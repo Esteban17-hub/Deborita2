@@ -19,12 +19,12 @@ if (typeof window !== 'undefined') {
     notifyStatusChange();
   });
 
-  // Polling automático cada 8 segundos: Envía pendientes y descarga novedades de otros dispositivos
+  // Polling automático cada 5 segundos: Envía pendientes y descarga novedades de otros dispositivos
   setInterval(() => {
     if (isOnline && !isSyncing) {
       triggerBackgroundSync();
     }
-  }, 8000);
+  }, 5000);
 }
 
 // Configurar WebSockets para Realtime

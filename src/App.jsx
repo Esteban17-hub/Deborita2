@@ -119,13 +119,27 @@ export default function App() {
     }
   };
 
-  // --- FILTROS POR CONGREGACION ---
-  const activeCommittees = committees.filter(c => c.congregationId === congregationId);
+  // --- FILTROS Y CÁLCULOS DINÁMICOS POR CONGREGACIÓN ---
+  const activeCommittees = committees
+    .filter(c => c.congregationId === congregationId)
+    .map(c => {
+      const commMovs = movements.filter(m => m.committeeId === c.id && m.congregationId === congregationId && !m.annulled);
+      const movsIncome = commMovs.filter(m => m.type === 'INGRESO').reduce((acc, m) => acc + (m.amount || 0), 0);
+      const movsExpense = commMovs.filter(m => m.type === 'EGRESO').reduce((acc, m) => acc + (m.amount || 0), 0);
+      const commOfferings = offerings.filter(o => o.destinationCommitteeId === c.id && o.congregationId === congregationId);
+      const offeringsIncome = commOfferings.reduce((acc, o) => acc + (o.amount || 0), 0);
+
+      const computedBalance = movsIncome - movsExpense + offeringsIncome;
+      return {
+        ...c,
+        balance: computedBalance
+      };
+    });
+
   const activeMovements = movements.filter(m => m.congregationId === congregationId);
   const activeTithes = tithes.filter(t => t.congregationId === congregationId);
   const activeOfferings = offerings.filter(o => o.congregationId === congregationId);
   const activeProjects = projects.filter(p => p.congregationId === congregationId);
-  // Votes se enlazan al proyecto, pero para simplificar la vista se filtran si el proyecto pertenece a la congregación
   const activeProjectIds = new Set(activeProjects.map(p => p.id));
   const activeVotes = votes.filter(v => activeProjectIds.has(v.projectId));
 

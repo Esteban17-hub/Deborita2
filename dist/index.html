@@ -12,8 +12,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#2563eb" />
-    <script type="module" crossorigin src="/assets/index-C-aa4_UB.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-Hjm-lLKl.css">
+    <script type="module" crossorigin src="/assets/index-Sw9rDHA2.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-YKY3pOA6.css">
   </head>
   <body class="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-white font-sans antialiased selection:bg-blue-500 selection:text-white">
     <div id="root"></div>
@@ -35,6 +35,25 @@
           });
         });
       }
+
+      // Watchdog de Autoreparación: Elimina pantallas en blanco automáticamente
+      setTimeout(() => {
+        const rootEl = document.getElementById('root');
+        if (rootEl && rootEl.children.length === 0) {
+          console.warn('Pantalla en blanco detectada. Autorreparando app...');
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+              for (let reg of registrations) reg.unregister();
+            });
+          }
+          if ('caches' in window) {
+            caches.keys().then(names => {
+              for (let name of names) caches.delete(name);
+            });
+          }
+          setTimeout(() => window.location.reload(true), 500);
+        }
+      }, 2500);
     </script>
   </body>
 </html>
