@@ -1,4 +1,4 @@
-const CACHE_NAME = 'deborita-cache-v6';
+const CACHE_NAME = 'deborita-cache-v7';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -26,10 +26,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Estrategia Network-First para navegación e HTML
+  // Estrategia Network-First para navegación e HTML con bypass estricto de caché HTTP
   if (event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html')) {
     event.respondWith(
-      fetch(event.request)
+      fetch(event.request.url, { cache: 'no-store' })
         .then((response) => {
           if (response.status === 200) {
             const responseClone = response.clone();

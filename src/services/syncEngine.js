@@ -6,6 +6,19 @@ let isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
 let isSyncing = false;
 const listeners = new Set();
 
+let presenceCount = 1;
+const presenceListeners = new Set();
+
+export function subscribePresence(callback) {
+  presenceListeners.add(callback);
+  callback(presenceCount);
+  return () => presenceListeners.delete(callback);
+}
+
+function notifyPresenceChange() {
+  presenceListeners.forEach((cb) => cb(presenceCount));
+}
+
 // Manejadores de eventos de red y polling automático
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
@@ -52,6 +65,33 @@ export function setupRealtimeListeners() {
       })
       .subscribe();
   });
+
+  // PRESENCE CHANNEL
+  const presenceChannel = supabase.channel('global-presence', {
+    config: {
+      presence: {
+        key: 'user-' + Math.random().toString(36).substring(2, 9)
+      }
+    }
+  });
+
+  presenceChannel
+    .on('presence', { event: 'sync' }, () => {
+      const state = presenceChannel.presenceState();
+      let count = 0;
+      for (const id in state) {
+        count += state[id].length;
+      }
+      presenceCount = Math.max(1, count);
+      notifyPresenceChange();
+    })
+    .subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await presenceChannel.track({
+          online_at: new Date().toISOString()
+        });
+      }
+    });
 
   isRealtimeInitialized = true;
 }

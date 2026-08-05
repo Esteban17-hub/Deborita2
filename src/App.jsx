@@ -20,7 +20,8 @@ import {
   subscribeNetworkStatus,
   queueOfflineAction,
   triggerBackgroundSync,
-  setupRealtimeListeners
+  setupRealtimeListeners,
+  subscribePresence
 } from './services/syncEngine';
 import { subscribeToSyncEvents, notifyDataChange } from './services/broadcast';
 
@@ -49,6 +50,7 @@ export default function App() {
 
   // Estado de Red y Sincronización
   const [networkStatus, setNetworkStatus] = useState({ isOnline: true, isSyncing: false, pendingCount: 0 });
+  const [connectedUsers, setConnectedUsers] = useState(1);
 
   // Entidades principales de la Base de Datos Local (IndexedDB)
   const [users, setUsers] = useState([]);
@@ -87,12 +89,17 @@ export default function App() {
       setNetworkStatus(status);
     });
 
+    const unsubPresence = subscribePresence((count) => {
+      setConnectedUsers(count);
+    });
+
     const unsubBroadcast = subscribeToSyncEvents((event) => {
       loadAllData();
     });
 
     return () => {
       unsubNetwork();
+      unsubPresence();
       unsubBroadcast();
     };
   }, []);
@@ -372,6 +379,7 @@ export default function App() {
         userRole={userRole}
         userName={userName}
         networkStatus={networkStatus}
+        connectedUsers={connectedUsers}
         onLogout={() => {
           localStorage.removeItem('deborita_session');
           setIsLoginOpen(true);

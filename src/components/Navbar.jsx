@@ -7,6 +7,7 @@ export default function Navbar({
   userRole,
   userName,
   networkStatus,
+  connectedUsers,
   onLogout,
   onOpenDiagnostics,
   onOpenReset
@@ -86,7 +87,7 @@ export default function Navbar({
           {/* Indicador de Presencia Activa (Realtime) */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700" title="Usuarios conectados">
             <Users className="w-4 h-4 text-blue-500" />
-            <span className="hidden md:inline">1 Conectado(s)</span>
+            <span className="hidden md:inline">{connectedUsers || 1} Conectado(s)</span>
           </div>
 
           {/* Badge de Rol y Logout */}
