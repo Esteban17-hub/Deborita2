@@ -1,11 +1,24 @@
 import React, { useState } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { getPendingCount } from '../services/syncEngine';
-import { X, ShieldAlert, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { getAllFromStore } from '../services/db';
+import { X, ShieldAlert, CheckCircle2, AlertTriangle, RefreshCw, Database } from 'lucide-react';
+
+// Helper local para convertir a formato de base de datos (todo a minúsculas)
+function toDbFormat(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  const dbObj = {};
+  for (const key of Object.keys(obj)) {
+    dbObj[key.toLowerCase()] = obj[key];
+  }
+  return dbObj;
+}
 
 export default function DiagnosticsModal({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
+  const [syncingLocal, setSyncingLocal] = useState(false);
+  const [syncLog, setSyncLog] = useState([]);
 
   if (!isOpen) return null;
 
@@ -32,7 +45,6 @@ export default function DiagnosticsModal({ isOpen, onClose }) {
 
     if (isSupaClientInit) {
       try {
-        const start = Date.now();
         const { data, error } = await supabase.from('congregations').select('*').limit(1);
         if (error) {
           pingError = `${error.code}: ${error.message}`;
@@ -60,6 +72,54 @@ export default function DiagnosticsModal({ isOpen, onClose }) {
     setLoading(false);
   };
 
+  const handleForceSync = async () => {
+    if (!supabase) {
+      alert("El conector de Supabase no está inicializado. Corrige las variables primero.");
+      return;
+    }
+
+    setSyncingLocal(true);
+    setSyncLog(["Iniciando subida forzada de datos locales a la nube..."]);
+
+    const entities = ['congregations', 'users', 'committees', 'projects', 'tithes', 'offerings', 'movements', 'votes'];
+    
+    try {
+      for (const entity of entities) {
+        setSyncLog(prev => [...prev, `Leyendo tabla local: ${entity}...`]);
+        const localData = await getAllFromStore(entity);
+        
+        if (!localData || localData.length === 0) {
+          setSyncLog(prev => [...prev, `Tabla ${entity} vacía localmente. Omitiendo.`]);
+          continue;
+        }
+
+        setSyncLog(prev => [...prev, `Subiendo ${localData.length} registros de ${entity} a Supabase...`]);
+        let entityErrors = 0;
+        let lastErrorMsg = '';
+
+        for (const record of localData) {
+          const dbData = toDbFormat(record);
+          const { error } = await supabase.from(entity).upsert(dbData);
+          if (error) {
+            entityErrors++;
+            lastErrorMsg = `${error.code}: ${error.message}`;
+          }
+        }
+
+        if (entityErrors > 0) {
+          setSyncLog(prev => [...prev, `❌ Error en ${entity}: fallaron ${entityErrors} envíos. Último error: ${lastErrorMsg}`]);
+        } else {
+          setSyncLog(prev => [...prev, `✅ Tabla ${entity} sincronizada correctamente en la nube.`]);
+        }
+      }
+      setSyncLog(prev => [...prev, "🎉 Proceso de sincronización forzada finalizado."]);
+    } catch (e) {
+      setSyncLog(prev => [...prev, `💥 Error crítico: ${e.message || String(e)}`]);
+    } finally {
+      setSyncingLocal(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative">
@@ -81,23 +141,53 @@ export default function DiagnosticsModal({ isOpen, onClose }) {
         </div>
 
         <div className="space-y-4">
-          <button
-            onClick={runDiagnostics}
-            disabled={loading}
-            className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Analizando conexión...</span>
-              </>
-            ) : (
-              <span>Ejecutar Diagnóstico</span>
-            )}
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={runDiagnostics}
+              disabled={loading}
+              className="py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-1.5"
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Analizando...</span>
+                </>
+              ) : (
+                <span>Ejecutar Diagnóstico</span>
+              )}
+            </button>
+
+            <button
+              onClick={handleForceSync}
+              disabled={syncingLocal}
+              className="py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-1.5"
+            >
+              {syncingLocal ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Sincronizando...</span>
+                </>
+              ) : (
+                <>
+                  <Database className="w-3.5 h-3.5" />
+                  <span>Subir todo a Nube</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Registro de logs de sincronización forzada */}
+          {syncLog.length > 0 && (
+            <div className="bg-slate-900 text-slate-200 p-3 rounded-xl text-xs font-mono max-h-36 overflow-y-auto space-y-1">
+              <p className="text-[10px] text-slate-400 font-bold uppercase mb-1 border-b border-slate-800 pb-1">Progreso de Sincronización:</p>
+              {syncLog.map((log, idx) => (
+                <div key={idx} className="leading-tight">{log}</div>
+              ))}
+            </div>
+          )}
 
           {results && (
-            <div className="space-y-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-sm overflow-y-auto max-h-96">
+            <div className="space-y-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-sm overflow-y-auto max-h-72">
               {/* Variables de Entorno */}
               <div className="space-y-1">
                 <p className="text-xs font-bold text-slate-400 uppercase">1. Variables cargadas en Vercel</p>
