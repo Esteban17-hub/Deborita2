@@ -6,7 +6,7 @@ let isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
 let isSyncing = false;
 const listeners = new Set();
 
-// Manejadores de eventos de red
+// Manejadores de eventos de red y polling automático
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
     isOnline = true;
@@ -18,6 +18,13 @@ if (typeof window !== 'undefined') {
     isOnline = false;
     notifyStatusChange();
   });
+
+  // Polling automático cada 8 segundos: Envía pendientes y descarga novedades de otros dispositivos
+  setInterval(() => {
+    if (isOnline && !isSyncing) {
+      triggerBackgroundSync();
+    }
+  }, 8000);
 }
 
 // Configurar WebSockets para Realtime

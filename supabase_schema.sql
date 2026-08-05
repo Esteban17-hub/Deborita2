@@ -1,8 +1,28 @@
--- Esquema inicial para Supabase de Deborita Gestión Local
--- Copia y pega este script en el "SQL Editor" de tu panel de Supabase y ejecútalo ("Run").
+-- ====================================================================
+-- ESQUEMA DEFINITIVO PARA DEBORITA GESTIÓN LOCAL (SUPABASE)
+-- Ejecuta este script completo en el SQL Editor de tu Supabase
+-- ====================================================================
 
--- 0. Tabla de Usuarios
-CREATE TABLE public.users (
+-- 1. DESACTIVAR RLS (ROW LEVEL SECURITY) EN TODAS LAS TABLAS
+-- Esto permite que la aplicación web (rol anon) pueda leer y escribir libremente
+ALTER TABLE IF EXISTS public.users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.congregations DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.committees DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.movements DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.tithes DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.offerings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.projects DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.votes DISABLE ROW LEVEL SECURITY;
+
+-- 2. AGREGAR COLUMNAS FALTANTES A TABLAS EXISTENTES
+ALTER TABLE IF EXISTS public.committees ADD COLUMN IF NOT EXISTS "isOfferingOnly" BOOLEAN DEFAULT false;
+ALTER TABLE IF EXISTS public.committees ADD COLUMN IF NOT EXISTS "updatedAt" BIGINT;
+ALTER TABLE IF EXISTS public.movements ADD COLUMN IF NOT EXISTS "annulReason" TEXT;
+ALTER TABLE IF EXISTS public.projects ADD COLUMN IF NOT EXISTS "targetAmount" NUMERIC;
+ALTER TABLE IF EXISTS public.projects ADD COLUMN IF NOT EXISTS "totalRaised" NUMERIC DEFAULT 0;
+
+-- 3. CREAR TABLAS SI NO EXISTEN CON ESTRUCTURA EXACTA
+CREATE TABLE IF NOT EXISTS public.users (
   id TEXT PRIMARY KEY,
   "congregationId" TEXT NOT NULL,
   name TEXT NOT NULL,
@@ -10,31 +30,31 @@ CREATE TABLE public.users (
   pin TEXT NOT NULL,
   "createdAt" BIGINT NOT NULL
 );
+ALTER TABLE public.users DISABLE ROW LEVEL SECURITY;
 
--- 1. Tabla de Congregaciones
-CREATE TABLE public.congregations (
+CREATE TABLE IF NOT EXISTS public.congregations (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  city TEXT NOT NULL
+  city TEXT
 );
+ALTER TABLE public.congregations DISABLE ROW LEVEL SECURITY;
 
--- 2. Tabla de Comités
-CREATE TABLE public.committees (
+CREATE TABLE IF NOT EXISTS public.committees (
   id TEXT PRIMARY KEY,
-  "congregationId" TEXT NOT NULL REFERENCES public.congregations(id),
+  "congregationId" TEXT NOT NULL,
   name TEXT NOT NULL,
   treasurer TEXT,
   balance NUMERIC DEFAULT 0,
   "isOfferingOnly" BOOLEAN DEFAULT false,
-  "updatedAt" BIGINT NOT NULL
+  "updatedAt" BIGINT
 );
+ALTER TABLE public.committees DISABLE ROW LEVEL SECURITY;
 
--- 3. Tabla de Movimientos
-CREATE TABLE public.movements (
+CREATE TABLE IF NOT EXISTS public.movements (
   id TEXT PRIMARY KEY,
-  "congregationId" TEXT NOT NULL REFERENCES public.congregations(id),
-  "committeeId" TEXT NOT NULL REFERENCES public.committees(id),
-  type TEXT NOT NULL CHECK (type IN ('INGRESO', 'EGRESO')),
+  "congregationId" TEXT NOT NULL,
+  "committeeId" TEXT NOT NULL,
+  type TEXT NOT NULL,
   amount NUMERIC NOT NULL,
   description TEXT,
   date TEXT NOT NULL,
@@ -42,80 +62,62 @@ CREATE TABLE public.movements (
   "annulReason" TEXT,
   "createdAt" BIGINT NOT NULL
 );
+ALTER TABLE public.movements DISABLE ROW LEVEL SECURITY;
 
--- 4. Tabla de Diezmos
-CREATE TABLE public.tithes (
+CREATE TABLE IF NOT EXISTS public.tithes (
   id TEXT PRIMARY KEY,
-  "congregationId" TEXT NOT NULL REFERENCES public.congregations(id),
-  month TEXT NOT NULL,
-  year TEXT NOT NULL,
-  "pastorName" TEXT NOT NULL,
-  smlv NUMERIC NOT NULL,
-  "nationalPercentage" NUMERIC NOT NULL,
-  "grossTithe" NUMERIC NOT NULL,
-  "nationalTreasury" NUMERIC NOT NULL,
-  "netIncome" NUMERIC NOT NULL,
-  "calculatedPoint" NUMERIC,
-  "correctedPoint" NUMERIC,
-  "localFundAport" NUMERIC NOT NULL,
-  "pastorAllocation" NUMERIC NOT NULL,
-  date TEXT NOT NULL,
+  "congregationId" TEXT NOT NULL,
+  date TEXT,
+  month TEXT,
+  year INTEGER,
+  "grossIncome" NUMERIC,
+  "nationalPercentage" NUMERIC,
+  "nationalShare" NUMERIC,
+  "localShare" NUMERIC,
+  "pastorTithe" NUMERIC,
+  "pastorTithePercentage" NUMERIC,
+  "netIncome" NUMERIC,
+  "pastorAllocation" NUMERIC,
+  "pastorAllocationPercentage" NUMERIC,
+  "balanceGroup" TEXT,
+  archived BOOLEAN DEFAULT false,
   "createdAt" BIGINT NOT NULL
 );
+ALTER TABLE public.tithes DISABLE ROW LEVEL SECURITY;
 
--- 5. Tabla de Ofrendas
-CREATE TABLE public.offerings (
+CREATE TABLE IF NOT EXISTS public.offerings (
   id TEXT PRIMARY KEY,
-  "congregationId" TEXT NOT NULL REFERENCES public.congregations(id),
-  date TEXT NOT NULL,
-  "dayOfWeek" TEXT NOT NULL,
-  "destinationCommitteeId" TEXT REFERENCES public.committees(id),
+  "congregationId" TEXT NOT NULL,
+  "destinationCommitteeId" TEXT,
+  type TEXT,
   amount NUMERIC NOT NULL,
-  responsible TEXT,
-  notes TEXT,
+  description TEXT,
+  date TEXT,
   "createdAt" BIGINT NOT NULL
 );
+ALTER TABLE public.offerings DISABLE ROW LEVEL SECURITY;
 
--- 6. Tabla de Proyectos Pro-Templo
-CREATE TABLE public.projects (
+CREATE TABLE IF NOT EXISTS public.projects (
   id TEXT PRIMARY KEY,
-  "congregationId" TEXT NOT NULL REFERENCES public.congregations(id),
+  "congregationId" TEXT NOT NULL,
   name TEXT NOT NULL,
   description TEXT,
-  "startDate" TEXT NOT NULL,
-  "endDate" TEXT NOT NULL,
-  "financialGoal" NUMERIC,
+  "targetAmount" NUMERIC,
   "totalRaised" NUMERIC DEFAULT 0,
+  status TEXT,
   "createdAt" BIGINT NOT NULL
 );
+ALTER TABLE public.projects DISABLE ROW LEVEL SECURITY;
 
--- 7. Tabla de Votos/Promesas
-CREATE TABLE public.votes (
+CREATE TABLE IF NOT EXISTS public.votes (
   id TEXT PRIMARY KEY,
-  "projectId" TEXT NOT NULL REFERENCES public.projects(id),
-  "memberName" TEXT NOT NULL,
+  "projectId" TEXT NOT NULL,
+  "voterName" TEXT,
   amount NUMERIC NOT NULL,
-  date TEXT NOT NULL,
-  notes TEXT,
+  date TEXT,
   "createdAt" BIGINT NOT NULL
 );
+ALTER TABLE public.votes DISABLE ROW LEVEL SECURITY;
 
--- Configurar Políticas RLS (Row Level Security) básicas
--- Temporalmente permitiremos lectura y escritura total para facilitar la integración inicial
-ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.congregations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.committees ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.movements ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.tithes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.offerings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.votes ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Permitir todo a usuarios anonimos (temporal) en users" ON public.users FOR ALL USING (true);
-CREATE POLICY "Permitir todo a usuarios anonimos (temporal) en congregations" ON public.congregations FOR ALL USING (true);
-CREATE POLICY "Permitir todo a usuarios anonimos (temporal) en committees" ON public.committees FOR ALL USING (true);
-CREATE POLICY "Permitir todo a usuarios anonimos (temporal) en movements" ON public.movements FOR ALL USING (true);
-CREATE POLICY "Permitir todo a usuarios anonimos (temporal) en tithes" ON public.tithes FOR ALL USING (true);
-CREATE POLICY "Permitir todo a usuarios anonimos (temporal) en offerings" ON public.offerings FOR ALL USING (true);
-CREATE POLICY "Permitir todo a usuarios anonimos (temporal) en projects" ON public.projects FOR ALL USING (true);
-CREATE POLICY "Permitir todo a usuarios anonimos (temporal) en votes" ON public.votes FOR ALL USING (true);
+-- 4. HABILITAR PUBLICACIÓN REALTIME PARA CAMBIOS EN TIEMPO REAL
+ALTER PUBLICATION supabase_realtime ADD TABLE public.congregations, public.users, public.committees, public.projects, public.tithes, public.offerings, public.movements, public.votes;

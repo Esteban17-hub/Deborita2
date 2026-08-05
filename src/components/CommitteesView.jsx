@@ -68,24 +68,30 @@ export default function CommitteesView({
       {/* Selector de Comités y Botón de Crear */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
-          {committees.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => setSelectedCommitteeId(c.id)}
-              className={`px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 whitespace-nowrap ${
-                selectedCommitteeId === c.id
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50'
-              }`}
-            >
-              <span>{c.name}</span>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full ${
-                c.balance < 0 ? 'bg-rose-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200'
-              }`}>
-                {formatCurrency(c.balance)}
-              </span>
-            </button>
-          ))}
+          {committees.map((c) => {
+            const commBalance = movements
+              .filter(m => m.committeeId === c.id && !m.annulled)
+              .reduce((acc, m) => acc + (m.type === 'INGRESO' ? (m.amount || 0) : -(m.amount || 0)), 0);
+
+            return (
+              <button
+                key={c.id}
+                onClick={() => setSelectedCommitteeId(c.id)}
+                className={`px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 whitespace-nowrap ${
+                  selectedCommitteeId === c.id
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                    : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50'
+                }`}
+              >
+                <span>{c.name}</span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                  commBalance < 0 ? 'bg-rose-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200'
+                }`}>
+                  {formatCurrency(commBalance)}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {!isReadOnly && (
@@ -99,30 +105,35 @@ export default function CommitteesView({
         )}
       </div>
 
-      {activeCommittee && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-          
-          {/* Header del Comité Seleccionado */}
-          <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-            <div>
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white">{activeCommittee.name}</h2>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                👤 Tesorero a cargo: <span className="font-bold text-slate-700 dark:text-slate-300">{activeCommittee.treasurer || 'Sin asignar'}</span>
-              </p>
-            </div>
+      {activeCommittee && (() => {
+        const activeBalance = movements
+          .filter(m => m.committeeId === activeCommittee.id && !m.annulled)
+          .reduce((acc, m) => acc + (m.type === 'INGRESO' ? (m.amount || 0) : -(m.amount || 0)), 0);
 
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <span className="text-xs font-bold text-slate-400 block uppercase">Saldo Actual</span>
-                <p className={`text-2xl font-black ${activeCommittee.balance < 0 ? 'text-rose-600 animate-pulse' : 'text-slate-900 dark:text-white'}`}>
-                  {formatCurrency(activeCommittee.balance)}
+        return (
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+            
+            {/* Header del Comité Seleccionado */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white">{activeCommittee.name}</h2>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  👤 Tesorero a cargo: <span className="font-bold text-slate-700 dark:text-slate-300">{activeCommittee.treasurer || 'Sin asignar'}</span>
                 </p>
-                {activeCommittee.balance < 0 && (
-                  <span className="text-[10px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-full inline-block mt-1">
-                    ⚠️ Saldo Negativo Permitido (Regla de Oro)
-                  </span>
-                )}
               </div>
+
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <span className="text-xs font-bold text-slate-400 block uppercase">Saldo Actual</span>
+                  <p className={`text-2xl font-black ${activeBalance < 0 ? 'text-rose-600 animate-pulse' : 'text-slate-900 dark:text-white'}`}>
+                    {formatCurrency(activeBalance)}
+                  </p>
+                  {activeBalance < 0 && (
+                    <span className="text-[10px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-full inline-block mt-1">
+                      ⚠️ Saldo Negativo Permitido (Regla de Oro)
+                    </span>
+                  )}
+                </div>
 
               {!isReadOnly && (
                 <button
@@ -221,7 +232,8 @@ export default function CommitteesView({
           </div>
 
         </div>
-      )}
+      );
+    })()}
 
       {/* Modal Nuevo Comité */}
       {isNewCommitteeOpen && (
