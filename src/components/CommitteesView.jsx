@@ -62,6 +62,18 @@ export default function CommitteesView({
     setAnnulModalState({ isOpen: false, movementId: null, reason: '' });
   };
 
+  const handleSelectCommittee = (committeeId) => {
+    setSelectedCommitteeId(committeeId);
+    if (window.innerWidth < 1024) {
+      setTimeout(() => {
+        const el = document.getElementById('committee-detail-panel');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  };
+
   return (
     <div className="space-y-6">
       
@@ -72,7 +84,7 @@ export default function CommitteesView({
         <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-white">Comités y Departamentos</h2>
-            <p className="text-xs text-slate-500">Selecciona para ver movimientos</p>
+            <p className="text-xs text-slate-500">Toca un comité para ver o añadir movimientos</p>
           </div>
           {!isReadOnly && (
             <button
@@ -88,41 +100,57 @@ export default function CommitteesView({
         <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1 scrollbar-thin">
           {committees.map((c) => {
             const isSelected = activeCommittee?.id === c.id;
-            const commBalance = movements
-              .filter(m => m.committeeId === c.id && !m.annulled)
-              .reduce((acc, m) => acc + (m.type === 'INGRESO' ? (m.amount || 0) : -(m.amount || 0)), 0);
+            const commBalance = c.balance || 0;
 
             return (
               <div
                 key={c.id}
-                onClick={() => setSelectedCommitteeId(c.id)}
-                className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                onClick={() => handleSelectCommittee(c.id)}
+                className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col gap-2 ${
                   isSelected
                     ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-500/20 scale-[1.01]'
                     : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-600'
                 }`}
               >
-                <div className="min-w-0 flex-1">
-                  <h3 className={`font-bold text-sm leading-tight truncate ${isSelected ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
-                    {c.name}
-                  </h3>
-                  <p className={`text-xs mt-0.5 truncate ${isSelected ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'}`}>
-                    👤 {c.treasurer || 'Sin asignar'}
-                  </p>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <h3 className={`font-bold text-sm leading-tight truncate ${isSelected ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
+                      {c.name}
+                    </h3>
+                    <p className={`text-xs mt-0.5 truncate ${isSelected ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                      👤 {c.treasurer || 'Sin asignar'}
+                    </p>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider block ${isSelected ? 'text-blue-200' : 'text-slate-400'}`}>
+                      Saldo Actual
+                    </span>
+                    <span className={`text-sm font-black ${
+                      isSelected 
+                        ? 'text-white' 
+                        : commBalance < 0 ? 'text-rose-600' : 'text-slate-900 dark:text-white'
+                    }`}>
+                      {formatCurrency(commBalance)}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="text-right shrink-0">
-                  <span className={`text-[10px] font-bold uppercase tracking-wider block ${isSelected ? 'text-blue-200' : 'text-slate-400'}`}>
-                    Saldo Actual
-                  </span>
-                  <span className={`text-sm font-black ${
-                    isSelected 
-                      ? 'text-white' 
-                      : commBalance < 0 ? 'text-rose-600' : 'text-slate-900 dark:text-white'
-                  }`}>
-                    {formatCurrency(commBalance)}
-                  </span>
-                </div>
+                {isSelected && !isReadOnly && (
+                  <div className="pt-2 border-t border-blue-500/40 flex justify-end">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectCommittee(c.id);
+                        setIsNewMovementOpen(true);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-white text-blue-700 font-bold text-xs shadow-sm hover:bg-blue-50 transition-all flex items-center gap-1.5"
+                    >
+                      <ArrowRightLeft className="w-3.5 h-3.5" />
+                      <span>+ Nuevo Movimiento</span>
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -130,11 +158,9 @@ export default function CommitteesView({
       </div>
 
       {/* Columna Derecha: Detalle y Historial del Comité Seleccionado */}
-      <div className="lg:col-span-2">
+      <div className="lg:col-span-2" id="committee-detail-panel">
         {activeCommittee && (() => {
-          const activeBalance = movements
-            .filter(m => m.committeeId === activeCommittee.id && !m.annulled)
-            .reduce((acc, m) => acc + (m.type === 'INGRESO' ? (m.amount || 0) : -(m.amount || 0)), 0);
+          const activeBalance = activeCommittee.balance || 0;
 
           return (
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">

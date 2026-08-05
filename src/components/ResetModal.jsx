@@ -72,6 +72,15 @@ export default function ResetModal({
           await deleteRecord('movements', m.id);
         }
 
+        // Desvincular ofrendas asignadas a comités para esta congregación
+        const allOfferings = await getAllFromStore('offerings');
+        const commOfferings = allOfferings.filter(o => o.congregationId === congregationId && o.destinationCommitteeId);
+        for (const o of commOfferings) {
+          if (!selectedModules.offerings) {
+            await putRecord('offerings', { ...o, destinationCommitteeId: null });
+          }
+        }
+
         // Resetear saldo de comités de la congregación a 0
         const allComms = await getAllFromStore('committees');
         const commsToReset = allComms.filter(c => c.congregationId === congregationId);
@@ -79,10 +88,13 @@ export default function ResetModal({
           await putRecord('committees', { ...c, balance: 0, updatedAt: Date.now() });
         }
 
-        // Supabase Cloud: Eliminar movimientos y resetear saldos en la nube
+        // Supabase Cloud: Eliminar movimientos, desvincular ofrendas y resetear saldos en la nube
         if (supabase) {
           await supabase.from('movements').delete().eq('congregationId', congregationId);
           await supabase.from('committees').update({ balance: 0 }).eq('congregationId', congregationId);
+          if (!selectedModules.offerings) {
+            await supabase.from('offerings').update({ destinationCommitteeId: null }).eq('congregationId', congregationId);
+          }
         }
       }
 
