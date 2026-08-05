@@ -1,4 +1,4 @@
-import { initDB, getAllFromStore, deleteRecord, putRecord } from './db';
+import { initDB, getAllFromStore, deleteRecord, putRecord, clearStore } from './db';
 import { notifyDataChange } from './broadcast';
 import { supabase } from './supabaseClient';
 
@@ -203,8 +203,14 @@ async function fetchFreshDataFromCloud() {
   for (const entity of entities) {
     const { data, error } = await supabase.from(entity).select('*');
     if (data && !error) {
+      // CAUSA RAÍZ SOLUCIONADA: 
+      // Antes, solo hacíamos putRecord (Upsert). Los registros eliminados en la nube 
+      // o en otro dispositivo nunca se borraban localmente si el cliente estaba offline.
+      // Ahora, al asegurar que la cola de pendientes está vacía, podemos limpiar 
+      // la tabla local por completo y reescribirla con la fuente de verdad (Nube).
+      await clearStore(entity);
+      
       for (const record of data) {
-         // Sobrescribe la DB local con la fuente de verdad (Nube)
          await putRecord(entity, record);
       }
     } else if (error) {

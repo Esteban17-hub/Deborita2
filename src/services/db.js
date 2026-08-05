@@ -177,3 +177,8 @@ export async function deleteRecord(storeName, id) {
   const db = await initDB();
   return db.delete(storeName, id);
 }
+
+export async function clearStore(storeName) {
+  const db = await initDB();
+  return db.clear(storeName);
+}
