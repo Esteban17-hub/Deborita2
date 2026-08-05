@@ -9,6 +9,7 @@ import ProjectsView from './components/ProjectsView';
 import ReportsView from './components/ReportsView';
 import StatisticsView from './components/StatisticsView';
 import DiagnosticsModal from './components/DiagnosticsModal';
+import ResetModal from './components/ResetModal';
 
 import {
   seedInitialData,
@@ -41,6 +42,7 @@ export default function App() {
   const [userRole, setUserRole] = useState('TESORERO');
   const [isLoginOpen, setIsLoginOpen] = useState(true);
   const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
+  const [isResetOpen, setIsResetOpen] = useState(false);
 
   // Estado de Navegación
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -375,6 +377,7 @@ export default function App() {
           setIsLoginOpen(true);
         }}
         onOpenDiagnostics={() => setIsDiagnosticsOpen(true)}
+        onOpenReset={() => setIsResetOpen(true)}
       />
 
       {/* Menú de Navegación por Pestañas */}
@@ -509,6 +512,14 @@ export default function App() {
       <DiagnosticsModal
         isOpen={isDiagnosticsOpen}
         onClose={() => setIsDiagnosticsOpen(false)}
+      />
+
+      <ResetModal
+        isOpen={isResetOpen}
+        onClose={() => setIsResetOpen(false)}
+        congregationId={congregationId}
+        congregationName={congregationName}
+        onResetComplete={loadAllData}
       />
 
     </div>

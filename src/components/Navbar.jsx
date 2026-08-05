@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cloud, CloudOff, RefreshCw, UserCheck, Users } from 'lucide-react';
+import { Cloud, CloudOff, RefreshCw, UserCheck, Users, RotateCcw } from 'lucide-react';
 import { triggerBackgroundSync } from '../services/syncEngine';
 
 export default function Navbar({
@@ -8,7 +8,8 @@ export default function Navbar({
   userName,
   networkStatus,
   onLogout,
-  onOpenDiagnostics
+  onOpenDiagnostics,
+  onOpenReset
 }) {
   const { isOnline, isSyncing, pendingCount } = networkStatus;
 
@@ -108,6 +109,15 @@ export default function Navbar({
             title="Diagnosticar Conexión"
           >
             <span>Diagnóstico</span>
+          </button>
+
+          <button
+            onClick={onOpenReset}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-400 dark:hover:bg-rose-900/60 text-xs font-bold transition-all"
+            title="Restablecer Datos de Fábrica"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Restablecer</span>
           </button>
 
         </div>
