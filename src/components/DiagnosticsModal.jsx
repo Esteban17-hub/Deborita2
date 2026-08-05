@@ -4,16 +4,6 @@ import { getPendingCount } from '../services/syncEngine';
 import { getAllFromStore } from '../services/db';
 import { X, ShieldAlert, CheckCircle2, AlertTriangle, RefreshCw, Database } from 'lucide-react';
 
-// Helper local para convertir a formato de base de datos (todo a minúsculas)
-function toDbFormat(obj) {
-  if (!obj || typeof obj !== 'object') return obj;
-  const dbObj = {};
-  for (const key of Object.keys(obj)) {
-    dbObj[key.toLowerCase()] = obj[key];
-  }
-  return dbObj;
-}
-
 export default function DiagnosticsModal({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
@@ -98,8 +88,7 @@ export default function DiagnosticsModal({ isOpen, onClose }) {
         let lastErrorMsg = '';
 
         for (const record of localData) {
-          const dbData = toDbFormat(record);
-          const { error } = await supabase.from(entity).upsert(dbData);
+          const { error } = await supabase.from(entity).upsert(record);
           if (error) {
             entityErrors++;
             lastErrorMsg = `${error.code}: ${error.message}`;

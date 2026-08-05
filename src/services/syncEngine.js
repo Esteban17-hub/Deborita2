@@ -89,51 +89,6 @@ export async function queueOfflineAction(action, entity, data) {
   }
 }
 
-// Mapeos para convertir nombres de columnas de base de datos (Postgres) a JS y viceversa
-const DB_TO_JS_KEYS = {
-  congregationid: 'congregationId',
-  committeeid: 'committeeId',
-  createdat: 'createdAt',
-  updatedat: 'updatedAt',
-  isofferingonly: 'isOfferingOnly',
-  destinationcommitteeid: 'destinationCommitteeId',
-  totalraised: 'totalRaised',
-  projectid: 'projectId',
-  annulreason: 'annulReason',
-  grossincome: 'grossIncome',
-  nationalpercentage: 'nationalPercentage',
-  nationalshare: 'nationalShare',
-  localshare: 'localShare',
-  pastortithe: 'pastorTithe',
-  pastortithepercentage: 'pastorTithePercentage',
-  netincome: 'netIncome',
-  pastorallocation: 'pastorAllocation',
-  pastorallocationpercentage: 'pastorAllocationPercentage',
-  balancegroup: 'balanceGroup'
-};
-
-function toDbFormat(obj) {
-  if (!obj || typeof obj !== 'object') return obj;
-  const dbObj = {};
-  for (const key of Object.keys(obj)) {
-    dbObj[key.toLowerCase()] = obj[key];
-  }
-  return dbObj;
-}
-
-function toJsFormat(obj) {
-  if (!obj || typeof obj !== 'object') return obj;
-  if (Array.isArray(obj)) {
-    return obj.map(toJsFormat);
-  }
-  const jsObj = {};
-  for (const key of Object.keys(obj)) {
-    const jsKey = DB_TO_JS_KEYS[key] || key;
-    jsObj[jsKey] = obj[key];
-  }
-  return jsObj;
-}
-
 export async function triggerBackgroundSync() {
   if (isSyncing || !isOnline) return;
 
@@ -151,8 +106,7 @@ export async function triggerBackgroundSync() {
         
         if (supabase) {
           if (item.action === 'CREATE' || item.action === 'UPDATE' || item.action === 'ANNUL') {
-            const dbData = toDbFormat(item.data);
-            const { error } = await supabase.from(item.entity).upsert(dbData);
+            const { error } = await supabase.from(item.entity).upsert(item.data);
             if (error) {
               console.error(`Error enviando ${item.entity} a Supabase:`, error);
               success = false;
@@ -202,8 +156,7 @@ async function fetchFreshDataFromCloud() {
   for (const entity of entities) {
     const { data, error } = await supabase.from(entity).select('*');
     if (data && !error) {
-      const jsData = toJsFormat(data);
-      for (const record of jsData) {
+      for (const record of data) {
          // Sobrescribe la DB local con la fuente de verdad (Nube)
          await putRecord(entity, record);
       }
