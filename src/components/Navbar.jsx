@@ -7,7 +7,8 @@ export default function Navbar({
   userRole,
   userName,
   networkStatus,
-  onLogout
+  onLogout,
+  onOpenDiagnostics
 }) {
   const { isOnline, isSyncing, pendingCount } = networkStatus;
 
@@ -99,6 +100,14 @@ export default function Navbar({
             title="Cerrar sesión"
           >
             <span>Cerrar sesión</span>
+          </button>
+
+          <button
+            onClick={onOpenDiagnostics}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-400 dark:hover:bg-blue-900/60 text-xs font-bold transition-all"
+            title="Diagnosticar Conexión"
+          >
+            <span>Diagnóstico</span>
           </button>
 
         </div>

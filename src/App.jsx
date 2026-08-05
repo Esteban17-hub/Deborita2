@@ -8,6 +8,7 @@ import OfferingsView from './components/OfferingsView';
 import ProjectsView from './components/ProjectsView';
 import ReportsView from './components/ReportsView';
 import StatisticsView from './components/StatisticsView';
+import DiagnosticsModal from './components/DiagnosticsModal';
 
 import {
   seedInitialData,
@@ -39,6 +40,7 @@ export default function App() {
   const [userName, setUserName] = useState('Tesorero');
   const [userRole, setUserRole] = useState('TESORERO');
   const [isLoginOpen, setIsLoginOpen] = useState(true);
+  const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
 
   // Estado de Navegación
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -358,6 +360,7 @@ export default function App() {
           localStorage.removeItem('deborita_session');
           setIsLoginOpen(true);
         }}
+        onOpenDiagnostics={() => setIsDiagnosticsOpen(true)}
       />
 
       {/* Menú de Navegación por Pestañas */}
@@ -487,6 +490,11 @@ export default function App() {
             setActiveTab('dashboard');
           }
         }}
+      />
+
+      <DiagnosticsModal
+        isOpen={isDiagnosticsOpen}
+        onClose={() => setIsDiagnosticsOpen(false)}
       />
 
     </div>
