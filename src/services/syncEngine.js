@@ -89,6 +89,51 @@ export async function queueOfflineAction(action, entity, data) {
   }
 }
 
+// Mapeos para convertir nombres de columnas de base de datos (Postgres) a JS y viceversa
+const DB_TO_JS_KEYS = {
+  congregationid: 'congregationId',
+  committeeid: 'committeeId',
+  createdat: 'createdAt',
+  updatedat: 'updatedAt',
+  isofferingonly: 'isOfferingOnly',
+  destinationcommitteeid: 'destinationCommitteeId',
+  totalraised: 'totalRaised',
+  projectid: 'projectId',
+  annulreason: 'annulReason',
+  grossincome: 'grossIncome',
+  nationalpercentage: 'nationalPercentage',
+  nationalshare: 'nationalShare',
+  localshare: 'localShare',
+  pastortithe: 'pastorTithe',
+  pastortithepercentage: 'pastorTithePercentage',
+  netincome: 'netIncome',
+  pastorallocation: 'pastorAllocation',
+  pastorallocationpercentage: 'pastorAllocationPercentage',
+  balancegroup: 'balanceGroup'
+};
+
+function toDbFormat(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  const dbObj = {};
+  for (const key of Object.keys(obj)) {
+    dbObj[key.toLowerCase()] = obj[key];
+  }
+  return dbObj;
+}
+
+function toJsFormat(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(toJsFormat);
+  }
+  const jsObj = {};
+  for (const key of Object.keys(obj)) {
+    const jsKey = DB_TO_JS_KEYS[key] || key;
+    jsObj[jsKey] = obj[key];
+  }
+  return jsObj;
+}
+
 export async function triggerBackgroundSync() {
   if (isSyncing || !isOnline) return;
 
@@ -102,27 +147,36 @@ export async function triggerBackgroundSync() {
     if (queue.length > 0) {
       // Sincronizar cola enviando a Supabase
       for (const item of queue) {
+        let success = true;
+        
         if (supabase) {
           if (item.action === 'CREATE' || item.action === 'UPDATE' || item.action === 'ANNUL') {
-            const { error } = await supabase.from(item.entity).upsert(item.data);
+            const dbData = toDbFormat(item.data);
+            const { error } = await supabase.from(item.entity).upsert(dbData);
             if (error) {
               console.error(`Error enviando ${item.entity} a Supabase:`, error);
-              // En un entorno de producción avanzado, reintentaríamos luego
+              success = false;
             }
           } else if (item.action === 'DELETE') {
             const { error } = await supabase.from(item.entity).delete().match({ id: item.data.id });
             if (error) {
                console.error(`Error eliminando en Supabase:`, error);
+               success = false;
             }
           }
         }
         
-        // Guardar el registro procesado de forma definitiva (en IndexedDB local)
-        await putRecord(item.entity, item.data);
-        
-        // Eliminar de la cola de pendientes local
-        await deleteRecord('syncQueue', item.id);
-        notifyStatusChange();
+        if (success) {
+          // Guardar el registro procesado de forma definitiva (en IndexedDB local)
+          await putRecord(item.entity, item.data);
+          
+          // Eliminar de la cola de pendientes local
+          await deleteRecord('syncQueue', item.id);
+          notifyStatusChange();
+        } else {
+          // Si falla un elemento de la cola, detenemos el proceso para no perder el orden
+          throw new Error(`Sincronización pausada debido a error en el elemento de la cola de tipo: ${item.entity}`);
+        }
       }
     }
 
@@ -148,7 +202,8 @@ async function fetchFreshDataFromCloud() {
   for (const entity of entities) {
     const { data, error } = await supabase.from(entity).select('*');
     if (data && !error) {
-      for (const record of data) {
+      const jsData = toJsFormat(data);
+      for (const record of jsData) {
          // Sobrescribe la DB local con la fuente de verdad (Nube)
          await putRecord(entity, record);
       }
