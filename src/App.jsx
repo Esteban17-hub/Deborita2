@@ -35,7 +35,8 @@ import {
   HandHeart,
   Target,
   FileText,
-  PieChart
+  PieChart,
+  Settings
 } from 'lucide-react';
 
 export default function App() {
