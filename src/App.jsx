@@ -22,6 +22,7 @@ import {
   subscribeNetworkStatus,
   queueOfflineAction,
   triggerBackgroundSync,
+  fetchFreshDataFromCloud,
   setupRealtimeListeners,
   subscribePresence
 } from './services/syncEngine';
@@ -144,7 +145,9 @@ export default function App() {
       }
 
       // Iniciar sincronización (para que baje datos si estaba offline)
-      triggerBackgroundSync();
+      triggerBackgroundSync().then(() => {
+         fetchFreshDataFromCloud();
+      });
     }
     initApp();
 
@@ -274,18 +277,8 @@ export default function App() {
       createdAt: Date.now()
     };
 
-    // Actualizar saldo del comité (Regla de Oro: Permite saldo negativo)
-    const committee = committees.find(c => c.id === movementData.committeeId);
-    if (committee) {
-      const delta = movementData.type === 'INGRESO' ? movementData.amount : -movementData.amount;
-      const updatedCommittee = {
-        ...committee,
-        balance: (committee.balance || 0) + delta,
-        updatedAt: Date.now()
-      };
-      await putRecord('committees', updatedCommittee);
-      await queueOfflineAction('UPDATE', 'committees', updatedCommittee);
-    }
+    // UI dinámicamente calcula saldos vía 'activeCommittees', no necesitamos alterar 'committees' en la DB
+    // Esto evita condiciones de carrera (Lost Update) en escenarios multi-dispositivo offline
 
     await putRecord('movements', newMovement);
     await queueOfflineAction('CREATE', 'movements', newMovement);
@@ -303,18 +296,7 @@ export default function App() {
       updatedAt: Date.now()
     };
 
-    // Revertir cálculo matemático en el saldo del comité
-    const committee = committees.find(c => c.id === mov.committeeId);
-    if (committee) {
-      const reverseDelta = mov.type === 'INGRESO' ? -mov.amount : mov.amount;
-      const updatedCommittee = {
-        ...committee,
-        balance: (committee.balance || 0) + reverseDelta,
-        updatedAt: Date.now()
-      };
-      await putRecord('committees', updatedCommittee);
-      await queueOfflineAction('UPDATE', 'committees', updatedCommittee);
-    }
+    // UI dinámicamente calcula saldos, no necesitamos alterar 'committees' en la DB
 
     await putRecord('movements', updatedMov);
     await queueOfflineAction('ANNUL', 'movements', updatedMov);
@@ -342,19 +324,7 @@ export default function App() {
       createdAt: Date.now()
     };
 
-    // Si la ofrenda va a un comité específico, sumar al saldo del comité
-    if (offeringData.destinationCommitteeId) {
-      const com = committees.find(c => c.id === offeringData.destinationCommitteeId);
-      if (com) {
-        const updatedCom = {
-          ...com,
-          balance: (com.balance || 0) + offeringData.amount,
-          updatedAt: Date.now()
-        };
-        await putRecord('committees', updatedCom);
-        await queueOfflineAction('UPDATE', 'committees', updatedCom);
-      }
-    }
+    // UI dinámicamente calcula saldos, no necesitamos alterar 'committees' en la DB
 
     await putRecord('offerings', newOffering);
     await queueOfflineAction('CREATE', 'offerings', newOffering);
@@ -497,6 +467,7 @@ export default function App() {
             movements={activeMovements}
             offerings={activeOfferings}
             userRole={userRole}
+            congregationName={congregationName}
             isMobile={isMobile}
             onOpenMovementModal={() => setActiveTab('committees')}
             onOpenOfferingModal={() => setActiveTab('offerings')}

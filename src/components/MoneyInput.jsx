@@ -34,6 +34,8 @@ export default function MoneyInput({
       <input
         id={id}
         type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
         value={formattedDisplay}
         onChange={handleChange}
         placeholder={placeholder}

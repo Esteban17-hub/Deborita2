@@ -24,7 +24,9 @@ if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
     isOnline = true;
     notifyStatusChange();
-    triggerBackgroundSync();
+    triggerBackgroundSync().then(() => {
+       fetchFreshDataFromCloud();
+    });
   });
 
   window.addEventListener('offline', () => {
@@ -181,10 +183,11 @@ export async function triggerBackgroundSync() {
       }
     }
 
-    // Regla de Oro: Solo cuando la cola está 100% vacía, se puede descargar información de la nube central
+    // Regla de Oro: Solo cuando la cola está 100% vacía, notificamos que terminó
     const remainingQueue = await getAllFromStore('syncQueue');
     if (remainingQueue.length === 0) {
-      await fetchFreshDataFromCloud();
+      // Ya no hacemos fetchFreshDataFromCloud() aquí para evitar el bucle de borrado cada 5s
+      console.log('Cola de pendientes vacía. Sincronización al día.');
     }
   } catch (err) {
     console.error('Error durante la sincronización en segundo plano:', err);
@@ -195,7 +198,7 @@ export async function triggerBackgroundSync() {
   }
 }
 
-async function fetchFreshDataFromCloud() {
+export async function fetchFreshDataFromCloud() {
   if (!supabase) return;
   // Descarga de datos reales desde Supabase a IndexedDB local
   const entities = ['users', 'congregations', 'committees', 'projects', 'tithes', 'offerings', 'movements', 'votes'];

@@ -109,6 +109,23 @@ export default function DiagnosticsModal({ isOpen, onClose }) {
     }
   };
 
+  const handleClearCache = async () => {
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (let reg of registrations) {
+        await reg.unregister();
+      }
+    }
+    if ('caches' in window) {
+      const names = await caches.keys();
+      for (let name of names) {
+        await caches.delete(name);
+      }
+    }
+    alert('Caché limpiado exitosamente. La aplicación se recargará para descargar la última versión.');
+    window.location.reload(true);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative">
@@ -164,6 +181,14 @@ export default function DiagnosticsModal({ isOpen, onClose }) {
               )}
             </button>
           </div>
+
+          <button
+            onClick={handleClearCache}
+            className="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-1.5"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Actualizar App (Forzar Limpieza de Caché)
+          </button>
 
           {/* Registro de logs de sincronización forzada */}
           {syncLog.length > 0 && (

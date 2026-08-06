@@ -56,27 +56,53 @@
 
 /* Tema 2: Corporate Blue (Formal Claro) */
 :root[data-theme="corporate-blue"] {
-  --gradient-committees: linear-gradient(to right, #1e40af, #1d4ed8, #1e3a8a); /* blue-800 -> blue-700 -> blue-900 */
-  --gradient-tithes: linear-gradient(to right, #334155, #475569, #1e293b); /* slate-700 -> slate-600 -> slate-800 */
-  --gradient-projects: linear-gradient(to right, #0f172a, #1e293b, #0f172a); /* slate-900 -> slate-800 -> slate-900 */
-  --gradient-reports: linear-gradient(to right, #1e3a8a, #1e40af, #172554); /* blue-900 -> blue-800 -> blue-950 */
+  --gradient-committees: linear-gradient(to right, #1e40af, #1d4ed8, #1e3a8a);
+  --gradient-tithes: linear-gradient(to right, #334155, #475569, #1e293b);
+  --gradient-projects: linear-gradient(to right, #0f172a, #1e293b, #0f172a);
+  --gradient-reports: linear-gradient(to right, #1e3a8a, #1e40af, #172554);
   --shadow-color: rgba(30, 64, 175, 0.15);
+  
+  /* Overrides globales para cambiar toda la app */
+  --color-slate-100: #f0f9ff; /* sky-50 bg */
+  --color-slate-900: #0f172a;
 }
 
 /* Tema 3: Executive Graphite (Minimalista Oscuro) */
 :root[data-theme="executive-graphite"] {
-  --gradient-committees: linear-gradient(to right, #334155, #1e293b, #0f172a); /* slate-700 -> slate-800 -> slate-900 */
-  --gradient-tithes: linear-gradient(to right, #44403c, #292524, #1c1917); /* stone-700 -> stone-800 -> stone-900 */
-  --gradient-projects: linear-gradient(to right, #3f3f46, #27272a, #18181b); /* zinc-700 -> zinc-800 -> zinc-900 */
-  --gradient-reports: linear-gradient(to right, #374151, #1f2937, #111827); /* gray-700 -> gray-800 -> gray-900 */
+  --gradient-committees: linear-gradient(to right, #334155, #1e293b, #0f172a);
+  --gradient-tithes: linear-gradient(to right, #44403c, #292524, #1c1917);
+  --gradient-projects: linear-gradient(to right, #3f3f46, #27272a, #18181b);
+  --gradient-reports: linear-gradient(to right, #374151, #1f2937, #111827);
   --shadow-color: rgba(0, 0, 0, 0.4);
+
+  /* Overrides globales para cambiar toda la app */
+  --color-blue-500: #71717a; /* zinc-500 */
+  --color-blue-600: #52525b; /* zinc-600 */
+  --color-blue-700: #3f3f46; /* zinc-700 */
+  --color-emerald-400: #9ca3af; /* gray-400 */
+  --color-emerald-500: #6b7280; /* gray-500 */
+  --color-emerald-600: #4b5563; /* gray-600 */
+  
+  /* Backgrounds */
+  --color-slate-800: #27272a; /* zinc-800 */
+  --color-slate-900: #18181b; /* zinc-900 */
+  --color-slate-950: #09090b; /* zinc-950 */
 }
 
 /* Tema 4: Forest Emerald (Elegante Claro) */
 :root[data-theme="forest-emerald"] {
-  --gradient-committees: linear-gradient(to right, #065f46, #047857, #166534); /* emerald-800 -> emerald-700 -> green-800 */
-  --gradient-tithes: linear-gradient(to right, #b45309, #a16207, #92400e); /* amber-700 -> yellow-700 -> amber-800 */
-  --gradient-projects: linear-gradient(to right, #115e59, #0f766e, #065f46); /* teal-800 -> teal-700 -> emerald-800 */
-  --gradient-reports: linear-gradient(to right, #3f6212, #15803d, #065f46); /* lime-800 -> green-700 -> emerald-800 */
+  --gradient-committees: linear-gradient(to right, #065f46, #047857, #166534);
+  --gradient-tithes: linear-gradient(to right, #b45309, #a16207, #92400e);
+  --gradient-projects: linear-gradient(to right, #115e59, #0f766e, #065f46);
+  --gradient-reports: linear-gradient(to right, #3f6212, #15803d, #065f46);
   --shadow-color: rgba(4, 120, 87, 0.15);
+
+  /* Overrides globales para cambiar toda la app */
+  --color-blue-500: #10b981; /* emerald-500 */
+  --color-blue-600: #059669; /* emerald-600 */
+  --color-blue-700: #047857; /* emerald-700 */
+  
+  /* Backgrounds */
+  --color-slate-100: #f0fdf4; /* green-50 bg */
+  --color-slate-900: #064e3b; /* emerald-900 */
 }

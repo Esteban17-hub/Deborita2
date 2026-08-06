@@ -7,6 +7,7 @@ export default function DashboardView({
   movements,
   offerings,
   userRole,
+  congregationName,
   onOpenMovementModal,
   onOpenOfferingModal,
   onSelectTab
@@ -43,7 +44,7 @@ export default function DashboardView({
       {!isReadOnly && (
         <div className="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-500 p-6 rounded-[2rem] text-white shadow-2xl shadow-indigo-500/20">
           <div>
-            <h2 className="text-2xl font-black mb-1">¡Bienvenido a Deborita Gestión!</h2>
+            <h2 className="text-2xl font-black mb-1">¡Bienvenido a {congregationName}!</h2>
             <p className="text-sm text-blue-100 font-medium">Acceso rápido a operaciones financieras cotidianas</p>
           </div>
           <div className="flex items-center gap-3">
