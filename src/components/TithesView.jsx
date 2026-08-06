@@ -44,10 +44,10 @@ export default function TithesView({ tithes, userRole, onSaveTithe }) {
   const [month, setMonth] = useState(String(new Date().getMonth() + 1).padStart(2, '0'));
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const [pastorName, setPastorName] = useState('Pastor David Morales');
-  const [smlv, setSmlv] = useState(1300000);
+  const [smlv, setSmlv] = useState(1750905);
   const [nationalPercentage, setNationalPercentage] = useState(21);
   const [grossTithe, setGrossTithe] = useState(5000000);
-  const [correctedPoint, setCorrectedPoint] = useState(0);
+  const [correctedPointInput, setCorrectedPointInput] = useState('');
   const [isPointManuallyEdited, setIsPointManuallyEdited] = useState(false);
 
   // Cálculos reactivos en tiempo real
@@ -58,7 +58,9 @@ export default function TithesView({ tithes, userRole, onSaveTithe }) {
   const calculatedPoint = smlv > 0 ? parseFloat((netIncome / smlv).toFixed(3)) : 0;
 
   // Si no se ha editado manualmente, Punto Corregido toma el valor exacto de Punto Calculado
-  const activeCorrectedPoint = isPointManuallyEdited ? correctedPoint : calculatedPoint;
+  const activeCorrectedPoint = isPointManuallyEdited 
+    ? (correctedPointInput === '' ? 0 : parseFloat(correctedPointInput) || 0) 
+    : calculatedPoint;
 
   const localFundAport = Math.round(netIncome * (activeCorrectedPoint / 100));
   const pastorAllocation = netIncome - localFundAport;
@@ -177,8 +179,8 @@ export default function TithesView({ tithes, userRole, onSaveTithe }) {
       {activeTab === 'calculator' && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
           <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-            <Calculator className="w-6 h-6 text-emerald-600" />
-            Liquidación de Diezmos (Matemática Estricta)
+            <Calculator className="w-6 h-6 text-blue-600" />
+            Liquidación de Diezmos
           </h2>
 
           <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -259,24 +261,24 @@ export default function TithesView({ tithes, userRole, onSaveTithe }) {
             </div>
 
             {/* Columna Derecha: Resultados Matemáticos en Tiempo Real */}
-            <div className="space-y-4 bg-gradient-to-br from-slate-900 to-teal-950 text-white p-5 rounded-2xl shadow-lg border border-slate-800">
-              <h3 className="text-xs font-bold uppercase text-emerald-400 tracking-wider">Resultados en Tiempo Real</h3>
+            <div className="space-y-4 bg-gradient-to-br from-slate-800 to-slate-900 text-white p-5 rounded-2xl shadow-lg border border-slate-700">
+              <h3 className="text-xs font-bold uppercase text-blue-400 tracking-wider">Resultados en Tiempo Real</h3>
 
-              <div className="space-y-3 divide-y divide-slate-800 text-xs">
+              <div className="space-y-3 divide-y divide-slate-700/50 text-xs">
                 
                 <div className="flex justify-between items-center pt-2">
                   <span className="text-slate-400">1. Tesorería Nacional ({nationalPercentage}%):</span>
-                  <span className="font-mono font-bold text-rose-400">{formatCurrency(nationalTreasury)}</span>
+                  <span className="font-mono font-bold text-slate-300">{formatCurrency(nationalTreasury)}</span>
                 </div>
 
                 <div className="flex justify-between items-center pt-2">
                   <span className="text-slate-400 font-bold">2. Ingreso Neto:</span>
-                  <span className="font-mono font-black text-emerald-400 text-sm">{formatCurrency(netIncome)}</span>
+                  <span className="font-mono font-black text-blue-400 text-sm">{formatCurrency(netIncome)}</span>
                 </div>
 
                 <div className="flex justify-between items-center pt-2">
                   <span className="text-slate-400">3. Punto Calculado (Ingreso Neto / SMLV):</span>
-                  <span className="font-mono font-bold text-amber-400 text-sm">{calculatedPoint.toFixed(3)} pts</span>
+                  <span className="font-mono font-bold text-indigo-300 text-sm">{calculatedPoint.toFixed(3)} pts</span>
                 </div>
 
                 <div className="pt-2">
@@ -286,9 +288,9 @@ export default function TithesView({ tithes, userRole, onSaveTithe }) {
                       type="button"
                       onClick={() => {
                         setIsPointManuallyEdited(!isPointManuallyEdited);
-                        if (isPointManuallyEdited) setCorrectedPoint(calculatedPoint);
+                        if (isPointManuallyEdited) setCorrectedPointInput('');
                       }}
-                      className="text-[10px] text-emerald-400 underline"
+                      className="text-[10px] text-blue-400 underline"
                     >
                       {isPointManuallyEdited ? 'Restablecer por defecto' : 'Editar manualmente'}
                     </button>
@@ -297,30 +299,30 @@ export default function TithesView({ tithes, userRole, onSaveTithe }) {
                     type="number"
                     step="0.001"
                     disabled={!isPointManuallyEdited}
-                    value={activeCorrectedPoint}
+                    value={isPointManuallyEdited ? correctedPointInput : calculatedPoint}
                     onChange={(e) => {
                       setIsPointManuallyEdited(true);
-                      setCorrectedPoint(parseFloat(e.target.value) || 0);
+                      setCorrectedPointInput(e.target.value);
                     }}
-                    className="w-full px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-white font-mono font-bold text-xs"
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800/80 text-white font-mono font-bold text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
                   />
                 </div>
 
                 <div className="flex justify-between items-center pt-2">
                   <span className="text-slate-400">5. Aporte Fondo Local:</span>
-                  <span className="font-mono font-bold text-teal-300">{formatCurrency(localFundAport)}</span>
+                  <span className="font-mono font-bold text-indigo-200">{formatCurrency(localFundAport)}</span>
                 </div>
 
                 <div className="flex justify-between items-center pt-3 border-t border-slate-700">
                   <span className="text-white font-black text-sm">6. Asignación Pastor:</span>
-                  <span className="font-mono font-black text-emerald-300 text-lg">{formatCurrency(pastorAllocation)}</span>
+                  <span className="font-mono font-black text-blue-300 text-lg">{formatCurrency(pastorAllocation)}</span>
                 </div>
 
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md transition-all mt-4"
+                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-md transition-all mt-4"
               >
                 Guardar Liquidación de Diezmos
               </button>

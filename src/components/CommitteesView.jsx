@@ -11,7 +11,8 @@ export default function CommitteesView({
   onAddMovement,
   onAnnulMovement
 }) {
-  const [selectedCommitteeId, setSelectedCommitteeId] = useState(committees[0]?.id || '');
+  const [viewMode, setViewMode] = useState('list'); // 'list' o 'detail'
+  const [selectedCommitteeId, setSelectedCommitteeId] = useState(null);
   const [isNewCommitteeOpen, setIsNewCommitteeOpen] = useState(false);
   const [isNewMovementOpen, setIsNewMovementOpen] = useState(false);
   const [annulModalState, setAnnulModalState] = useState({ isOpen: false, movementId: null, reason: '' });
@@ -27,9 +28,9 @@ export default function CommitteesView({
   const [movementDate, setMovementDate] = useState(new Date().toISOString().slice(0, 10));
 
   const isReadOnly = userRole === 'VISITA';
-  const activeCommittee = committees.find(c => c.id === selectedCommitteeId) || committees[0];
+  const activeCommittee = committees.find(c => c.id === selectedCommitteeId);
 
-  const committeeMovements = movements.filter(m => m.committeeId === selectedCommitteeId);
+  const committeeMovements = selectedCommitteeId ? movements.filter(m => m.committeeId === selectedCommitteeId) : [];
 
   const handleCreateCommittee = (e) => {
     e.preventDefault();
@@ -64,231 +65,206 @@ export default function CommitteesView({
 
   const handleSelectCommittee = (committeeId) => {
     setSelectedCommitteeId(committeeId);
-    if (window.innerWidth < 1024) {
-      setTimeout(() => {
-        const el = document.getElementById('committee-detail-panel');
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 100);
-    }
+    setViewMode('detail');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
     <div className="space-y-6">
       
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      
-      {/* Columna Izquierda: Lista Vertical de Comités */}
-      <div className="lg:col-span-1 space-y-3">
-        <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">Comités y Departamentos</h2>
-            <p className="text-xs text-slate-500">Toca un comité para ver o añadir movimientos</p>
-          </div>
-          {!isReadOnly && (
-            <button
-              onClick={() => setIsNewCommitteeOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-all shrink-0"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Crear</span>
-            </button>
-          )}
-        </div>
-
-        <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1 scrollbar-thin">
-          {committees.map((c) => {
-            const isSelected = activeCommittee?.id === c.id;
-            const commBalance = c.balance || 0;
-
-            return (
-              <div
-                key={c.id}
-                onClick={() => handleSelectCommittee(c.id)}
-                className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col gap-2 ${
-                  isSelected
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-500/20 scale-[1.01]'
-                    : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-600'
-                }`}
+      {viewMode === 'list' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Listado de Comités</h2>
+              <p className="text-sm text-slate-500">Selecciona un comité para ver sus detalles y registrar movimientos</p>
+            </div>
+            {!isReadOnly && (
+              <button
+                onClick={() => setIsNewCommitteeOpen(true)}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md transition-all shrink-0"
               >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <h3 className={`font-bold text-sm leading-tight truncate ${isSelected ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
+                <Plus className="w-5 h-5" />
+                <span>Crear Comité</span>
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {committees.map((c) => {
+              const commBalance = c.balance || 0;
+
+              return (
+                <div
+                  key={c.id}
+                  onClick={() => handleSelectCommittee(c.id)}
+                  className="p-6 rounded-3xl border bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-600 hover:shadow-lg hover:shadow-blue-500/10 transition-all cursor-pointer flex flex-col gap-4 group"
+                >
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-bold text-lg leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       {c.name}
                     </h3>
-                    <p className={`text-xs mt-0.5 truncate ${isSelected ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'}`}>
-                      👤 {c.treasurer || 'Sin asignar'}
-                    </p>
                   </div>
-
-                  <div className="text-right shrink-0">
-                    <span className={`text-[10px] font-bold uppercase tracking-wider block ${isSelected ? 'text-blue-200' : 'text-slate-400'}`}>
+                  
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
                       Saldo Actual
                     </span>
-                    <span className={`text-sm font-black ${
-                      isSelected 
-                        ? 'text-white' 
-                        : commBalance < 0 ? 'text-rose-600' : 'text-slate-900 dark:text-white'
+                    <span className={`text-2xl font-black ${
+                      commBalance < 0 ? 'text-rose-600' : 'text-slate-900 dark:text-white'
                     }`}>
                       {formatCurrency(commBalance)}
                     </span>
                   </div>
-                </div>
 
-                {isSelected && !isReadOnly && (
-                  <div className="pt-2 border-t border-blue-500/40 flex justify-end">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectCommittee(c.id);
-                        setIsNewMovementOpen(true);
-                      }}
-                      className="px-3 py-1.5 rounded-xl bg-white text-blue-700 font-bold text-xs shadow-sm hover:bg-blue-50 transition-all flex items-center gap-1.5"
-                    >
-                      <ArrowRightLeft className="w-3.5 h-3.5" />
-                      <span>+ Nuevo Movimiento</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Columna Derecha: Detalle y Historial del Comité Seleccionado */}
-      <div className="lg:col-span-2" id="committee-detail-panel">
-        {activeCommittee && (() => {
-          const activeBalance = activeCommittee.balance || 0;
-
-          return (
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-              
-              {/* Header del Comité Seleccionado */}
-              <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-                <div>
-                  <h2 className="text-2xl font-black text-slate-900 dark:text-white">{activeCommittee.name}</h2>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">
-                    👤 Tesorero a cargo: <span className="font-bold text-slate-700 dark:text-slate-300">{activeCommittee.treasurer || 'Sin asignar'}</span>
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <span className="text-xs font-bold text-slate-400 block uppercase">Saldo Actual</span>
-                    <p className={`text-2xl font-black ${activeBalance < 0 ? 'text-rose-600 animate-pulse' : 'text-slate-900 dark:text-white'}`}>
-                      {formatCurrency(activeBalance)}
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center mt-auto">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[150px]">
+                      👤 {c.treasurer || 'Sin asignar'}
                     </p>
-                    {activeBalance < 0 && (
-                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-full inline-block mt-1">
-                        ⚠️ Saldo Negativo Permitido
-                      </span>
-                    )}
+                    <span className="text-xs font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                      Ver Detalles →
+                    </span>
                   </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-                  {!isReadOnly && (
-                    <button
-                      onClick={() => setIsNewMovementOpen(true)}
-                      className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-lg shadow-blue-500/20 transition-all"
-                    >
-                      <ArrowRightLeft className="w-4 h-4" />
-                      <span>Nuevo Movimiento</span>
-                    </button>
+      {viewMode === 'detail' && activeCommittee && (() => {
+        const activeBalance = activeCommittee.balance || 0;
+
+        return (
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6" id="committee-detail-panel">
+            
+            <button
+              onClick={() => setViewMode('list')}
+              className="text-sm font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-2 mb-4"
+            >
+              ← Volver al listado
+            </button>
+
+            {/* Header del Comité Seleccionado */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h2 className="text-3xl font-black text-slate-900 dark:text-white">{activeCommittee.name}</h2>
+                <p className="text-sm text-slate-500 font-medium mt-1">
+                  👤 Tesorero a cargo: <span className="font-bold text-slate-700 dark:text-slate-300">{activeCommittee.treasurer || 'Sin asignar'}</span>
+                </p>
+              </div>
+
+              <div className="flex items-center gap-6">
+                <div className="text-right">
+                  <span className="text-xs font-bold text-slate-400 block uppercase mb-1">Saldo Actual</span>
+                  <p className={`text-3xl font-black ${activeBalance < 0 ? 'text-rose-600 animate-pulse' : 'text-slate-900 dark:text-white'}`}>
+                    {formatCurrency(activeBalance)}
+                  </p>
+                  {activeBalance < 0 && (
+                    <span className="text-[10px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-full inline-block mt-1">
+                      ⚠️ Saldo Negativo Permitido
+                    </span>
                   )}
                 </div>
-              </div>
 
-              {/* Historial de Transacciones del Comité */}
-              <div>
-                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">Historial de Transacciones</h3>
-                
-                {committeeMovements.length === 0 ? (
-                  <div className="text-center py-10 text-slate-400 text-xs font-medium bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
-                    No hay movimientos registrados para este comité.
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold uppercase">
-                          <th className="pb-3">Fecha</th>
-                          <th className="pb-3">Tipo</th>
-                          <th className="pb-3">Descripción</th>
-                          <th className="pb-3 text-right">Monto</th>
-                          <th className="pb-3 text-center">Estado</th>
-                          {!isReadOnly && <th className="pb-3 text-right">Acción</th>}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                        {committeeMovements.map((mov) => (
-                          <tr key={mov.id} className={mov.annulled ? 'opacity-50 bg-rose-50/30 dark:bg-rose-950/10' : ''}>
-                            <td className="py-3 font-semibold text-slate-700 dark:text-slate-300">
-                              {formatDate(mov.date)}
-                            </td>
-                            <td className="py-3 font-bold">
-                              <span className={`px-2.5 py-1 rounded-lg text-[10px] ${
-                                mov.type === 'INGRESO'
-                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                  : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                              }`}>
-                                {mov.type}
-                              </span>
-                            </td>
-                            <td className="py-3 font-medium text-slate-800 dark:text-slate-200">
-                              <span className={mov.annulled ? 'line-through text-slate-400' : ''}>
-                                {mov.description || 'Sin descripción'}
-                              </span>
-                              {mov.annulled && (
-                                <p className="text-[10px] text-rose-500 font-bold italic mt-0.5">
-                                  Motivo anulación: {mov.annulReason}
-                                </p>
-                              )}
-                            </td>
-                            <td className={`py-3 font-bold text-right ${
-                              mov.annulled 
-                                ? 'line-through text-slate-400' 
-                                : mov.type === 'INGRESO' ? 'text-emerald-600' : 'text-rose-600'
-                            }`}>
-                              {mov.type === 'INGRESO' ? '+' : '-'}{formatCurrency(mov.amount)}
-                            </td>
-                            <td className="py-3 text-center">
-                              {mov.annulled ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-100 dark:bg-rose-950 px-2 py-0.5 rounded-md">
-                                  <Ban className="w-3 h-3" /> Anulado
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-md">
-                                  <CheckCircle className="w-3 h-3" /> Activo
-                                </span>
-                              )}
-                            </td>
-                            {!isReadOnly && (
-                              <td className="py-3 text-right">
-                                {!mov.annulled && (
-                                  <button
-                                    onClick={() => setAnnulModalState({ isOpen: true, movementId: mov.id, reason: '' })}
-                                    className="text-rose-600 hover:text-rose-800 text-[11px] font-bold underline"
-                                  >
-                                    Anular
-                                  </button>
-                                )}
-                              </td>
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                {!isReadOnly && (
+                  <button
+                    onClick={() => setIsNewMovementOpen(true)}
+                    className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-500/20 transition-all"
+                  >
+                    <ArrowRightLeft className="w-4 h-4" />
+                    <span>Nuevo Movimiento</span>
+                  </button>
                 )}
               </div>
-
             </div>
-          );
-        })()}
-      </div>
 
-    </div>
+            {/* Historial de Transacciones del Comité */}
+            <div>
+              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4">Historial de Transacciones</h3>
+              
+              {committeeMovements.length === 0 ? (
+                <div className="text-center py-12 text-slate-400 text-sm font-medium bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                  No hay movimientos registrados para este comité.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold uppercase text-xs">
+                        <th className="pb-4">Fecha</th>
+                        <th className="pb-4">Tipo</th>
+                        <th className="pb-4">Descripción</th>
+                        <th className="pb-4 text-right">Monto</th>
+                        <th className="pb-4 text-center">Estado</th>
+                        {!isReadOnly && <th className="pb-4 text-right">Acción</th>}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {committeeMovements.map((mov) => (
+                        <tr key={mov.id} className={mov.annulled ? 'opacity-50 bg-rose-50/30 dark:bg-rose-950/10' : ''}>
+                          <td className="py-4 font-semibold text-slate-700 dark:text-slate-300">
+                            {formatDate(mov.date)}
+                          </td>
+                          <td className="py-4 font-bold">
+                            <span className={`px-3 py-1.5 rounded-lg text-[11px] ${
+                              mov.type === 'INGRESO'
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                            }`}>
+                              {mov.type}
+                            </span>
+                          </td>
+                          <td className="py-4 font-medium text-slate-800 dark:text-slate-200">
+                            <span className={mov.annulled ? 'line-through text-slate-400' : ''}>
+                              {mov.description || 'Sin descripción'}
+                            </span>
+                            {mov.annulled && (
+                              <p className="text-[11px] text-rose-500 font-bold italic mt-1">
+                                Motivo anulación: {mov.annulReason}
+                              </p>
+                            )}
+                          </td>
+                          <td className={`py-4 font-bold text-right ${
+                            mov.annulled 
+                              ? 'line-through text-slate-400' 
+                              : mov.type === 'INGRESO' ? 'text-emerald-600' : 'text-rose-600'
+                          }`}>
+                            {mov.type === 'INGRESO' ? '+' : '-'}{formatCurrency(mov.amount)}
+                          </td>
+                          <td className="py-4 text-center">
+                            {mov.annulled ? (
+                              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600 bg-rose-100 dark:bg-rose-950 px-3 py-1 rounded-md">
+                                <Ban className="w-3.5 h-3.5" /> Anulado
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-950 px-3 py-1 rounded-md">
+                                <CheckCircle className="w-3.5 h-3.5" /> Activo
+                              </span>
+                            )}
+                          </td>
+                          {!isReadOnly && (
+                            <td className="py-4 text-right">
+                              {!mov.annulled && (
+                                <button
+                                  onClick={() => setAnnulModalState({ isOpen: true, movementId: mov.id, reason: '' })}
+                                  className="text-rose-600 hover:text-rose-800 text-xs font-bold underline"
+                                >
+                                  Anular
+                                </button>
+                              )}
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Modal Nuevo Comité */}
       {isNewCommitteeOpen && (
