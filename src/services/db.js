@@ -59,8 +59,8 @@ export async function seedInitialData() {
     const u1 = await tx.objectStore('users').get('u-1');
     if (u1 && !u1.pin) {
       const defaultUsers = [
-        { id: 'u-1', congregationId: 'cong-zuluaga', name: 'Pastor', role: 'ADMIN', pin: '1234', createdAt: Date.now() },
-        { id: 'u-2', congregationId: 'cong-zuluaga', name: 'Tesorero', role: 'TESORERO', pin: '1234', createdAt: Date.now() },
+        { id: 'u-1', congregationId: 'cong-zuluaga', name: 'Ever Bustos Ramirez', role: 'ADMIN', pin: '1234', createdAt: Date.now() },
+        { id: 'u-2', congregationId: 'cong-zuluaga', name: 'Nubia Castro', role: 'TESORERO', pin: '1234', createdAt: Date.now() },
         { id: 'u-3', congregationId: 'cong-zuluaga', name: 'Visita', role: 'VISITA', pin: '1234', createdAt: Date.now() }
       ];
       for (const u of defaultUsers) {
@@ -82,8 +82,8 @@ export async function seedInitialData() {
 
   // Usuarios base de Zuluaga-Central D21
   const defaultUsers = [
-    { id: 'u-1', congregationId: 'cong-zuluaga', name: 'Pastor', role: 'ADMIN', pin: '1234', createdAt: Date.now() },
-    { id: 'u-2', congregationId: 'cong-zuluaga', name: 'Tesorero', role: 'TESORERO', pin: '1234', createdAt: Date.now() },
+    { id: 'u-1', congregationId: 'cong-zuluaga', name: 'Ever Bustos Ramirez', role: 'ADMIN', pin: '1234', createdAt: Date.now() },
+    { id: 'u-2', congregationId: 'cong-zuluaga', name: 'Nubia Castro', role: 'TESORERO', pin: '1234', createdAt: Date.now() },
     { id: 'u-3', congregationId: 'cong-zuluaga', name: 'Visita', role: 'VISITA', pin: '1234', createdAt: Date.now() }
   ];
   for (const u of defaultUsers) {

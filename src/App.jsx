@@ -8,6 +8,7 @@ import OfferingsView from './components/OfferingsView';
 import ProjectsView from './components/ProjectsView';
 import ReportsView from './components/ReportsView';
 import StatisticsView from './components/StatisticsView';
+import SettingsView from './components/SettingsView';
 import DiagnosticsModal from './components/DiagnosticsModal';
 import ResetModal from './components/ResetModal';
 import useMediaQuery from './hooks/useMediaQuery';
@@ -80,22 +81,65 @@ export default function App() {
   const [projects, setProjects] = useState([]);
   const [votes, setVotes] = useState([]);
 
+  const loadAllData = async () => {
+    try {
+      const usrs = await getAllFromStore('users');
+      const congs = await getAllFromStore('congregations');
+      const coms = await getAllFromStore('committees');
+      const movs = await getAllFromStore('movements');
+      const tiths = await getAllFromStore('tithes');
+      const offs = await getAllFromStore('offerings');
+      const projs = await getAllFromStore('projects');
+      const vts = await getAllFromStore('votes');
+
+      setUsers(usrs || []);
+      setCongregations(congs || []);
+      setCommittees(coms || []);
+      setMovements(movs || []);
+      setTithes(tiths || []);
+      setOfferings(offs || []);
+      setProjects(projs || []);
+      setVotes(vts || []);
+
+      return { usrs, congs, coms, movs, tiths, offs, projs, vts };
+    } catch (err) {
+      console.error('Error cargando datos desde IndexedDB:', err);
+      return {};
+    }
+  };
+
   // Cargar datos iniciales y suscribir a eventos
   useEffect(() => {
     async function initApp() {
       await seedInitialData();
-      await loadAllData();
+      const loadedData = await loadAllData();
       setupRealtimeListeners();
       
-      // Restaurar sesión guardada
+      // Restaurar y VALIDAR sesión guardada
       const savedSession = localStorage.getItem('deborita_session');
       if (savedSession) {
-        const parsed = JSON.parse(savedSession);
-        setCongregationId(parsed.congregationId);
-        setCongregationName(parsed.congregation);
-        setUserName(parsed.username);
-        setUserRole(parsed.role);
-        setIsLoginOpen(false); // No abrir modal si ya hay sesión
+        try {
+          const parsed = JSON.parse(savedSession);
+          // Validación estricta de sesión (Evita Privilege Escalation via LocalStorage)
+          const validUser = (loadedData?.usrs || []).find(
+            u => u.congregationId === parsed.congregationId && u.role === parsed.role && u.name === parsed.username
+          );
+
+          if (validUser) {
+            setCongregationId(parsed.congregationId);
+            setCongregationName(parsed.congregation);
+            setUserName(parsed.username);
+            setUserRole(parsed.role);
+            setIsLoginOpen(false);
+          } else {
+            console.warn('Sesión local inválida o manipulada. Forzando re-autenticación.');
+            localStorage.removeItem('deborita_session');
+            setIsLoginOpen(true);
+          }
+        } catch (e) {
+          localStorage.removeItem('deborita_session');
+          setIsLoginOpen(true);
+        }
       }
 
       // Iniciar sincronización (para que baje datos si estaba offline)
@@ -121,30 +165,6 @@ export default function App() {
       unsubBroadcast();
     };
   }, []);
-
-  const loadAllData = async () => {
-    try {
-      const usrs = await getAllFromStore('users');
-      const congs = await getAllFromStore('congregations');
-      const coms = await getAllFromStore('committees');
-      const movs = await getAllFromStore('movements');
-      const tiths = await getAllFromStore('tithes');
-      const offs = await getAllFromStore('offerings');
-      const projs = await getAllFromStore('projects');
-      const vts = await getAllFromStore('votes');
-
-      setUsers(usrs || []);
-      setCongregations(congs || []);
-      setCommittees(coms || []);
-      setMovements(movs || []);
-      setTithes(tiths || []);
-      setOfferings(offs || []);
-      setProjects(projs || []);
-      setVotes(vts || []);
-    } catch (err) {
-      console.error('Error cargando datos desde IndexedDB:', err);
-    }
-  };
 
   // --- FILTROS Y CÁLCULOS DINÁMICOS POR CONGREGACIÓN ---
   const activeCommittees = committees
@@ -172,7 +192,7 @@ export default function App() {
 
   // --- HANDLERS DE OPERACIONES DE NEGOCIO (OFFLINE-FIRST) ---
 
-  const handleCreateCongregation = async (name) => {
+  const handleCreateCongregation = async (name, pastorName, treasurerName) => {
     const id = `cong-${Date.now()}`;
     const newCong = { id, name, city: '' };
     
@@ -180,8 +200,8 @@ export default function App() {
     await queueOfflineAction('CREATE', 'congregations', newCong);
 
     const defaultUsers = [
-      { id: `u-1-${id}`, congregationId: id, name: 'Pastor', role: 'ADMIN', pin: '1234', createdAt: Date.now() },
-      { id: `u-2-${id}`, congregationId: id, name: 'Tesorero', role: 'TESORERO', pin: '1234', createdAt: Date.now() },
+      { id: `u-1-${id}`, congregationId: id, name: pastorName || 'Pastor', role: 'ADMIN', pin: '1234', createdAt: Date.now() },
+      { id: `u-2-${id}`, congregationId: id, name: treasurerName || 'Tesorero', role: 'TESORERO', pin: '1234', createdAt: Date.now() },
       { id: `u-3-${id}`, congregationId: id, name: 'Visita', role: 'VISITA', pin: '1234', createdAt: Date.now() }
     ];
     for (const u of defaultUsers) {
@@ -378,6 +398,40 @@ export default function App() {
     await loadAllData();
   };
 
+  const handleUpdateCongregationSettings = async (congData) => {
+    const cong = congregations.find(c => c.id === congregationId);
+    if (cong) {
+      const updatedCong = { ...cong, name: congData.name, city: congData.city };
+      await putRecord('congregations', updatedCong);
+      await queueOfflineAction('UPDATE', 'congregations', updatedCong);
+      setCongregationName(updatedCong.name);
+      await loadAllData();
+    }
+  };
+
+  const handleUpdateUsersSettings = async (updatedUsers) => {
+    for (const u of updatedUsers) {
+      await putRecord('users', u);
+      await queueOfflineAction('UPDATE', 'users', u);
+    }
+    
+    // Si el usuario actual cambió su nombre o PIN, actualizar sesión
+    const currentUserUpdate = updatedUsers.find(
+      u => u.congregationId === congregationId && u.role === userRole
+    );
+    if (currentUserUpdate) {
+      setUserName(currentUserUpdate.name);
+      const session = {
+        congregationId: currentUserUpdate.congregationId,
+        congregation: congregationName,
+        username: currentUserUpdate.name,
+        role: currentUserUpdate.role
+      };
+      localStorage.setItem('deborita_session', JSON.stringify(session));
+    }
+    await loadAllData();
+  };
+
   const navItems = [
     { id: 'dashboard', label: 'Inicio', icon: Home },
     { id: 'committees', label: 'Comités', icon: Users },
@@ -385,7 +439,8 @@ export default function App() {
     { id: 'offerings', label: 'Ofrendas', icon: HandHeart },
     { id: 'projects', label: 'Proyectos', icon: Target },
     { id: 'reports', label: 'Reportes', icon: FileText },
-    { id: 'statistics', label: 'Estadísticas', icon: PieChart }
+    { id: 'statistics', label: 'Estadísticas', icon: PieChart },
+    ...(userRole !== 'VISITA' ? [{ id: 'settings', label: 'Configuración', icon: Settings }] : [])
   ];
 
   return (
@@ -465,6 +520,7 @@ export default function App() {
             tithes={activeTithes}
             userRole={userRole}
             isMobile={isMobile}
+            pastorName={users.find(u => u.congregationId === congregationId && u.role === 'ADMIN')?.name || 'Pastor'}
             onSaveTithe={handleSaveTithe}
           />
         )}
@@ -510,6 +566,20 @@ export default function App() {
             offerings={activeOfferings}
             userRole={userRole}
             isMobile={isMobile}
+          />
+        )}
+
+        {activeTab === 'settings' && (
+          <SettingsView
+            congregationId={congregationId}
+            congregationName={congregationName}
+            congregationCity={congregations.find(c => c.id === congregationId)?.city}
+            users={users}
+            userRole={userRole}
+            currentUser={users.find(u => u.congregationId === congregationId && u.role === userRole)}
+            isMobile={isMobile}
+            onUpdateCongregation={handleUpdateCongregationSettings}
+            onUpdateUsers={handleUpdateUsersSettings}
           />
         )}
       </main>

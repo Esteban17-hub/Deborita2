@@ -13,6 +13,8 @@ export default function LoginModal({ isOpen, onClose, onLogin, currentCongregati
   
   const [isCreating, setIsCreating] = useState(false);
   const [newCongregationName, setNewCongregationName] = useState('');
+  const [newPastorName, setNewPastorName] = useState('');
+  const [newTreasurerName, setNewTreasurerName] = useState('');
 
   // Sincronizar el select cuando las congregaciones cargan
   React.useEffect(() => {
@@ -33,10 +35,12 @@ export default function LoginModal({ isOpen, onClose, onLogin, currentCongregati
         return;
       }
       try {
-        const newId = await onCreateCongregation(newCongregationName.trim());
+        const newId = await onCreateCongregation(newCongregationName.trim(), newPastorName.trim(), newTreasurerName.trim());
         setCongregationId(newId);
         setIsCreating(false);
         setNewCongregationName('');
+        setNewPastorName('');
+        setNewTreasurerName('');
         // Alert of successful creation and defaults
         alert(`Congregación creada con éxito.\nUsuarios creados con PIN 1234.`);
       } catch (err) {
@@ -112,8 +116,42 @@ export default function LoginModal({ isOpen, onClose, onLogin, currentCongregati
                     className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Nombre del Pastor
+                </label>
+                <div className="relative">
+                  <ShieldCheck className="w-5 h-5 absolute left-3.5 top-3 text-slate-400" />
+                  <input
+                    type="text"
+                    value={newPastorName}
+                    onChange={(e) => setNewPastorName(e.target.value)}
+                    required
+                    placeholder="Ej. Ever Bustos Ramirez"
+                    className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Nombre del Tesorero(a)
+                </label>
+                <div className="relative">
+                  <User className="w-5 h-5 absolute left-3.5 top-3 text-slate-400" />
+                  <input
+                    type="text"
+                    value={newTreasurerName}
+                    onChange={(e) => setNewTreasurerName(e.target.value)}
+                    required
+                    placeholder="Ej. Nubia Castro"
+                    className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
                 <p className="mt-2 text-[10px] text-slate-500">
-                  Al crear, se inicializarán los 11 comités por defecto y 3 usuarios base (Pastor, Tesorero, Visita) con PIN 1234.
+                  Se inicializarán los 11 comités por defecto y 3 usuarios base (Pastor, Tesorero, Visita) con PIN 1234.
                 </p>
               </div>
 

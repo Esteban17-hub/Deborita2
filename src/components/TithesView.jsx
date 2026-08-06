@@ -24,7 +24,7 @@ ChartJS.register(
   Legend
 );
 
-export default function TithesView({ tithes, userRole, isMobile, onSaveTithe }) {
+export default function TithesView({ tithes, userRole, isMobile, pastorName: initialPastorName, onSaveTithe }) {
   // Ocultar módulo si es rol VISITA
   if (userRole === 'VISITA') {
     return (
@@ -43,7 +43,7 @@ export default function TithesView({ tithes, userRole, isMobile, onSaveTithe }) 
   // Entradas de la calculadora
   const [month, setMonth] = useState(String(new Date().getMonth() + 1).padStart(2, '0'));
   const [year, setYear] = useState(String(new Date().getFullYear()));
-  const [pastorName, setPastorName] = useState('Pastor David Morales');
+  const [pastorName, setPastorName] = useState(initialPastorName || 'Pastor');
   const [smlv, setSmlv] = useState(1750905);
   const [nationalPercentage, setNationalPercentage] = useState(21);
   const [grossTithe, setGrossTithe] = useState(5000000);

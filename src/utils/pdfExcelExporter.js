@@ -1,43 +1,50 @@
-import * as XLSX from 'xlsx';
+
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency } from './formatters';
 
 export function exportToExcel(reportTitle, columns, data, totals) {
-  // Construir filas para Excel
+  let csvContent = "";
+  
+  // Headers
+  const headers = columns.map(c => `"${c.header}"`).join(",");
+  csvContent += headers + "\n";
+
+  // Rows
   const rows = data.map((item) => {
-    const rowObj = {};
-    columns.forEach((col) => {
+    return columns.map((col) => {
       let val = item[col.key];
       if (col.isCurrency) {
         val = formatCurrency(val);
       }
-      rowObj[col.header] = val;
-    });
-    return rowObj;
+      return `"${(val ?? '').toString().replace(/"/g, '""')}"`;
+    }).join(",");
   });
 
-  // Agregar fila final obligatoria de sumatoria total
+  csvContent += rows.join("\n") + "\n";
+
+  // Totals
   if (totals) {
-    const totalsRow = {};
-    columns.forEach((col, index) => {
-      if (index === 0) {
-        totalsRow[col.header] = 'TOTAL GENERAL';
-      } else if (col.isCurrency && totals[col.key] !== undefined) {
-        totalsRow[col.header] = formatCurrency(totals[col.key]);
-      } else {
-        totalsRow[col.header] = '-';
+    const totalsRow = columns.map((col, index) => {
+      if (index === 0) return '"TOTAL GENERAL"';
+      if (col.isCurrency && totals[col.key] !== undefined) {
+        return `"${formatCurrency(totals[col.key])}"`;
       }
-    });
-    rows.push(totalsRow);
+      return '"-"';
+    }).join(",");
+    csvContent += totalsRow + "\n";
   }
 
-  const worksheet = XLSX.utils.json_to_sheet(rows);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte');
-
-  const fileName = `${reportTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}.xlsx`;
-  XLSX.writeFile(workbook, fileName);
+  // Trigger download (BOM for UTF-8 Excel compatibility)
+  const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  const fileName = `${reportTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`;
+  link.setAttribute("download", fileName);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 export function exportToPDF(reportTitle, congregationName, columns, data, totals) {
