@@ -7,6 +7,7 @@ export default function ProjectsView({
   projects,
   votes,
   userRole,
+  isMobile,
   onCreateProject,
   onAddVote
 }) {

@@ -9,7 +9,8 @@ export default function ReportsView({
   tithes,
   offerings,
   congregationName,
-  userRole
+  userRole,
+  isMobile
 }) {
   const [reportType, setReportType] = useState('COMMITTEES'); // 'COMMITTEES', 'TITHES', 'OFFERINGS'
   const [dateFrom, setDateFrom] = useState('');

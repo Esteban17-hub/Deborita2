@@ -7,6 +7,7 @@ export default function CommitteesView({
   committees,
   movements,
   userRole,
+  isMobile,
   onCreateCommittee,
   onAddMovement,
   onAnnulMovement

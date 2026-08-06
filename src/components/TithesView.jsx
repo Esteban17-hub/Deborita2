@@ -24,7 +24,7 @@ ChartJS.register(
   Legend
 );
 
-export default function TithesView({ tithes, userRole, onSaveTithe }) {
+export default function TithesView({ tithes, userRole, isMobile, onSaveTithe }) {
   // Ocultar módulo si es rol VISITA
   if (userRole === 'VISITA') {
     return (
