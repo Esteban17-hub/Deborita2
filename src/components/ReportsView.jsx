@@ -146,29 +146,26 @@ export default function ReportsView({
     <div className="space-y-6">
       
       {/* Header & Selector de Reporte */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-cyan-600 via-blue-500 to-indigo-500 p-8 rounded-[2rem] text-white shadow-2xl shadow-blue-500/20">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-            <FileText className="w-7 h-7 text-blue-600" />
-            Módulo de Reportes Centralizados
-          </h2>
-          <p className="text-xs text-slate-500">Generación e impresión de estados financieros con fila obligatoria de sumatoria</p>
+          <h2 className="text-3xl font-black mb-2 tracking-tight">Tablero de Reportes</h2>
+          <p className="text-sm text-cyan-100 font-medium">Generación e impresión de estados financieros centralizados</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all"
+            className="flex items-center gap-2 px-5 py-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white font-bold text-sm shadow-lg transition-all active:scale-95"
           >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Exportar Excel</span>
+            <FileSpreadsheet className="w-5 h-5" />
+            <span className="hidden sm:inline">Exportar Excel</span>
           </button>
           <button
             onClick={handleExportPDF}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition-all"
+            className="flex items-center gap-2 px-5 py-3 rounded-full bg-white text-blue-600 hover:bg-blue-50 font-bold text-sm shadow-lg transition-all active:scale-95"
           >
-            <Download className="w-4 h-4" />
-            <span>Exportar PDF</span>
+            <Download className="w-5 h-5" />
+            <span className="hidden sm:inline">Exportar PDF</span>
           </button>
         </div>
       </div>

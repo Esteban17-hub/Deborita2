@@ -1,5 +1,5 @@
-import React from 'react';
-import { Cloud, CloudOff, RefreshCw, UserCheck, Users, RotateCcw } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { MoreVertical, Bell, LogOut, Activity, RotateCcw, Cloud, CloudOff, RefreshCw, User, Users } from 'lucide-react';
 import { triggerBackgroundSync } from '../services/syncEngine';
 
 export default function Navbar({
@@ -13,19 +13,23 @@ export default function Navbar({
   onOpenReset
 }) {
   const { isOnline, isSyncing, pendingCount } = networkStatus;
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
-  const getRoleBadgeColor = () => {
-    switch (userRole) {
-      case 'ADMIN': return 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950 dark:text-purple-300';
-      case 'TESORERO': return 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300';
-      case 'VISITA': return 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300';
-      default: return 'bg-slate-100 text-slate-800 border-slate-300';
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
     }
-  };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const getRoleLabel = () => {
     switch (userRole) {
-      case 'ADMIN': return 'Administrador';
+      case 'ADMIN': return 'Pastor - Administrador';
       case 'TESORERO': return 'Tesorero General';
       case 'VISITA': return 'Visita (Solo Lectura)';
       default: return userRole;
@@ -33,96 +37,111 @@ export default function Navbar({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 py-3 shadow-sm">
-      <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+    <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 shadow-sm">
+      <div className="max-w-7xl mx-auto flex items-center justify-between">
         
         {/* Brand & Congregation Name */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-md border border-slate-200">
+          <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-md">
             <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-tight">
+            <h1 className="text-lg font-bold text-white leading-tight">
               Gestión de Comités
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1">
+            <p className="text-xs text-slate-400 font-medium flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
               {congregationName || 'Congregación Central'}
             </p>
           </div>
         </div>
 
-        {/* Sync Indicator & Controls */}
-        <div className="flex items-center gap-2">
+        {/* Right side: Sync Status + Kebab Menu */}
+        <div className="flex items-center gap-3 relative" ref={menuRef}>
           
-          {/* Indicador de Nube y Estado Offline */}
+          {/* Sync Indicator (Kept outside for visibility, or can be moved inside. We keep a minimal version here) */}
           <button
             onClick={() => triggerBackgroundSync()}
-            title={isOnline ? 'En línea (Clic para sincronizar)' : 'Modo Sin Conexión (Offline)'}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
-              isOnline 
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/50 hover:bg-emerald-100'
-                : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/50 animate-pulse'
-            }`}
+            title={isOnline ? 'En línea' : 'Modo Offline'}
+            className="flex items-center justify-center w-9 h-9 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
           >
             {isSyncing ? (
-              <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
+              <RefreshCw className="w-4 h-4 animate-spin text-blue-400" />
             ) : isOnline ? (
-              <Cloud className="w-4 h-4 text-emerald-600" />
+              <Cloud className="w-4 h-4 text-emerald-400" />
             ) : (
-              <CloudOff className="w-4 h-4 text-amber-600" />
+              <CloudOff className="w-4 h-4 text-amber-400" />
             )}
-
-            <span className="hidden sm:inline">
-              {isSyncing ? 'Sincronizando...' : isOnline ? 'En línea' : 'Modo Offline'}
-            </span>
-
             {pendingCount > 0 && (
-              <span className="bg-amber-500 text-white font-bold px-2 py-0.5 rounded-full text-[10px] shadow-sm">
-                {pendingCount} pend.
+              <span className="absolute -top-1 -right-1 bg-amber-500 text-white font-bold w-4 h-4 flex items-center justify-center rounded-full text-[9px] shadow-sm">
+                {pendingCount}
               </span>
             )}
           </button>
 
-          {/* Indicador de Presencia Activa (Realtime) */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700" title="Usuarios conectados">
-            <Users className="w-4 h-4 text-blue-500" />
-            <span className="hidden md:inline">{connectedUsers || 1} Conectado(s)</span>
-          </div>
-
-          {/* Badge de Rol y Logout */}
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold ${getRoleBadgeColor()}`} title="Rol actual">
-            <UserCheck className="w-4 h-4" />
-            <span>{userName} ({getRoleLabel()})</span>
-          </div>
-
+          {/* Kebab Menu Button */}
           <button
-            onClick={onLogout}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-400 dark:hover:bg-rose-900/60 text-xs font-bold transition-all"
-            title="Cerrar sesión"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <span>Cerrar sesión</span>
+            <MoreVertical className="w-5 h-5" />
           </button>
 
-          <button
-            onClick={onOpenDiagnostics}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-400 dark:hover:bg-blue-900/60 text-xs font-bold transition-all"
-            title="Diagnosticar Conexión"
-          >
-            <span>Diagnóstico</span>
-          </button>
+          {/* Pop-up Menu */}
+          {isMenuOpen && (
+            <div className="absolute right-0 top-12 mt-2 w-64 bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden transform origin-top-right transition-all">
+              <div className="p-4 border-b border-slate-700 bg-slate-800/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                    <User className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">{userName}</p>
+                    <p className="text-xs font-medium text-slate-400">{getRoleLabel()}</p>
+                  </div>
+                </div>
+              </div>
 
-          <button
-            onClick={onOpenReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-400 dark:hover:bg-rose-900/60 text-xs font-bold transition-all"
-            title="Restablecer Datos de Fábrica"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Restablecer</span>
-          </button>
+              <div className="py-2">
+                <div className="px-4 py-2.5 flex items-center gap-3 text-sm font-medium text-slate-300 hover:bg-slate-700/50 transition-colors">
+                  <Users className="w-4 h-4 text-emerald-400" />
+                  <span>{connectedUsers || 1} Usuarios Activos</span>
+                </div>
 
+                <button className="w-full px-4 py-2.5 flex items-center gap-3 text-sm font-medium text-slate-300 hover:bg-slate-700/50 transition-colors text-left">
+                  <Bell className="w-4 h-4 text-amber-400" />
+                  <span>Notificaciones</span>
+                </button>
+
+                <button
+                  onClick={() => { setIsMenuOpen(false); onOpenDiagnostics(); }}
+                  className="w-full px-4 py-2.5 flex items-center gap-3 text-sm font-medium text-slate-300 hover:bg-slate-700/50 transition-colors text-left"
+                >
+                  <Activity className="w-4 h-4 text-blue-400" />
+                  <span>Diagnóstico</span>
+                </button>
+
+                <button
+                  onClick={() => { setIsMenuOpen(false); onOpenReset(); }}
+                  className="w-full px-4 py-2.5 flex items-center gap-3 text-sm font-medium text-slate-300 hover:bg-slate-700/50 transition-colors text-left"
+                >
+                  <RotateCcw className="w-4 h-4 text-rose-400" />
+                  <span>Restablecer Datos</span>
+                </button>
+              </div>
+
+              <div className="p-2 border-t border-slate-700">
+                <button
+                  onClick={() => { setIsMenuOpen(false); onLogout(); }}
+                  className="w-full px-4 py-2.5 flex items-center gap-3 text-sm font-bold text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors text-left"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Cerrar Sesión</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-
       </div>
     </header>
   );

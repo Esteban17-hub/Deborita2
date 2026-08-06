@@ -73,16 +73,16 @@ export default function CommitteesView({
     <div className="space-y-6">
       
       {viewMode === 'list' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 p-8 rounded-[2rem] text-white shadow-2xl shadow-indigo-500/20">
             <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Listado de Comités</h2>
-              <p className="text-sm text-slate-500">Selecciona un comité para ver sus detalles y registrar movimientos</p>
+              <h2 className="text-3xl font-black mb-2 tracking-tight">Mis Comités</h2>
+              <p className="text-sm text-indigo-100 font-medium">Gestiona y revisa los fondos de cada departamento</p>
             </div>
             {!isReadOnly && (
               <button
                 onClick={() => setIsNewCommitteeOpen(true)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md transition-all shrink-0"
+                className="flex items-center gap-2 px-5 py-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white font-bold text-sm shadow-lg transition-all active:scale-95"
               >
                 <Plus className="w-5 h-5" />
                 <span>Crear Comité</span>
@@ -90,7 +90,7 @@ export default function CommitteesView({
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {committees.map((c) => {
               const commBalance = c.balance || 0;
 
@@ -98,31 +98,34 @@ export default function CommitteesView({
                 <div
                   key={c.id}
                   onClick={() => handleSelectCommittee(c.id)}
-                  className="p-6 rounded-3xl border bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-600 hover:shadow-lg hover:shadow-blue-500/10 transition-all cursor-pointer flex flex-col gap-4 group"
+                  className="p-6 rounded-[2rem] bg-slate-800/80 backdrop-blur-md border border-slate-700/50 hover:border-indigo-500/50 hover:bg-slate-800 shadow-xl hover:shadow-indigo-500/10 transition-all cursor-pointer flex flex-col gap-5 group"
                 >
                   <div className="flex justify-between items-start">
-                    <h3 className="font-bold text-lg leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                      {c.name}
-                    </h3>
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+                       <span className="text-xl font-bold">{c.name.charAt(0)}</span>
+                    </div>
                   </div>
                   
                   <div>
+                    <h3 className="font-bold text-xl text-white leading-tight mb-2">
+                      {c.name}
+                    </h3>
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
                       Saldo Actual
                     </span>
                     <span className={`text-2xl font-black ${
-                      commBalance < 0 ? 'text-rose-600' : 'text-slate-900 dark:text-white'
+                      commBalance < 0 ? 'text-rose-400' : 'text-white'
                     }`}>
                       {formatCurrency(commBalance)}
                     </span>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center mt-auto">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[150px]">
+                  <div className="pt-4 border-t border-slate-700/50 flex justify-between items-center mt-auto">
+                    <p className="text-xs text-slate-400 font-medium truncate max-w-[150px]">
                       👤 {c.treasurer || 'Sin asignar'}
                     </p>
-                    <span className="text-xs font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                      Ver Detalles →
+                    <span className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                      →
                     </span>
                   </div>
                 </div>

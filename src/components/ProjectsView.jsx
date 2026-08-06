@@ -71,21 +71,18 @@ export default function ProjectsView({
     <div className="space-y-6">
       
       {/* Header & Proyectos */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-teal-700 via-emerald-600 to-teal-500 p-8 rounded-[2rem] text-white shadow-2xl shadow-teal-500/20">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-            <Target className="w-7 h-7 text-indigo-600" />
-            Proyectos
-          </h2>
-          <p className="text-xs text-slate-500">Gestión de metas de recaudación y registro de aportes</p>
+          <h2 className="text-3xl font-black mb-2 tracking-tight">Proyectos en Curso</h2>
+          <p className="text-sm text-teal-100 font-medium">Gestión de metas de recaudación y registro de aportes</p>
         </div>
 
         {!isReadOnly && (
           <button
             onClick={() => setIsNewProjectOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-all"
+            className="flex items-center gap-2 px-5 py-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white font-bold text-sm shadow-lg transition-all active:scale-95"
           >
-            <PlusCircle className="w-4 h-4" />
+            <PlusCircle className="w-5 h-5" />
             <span>Nuevo Proyecto</span>
           </button>
         )}
@@ -115,9 +112,9 @@ export default function ProjectsView({
           <div className="space-y-4">
             <div className="flex flex-wrap justify-between items-start gap-4">
               <div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white">{activeProject.name}</h3>
-                <p className="text-xs text-slate-500 mt-1">{activeProject.description}</p>
-                <p className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 mt-2">
+                <h3 className="text-xl font-bold text-white">{activeProject.name}</h3>
+                <p className="text-xs text-slate-400 mt-1">{activeProject.description}</p>
+                <p className="text-[11px] font-semibold text-teal-400 mt-2">
                   🗓️ Periodo: {formatDate(activeProject.startDate)} {activeProject.endDate ? `hasta ${formatDate(activeProject.endDate)}` : ''}
                 </p>
               </div>
@@ -125,7 +122,7 @@ export default function ProjectsView({
               {!isReadOnly && (
                 <button
                   onClick={() => setIsNewVoteOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md transition-all"
                 >
                   <HeartHandshake className="w-4 h-4" />
                   <span>Registrar Voto / Aporte</span>
@@ -134,30 +131,30 @@ export default function ProjectsView({
             </div>
 
             {/* Tarjetas resumen del proyecto */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-800/40 p-4 rounded-2xl border border-slate-700/50">
               <div>
                 <span className="text-xs font-bold text-slate-400 uppercase">Meta Económica</span>
-                <p className="text-xl font-black text-slate-900 dark:text-white mt-0.5">{formatCurrency(goal)}</p>
+                <p className="text-xl font-black text-white mt-0.5">{formatCurrency(goal)}</p>
               </div>
               <div>
                 <span className="text-xs font-bold text-slate-400 uppercase">Total Recaudado</span>
-                <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">{formatCurrency(totalRaised)}</p>
+                <p className="text-xl font-black text-teal-400 mt-0.5">{formatCurrency(totalRaised)}</p>
               </div>
               <div>
                 <span className="text-xs font-bold text-slate-400 uppercase">Faltante para la Meta</span>
-                <p className="text-xl font-black text-indigo-600 dark:text-indigo-400 mt-0.5">{formatCurrency(remaining)}</p>
+                <p className="text-xl font-black text-rose-400 mt-0.5">{formatCurrency(remaining)}</p>
               </div>
             </div>
 
             {/* Barra de Progreso Porcentual */}
             <div>
               <div className="flex justify-between items-center text-xs font-bold mb-1">
-                <span className="text-slate-700 dark:text-slate-300">Progreso Recaudado</span>
-                <span className="text-indigo-600 dark:text-indigo-400">{progressPercent}%</span>
+                <span className="text-slate-300">Progreso Recaudado</span>
+                <span className="text-teal-400">{progressPercent}%</span>
               </div>
-              <div className="w-full h-4 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-200 dark:border-slate-700">
+              <div className="w-full h-4 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700">
                 <div
-                  className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-500 shadow-sm"
+                  className="h-full bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full transition-all duration-500 shadow-sm"
                   style={{ width: `${progressPercent}%` }}
                 ></div>
               </div>
