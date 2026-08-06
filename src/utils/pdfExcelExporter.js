@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { formatCurrency } from './formatters';
 
 export function exportToExcel(reportTitle, columns, data, totals) {
@@ -80,7 +80,7 @@ export function exportToPDF(reportTitle, congregationName, columns, data, totals
     tableRows.push(totalRow);
   }
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: 95,
     head: [headers],
     body: tableRows,

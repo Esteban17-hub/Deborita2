@@ -27,6 +27,7 @@ import { subscribeToSyncEvents, notifyDataChange } from './services/broadcast';
 
 import {
   LayoutDashboard,
+  Home,
   Users,
   Calculator,
   HandHeart,
@@ -361,7 +362,7 @@ export default function App() {
   };
 
   const navItems = [
-    { id: 'dashboard', label: 'Panel Principal', icon: LayoutDashboard },
+    { id: 'dashboard', label: 'Inicio', icon: Home },
     { id: 'committees', label: 'Comités', icon: Users },
     ...(userRole !== 'VISITA' ? [{ id: 'tithes', label: 'Diezmos', icon: Calculator }] : []),
     { id: 'offerings', label: 'Ofrendas', icon: HandHeart },

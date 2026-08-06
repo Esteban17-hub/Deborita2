@@ -261,38 +261,40 @@ export default function TithesView({ tithes, userRole, onSaveTithe }) {
             </div>
 
             {/* Columna Derecha: Resultados Matemáticos en Tiempo Real */}
-            <div className="space-y-4 bg-gradient-to-br from-slate-800 to-slate-900 text-white p-5 rounded-2xl shadow-lg border border-slate-700">
-              <h3 className="text-xs font-bold uppercase text-blue-400 tracking-wider">Resultados en Tiempo Real</h3>
+            <div className="space-y-4 bg-emerald-50/50 dark:bg-emerald-950/20 p-6 rounded-3xl border border-emerald-100 dark:border-emerald-800/60 shadow-inner">
+              <h3 className="text-sm font-bold uppercase text-emerald-700 dark:text-emerald-400 tracking-wider flex items-center gap-2">
+                <TrendingUp className="w-4 h-4" /> Resultados en Tiempo Real
+              </h3>
 
-              <div className="space-y-3 divide-y divide-slate-700/50 text-xs">
+              <div className="space-y-4 divide-y divide-emerald-200/50 dark:divide-emerald-800/50 text-sm">
                 
-                <div className="flex justify-between items-center pt-2">
-                  <span className="text-slate-400">1. Tesorería Nacional ({nationalPercentage}%):</span>
-                  <span className="font-mono font-bold text-slate-300">{formatCurrency(nationalTreasury)}</span>
+                <div className="flex justify-between items-center pt-3">
+                  <span className="text-slate-600 dark:text-slate-400 font-medium">1. Tesorería Nacional ({nationalPercentage}%):</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-300">{formatCurrency(nationalTreasury)}</span>
                 </div>
 
-                <div className="flex justify-between items-center pt-2">
-                  <span className="text-slate-400 font-bold">2. Ingreso Neto:</span>
-                  <span className="font-mono font-black text-blue-400 text-sm">{formatCurrency(netIncome)}</span>
+                <div className="flex justify-between items-center pt-3">
+                  <span className="text-slate-800 dark:text-slate-200 font-bold">2. Ingreso Neto:</span>
+                  <span className="font-black text-emerald-600 dark:text-emerald-400 text-base">{formatCurrency(netIncome)}</span>
                 </div>
 
-                <div className="flex justify-between items-center pt-2">
-                  <span className="text-slate-400">3. Punto Calculado (Ingreso Neto / SMLV):</span>
-                  <span className="font-mono font-bold text-indigo-300 text-sm">{calculatedPoint.toFixed(3)} pts</span>
+                <div className="flex justify-between items-center pt-3">
+                  <span className="text-slate-600 dark:text-slate-400 font-medium">3. Punto Calculado:</span>
+                  <span className="font-bold text-blue-600 dark:text-blue-400">{calculatedPoint.toFixed(3)} pts</span>
                 </div>
 
-                <div className="pt-2">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-slate-300 font-bold">4. Punto Corregido (%):</span>
+                <div className="pt-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-slate-800 dark:text-slate-200 font-bold">4. Punto Corregido (%):</span>
                     <button
                       type="button"
                       onClick={() => {
                         setIsPointManuallyEdited(!isPointManuallyEdited);
                         if (isPointManuallyEdited) setCorrectedPointInput('');
                       }}
-                      className="text-[10px] text-blue-400 underline"
+                      className="text-xs text-blue-600 hover:text-blue-700 font-bold underline"
                     >
-                      {isPointManuallyEdited ? 'Restablecer por defecto' : 'Editar manualmente'}
+                      {isPointManuallyEdited ? 'Restablecer' : 'Editar'}
                     </button>
                   </div>
                   <input
@@ -304,25 +306,29 @@ export default function TithesView({ tithes, userRole, onSaveTithe }) {
                       setIsPointManuallyEdited(true);
                       setCorrectedPointInput(e.target.value);
                     }}
-                    className="w-full px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800/80 text-white font-mono font-bold text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                    className={`w-full px-4 py-2.5 rounded-xl border font-bold text-sm outline-none transition-all ${
+                      isPointManuallyEdited 
+                        ? 'border-blue-400 bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-400 shadow-sm focus:ring-2 focus:ring-blue-500' 
+                        : 'border-emerald-200 dark:border-emerald-800 bg-emerald-100/50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300'
+                    }`}
                   />
                 </div>
 
-                <div className="flex justify-between items-center pt-2">
-                  <span className="text-slate-400">5. Aporte Fondo Local:</span>
-                  <span className="font-mono font-bold text-indigo-200">{formatCurrency(localFundAport)}</span>
+                <div className="flex justify-between items-center pt-3">
+                  <span className="text-slate-600 dark:text-slate-400 font-medium">5. Aporte Fondo Local:</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-300">{formatCurrency(localFundAport)}</span>
                 </div>
 
-                <div className="flex justify-between items-center pt-3 border-t border-slate-700">
-                  <span className="text-white font-black text-sm">6. Asignación Pastor:</span>
-                  <span className="font-mono font-black text-blue-300 text-lg">{formatCurrency(pastorAllocation)}</span>
+                <div className="flex justify-between items-center pt-4 border-t-2 border-emerald-200 dark:border-emerald-800">
+                  <span className="text-slate-900 dark:text-white font-black text-base uppercase">6. Asignación Pastor:</span>
+                  <span className="font-black text-emerald-600 dark:text-emerald-400 text-2xl">{formatCurrency(pastorAllocation)}</span>
                 </div>
 
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-md transition-all mt-4"
+                className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm shadow-xl shadow-emerald-500/20 transition-all mt-6"
               >
                 Guardar Liquidación de Diezmos
               </button>
