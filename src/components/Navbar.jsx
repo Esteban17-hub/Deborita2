@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MoreVertical, Bell, LogOut, Activity, RotateCcw, Cloud, CloudOff, RefreshCw, User, Users } from 'lucide-react';
+import { MoreVertical, Bell, LogOut, Activity, RotateCcw, Cloud, CloudOff, RefreshCw, User, Users, Palette, Check } from 'lucide-react';
 import { triggerBackgroundSync } from '../services/syncEngine';
 
 export default function Navbar({
@@ -8,19 +8,27 @@ export default function Navbar({
   userName,
   networkStatus,
   connectedUsers,
+  theme,
+  setTheme,
+  isMobile,
   onLogout,
   onOpenDiagnostics,
   onOpenReset
 }) {
   const { isOnline, isSyncing, pendingCount } = networkStatus;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isThemeOpen, setIsThemeOpen] = useState(false);
   const menuRef = useRef(null);
+  const themeRef = useRef(null);
 
-  // Close menu when clicking outside
+  // Close menus when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsMenuOpen(false);
+      }
+      if (themeRef.current && !themeRef.current.contains(event.target)) {
+        setIsThemeOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -79,17 +87,54 @@ export default function Navbar({
             )}
           </button>
 
+          {/* Theme Selector */}
+          <div className="relative" ref={themeRef}>
+            <button
+              onClick={() => setIsThemeOpen(!isThemeOpen)}
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition-all focus:outline-none"
+              title="Seleccionar Tema"
+            >
+              <Palette className="w-5 h-5" />
+            </button>
+            
+            {isThemeOpen && (
+              <div className="absolute right-0 top-12 mt-2 w-56 bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden transform origin-top-right transition-all">
+                <div className="p-3 border-b border-slate-700 bg-slate-800/50">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estilos Visuales</p>
+                </div>
+                <div className="py-2">
+                  <button onClick={() => { setTheme('dark-premium'); setIsThemeOpen(false); }} className="w-full px-4 py-2.5 flex items-center justify-between text-sm font-medium text-slate-300 hover:bg-slate-700/50 transition-colors text-left">
+                    <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-slate-900 border border-slate-600"></div> Dark Premium</span>
+                    {theme === 'dark-premium' && <Check className="w-4 h-4 text-emerald-400" />}
+                  </button>
+                  <button onClick={() => { setTheme('corporate-blue'); setIsThemeOpen(false); }} className="w-full px-4 py-2.5 flex items-center justify-between text-sm font-medium text-slate-300 hover:bg-slate-700/50 transition-colors text-left">
+                    <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-100 border border-blue-300"></div> Corporate Blue</span>
+                    {theme === 'corporate-blue' && <Check className="w-4 h-4 text-emerald-400" />}
+                  </button>
+                  <button onClick={() => { setTheme('executive-graphite'); setIsThemeOpen(false); }} className="w-full px-4 py-2.5 flex items-center justify-between text-sm font-medium text-slate-300 hover:bg-slate-700/50 transition-colors text-left">
+                    <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-slate-800 border border-slate-500"></div> Executive Graphite</span>
+                    {theme === 'executive-graphite' && <Check className="w-4 h-4 text-emerald-400" />}
+                  </button>
+                  <button onClick={() => { setTheme('forest-emerald'); setIsThemeOpen(false); }} className="w-full px-4 py-2.5 flex items-center justify-between text-sm font-medium text-slate-300 hover:bg-slate-700/50 transition-colors text-left">
+                    <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-50 border border-emerald-200"></div> Forest Emerald</span>
+                    {theme === 'forest-emerald' && <Check className="w-4 h-4 text-emerald-400" />}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Kebab Menu Button */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white transition-all focus:outline-none"
           >
             <MoreVertical className="w-5 h-5" />
           </button>
 
           {/* Pop-up Menu */}
           {isMenuOpen && (
-            <div className="absolute right-0 top-12 mt-2 w-64 bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden transform origin-top-right transition-all">
+            <div className="absolute right-0 top-12 mt-2 w-64 bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden transform origin-top-right transition-all" ref={menuRef}>
               <div className="p-4 border-b border-slate-700 bg-slate-800/50">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center">

@@ -71,19 +71,22 @@ export default function ProjectsView({
     <div className="space-y-6">
       
       {/* Header & Proyectos */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-teal-700 via-emerald-600 to-teal-500 p-8 rounded-[2rem] text-white shadow-2xl shadow-teal-500/20">
+      <div 
+        className={`flex flex-wrap items-center justify-between gap-4 ${isMobile ? 'p-6' : 'p-8'} rounded-[2rem] text-white shadow-2xl`}
+        style={{ backgroundImage: 'var(--gradient-projects)', boxShadow: '0 25px 50px -12px var(--shadow-color)' }}
+      >
         <div>
-          <h2 className="text-3xl font-black mb-2 tracking-tight">Proyectos en Curso</h2>
-          <p className="text-sm text-teal-100 font-medium">Gestión de metas de recaudación y registro de aportes</p>
+          <h2 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-black mb-2 tracking-tight`}>Proyectos en Curso</h2>
+          <p className="text-sm text-teal-100 font-medium opacity-90">Gestión de metas de recaudación y registro de aportes</p>
         </div>
 
         {!isReadOnly && (
           <button
             onClick={() => setIsNewProjectOpen(true)}
-            className="flex items-center gap-2 px-5 py-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white font-bold text-sm shadow-lg transition-all active:scale-95"
+            className="flex items-center gap-2 px-5 py-3 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 text-white font-bold text-sm shadow-lg transition-all active:scale-95"
           >
             <PlusCircle className="w-5 h-5" />
-            <span>Nuevo Proyecto</span>
+            <span className={isMobile ? 'hidden sm:inline' : ''}>Nuevo Proyecto</span>
           </button>
         )}
       </div>

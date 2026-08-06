@@ -10,6 +10,7 @@ import ReportsView from './components/ReportsView';
 import StatisticsView from './components/StatisticsView';
 import DiagnosticsModal from './components/DiagnosticsModal';
 import ResetModal from './components/ResetModal';
+import useMediaQuery from './hooks/useMediaQuery';
 
 import {
   seedInitialData,
@@ -52,6 +53,22 @@ export default function App() {
   // Estado de Red y Sincronización
   const [networkStatus, setNetworkStatus] = useState({ isOnline: true, isSyncing: false, pendingCount: 0 });
   const [connectedUsers, setConnectedUsers] = useState(1);
+
+  // Estado de Tema y Responsive
+  const [theme, setTheme] = useState(() => localStorage.getItem('deborita_theme') || 'dark-premium');
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
+  useEffect(() => {
+    // Aplicar Tema al DOM
+    const root = document.documentElement;
+    root.setAttribute('data-theme', theme);
+    if (theme === 'dark-premium' || theme === 'executive-graphite') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('deborita_theme', theme);
+  }, [theme]);
 
   // Entidades principales de la Base de Datos Local (IndexedDB)
   const [users, setUsers] = useState([]);
@@ -381,6 +398,9 @@ export default function App() {
         userName={userName}
         networkStatus={networkStatus}
         connectedUsers={connectedUsers}
+        theme={theme}
+        setTheme={setTheme}
+        isMobile={isMobile}
         onLogout={() => {
           localStorage.removeItem('deborita_session');
           setIsLoginOpen(true);
@@ -421,6 +441,7 @@ export default function App() {
             movements={activeMovements}
             offerings={activeOfferings}
             userRole={userRole}
+            isMobile={isMobile}
             onOpenMovementModal={() => setActiveTab('committees')}
             onOpenOfferingModal={() => setActiveTab('offerings')}
             onSelectTab={setActiveTab}
@@ -432,6 +453,7 @@ export default function App() {
             committees={activeCommittees.filter(c => !c.isOfferingOnly)}
             movements={activeMovements}
             userRole={userRole}
+            isMobile={isMobile}
             onCreateCommittee={handleCreateCommittee}
             onAddMovement={handleAddMovement}
             onAnnulMovement={handleAnnulMovement}
@@ -442,6 +464,7 @@ export default function App() {
           <TithesView
             tithes={activeTithes}
             userRole={userRole}
+            isMobile={isMobile}
             onSaveTithe={handleSaveTithe}
           />
         )}
@@ -451,6 +474,7 @@ export default function App() {
             offerings={activeOfferings}
             committees={activeCommittees} // Aquí sí van todos, incluyendo Junta Local
             userRole={userRole}
+            isMobile={isMobile}
             onAddOffering={handleAddOffering}
           />
         )}
@@ -460,6 +484,7 @@ export default function App() {
             projects={activeProjects}
             votes={activeVotes}
             userRole={userRole}
+            isMobile={isMobile}
             onCreateProject={handleCreateProject}
             onAddVote={handleAddVote}
           />
@@ -473,6 +498,7 @@ export default function App() {
             offerings={activeOfferings}
             congregationName={congregationName}
             userRole={userRole}
+            isMobile={isMobile}
           />
         )}
 
@@ -483,6 +509,7 @@ export default function App() {
             tithes={activeTithes}
             offerings={activeOfferings}
             userRole={userRole}
+            isMobile={isMobile}
           />
         )}
       </main>

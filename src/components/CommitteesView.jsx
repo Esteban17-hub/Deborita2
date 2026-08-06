@@ -74,9 +74,12 @@ export default function CommitteesView({
       
       {viewMode === 'list' && (
         <div className="space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 p-8 rounded-[2rem] text-white shadow-2xl shadow-indigo-500/20">
+          <div 
+            className={`flex flex-wrap items-center justify-between gap-4 ${isMobile ? 'p-6' : 'p-8'} rounded-[2rem] text-white shadow-2xl`}
+            style={{ backgroundImage: 'var(--gradient-committees)', boxShadow: '0 25px 50px -12px var(--shadow-color)' }}
+          >
             <div>
-              <h2 className="text-3xl font-black mb-2 tracking-tight">Mis Comités</h2>
+              <h2 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-black mb-2 tracking-tight`}>Mis Comités</h2>
               <p className="text-sm text-indigo-100 font-medium">Gestiona y revisa los fondos de cada departamento</p>
             </div>
             {!isReadOnly && (
