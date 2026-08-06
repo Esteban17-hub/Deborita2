@@ -24,7 +24,7 @@ ChartJS.register(
   Legend
 );
 
-export default function TithesView({ tithes, userRole, onSaveTithe }) {
+export default function TithesView({ tithes, userRole, isMobile, pastorName: initialPastorName, onSaveTithe }) {
   // Ocultar módulo si es rol VISITA
   if (userRole === 'VISITA') {
     return (
@@ -43,7 +43,7 @@ export default function TithesView({ tithes, userRole, onSaveTithe }) {
   // Entradas de la calculadora
   const [month, setMonth] = useState(String(new Date().getMonth() + 1).padStart(2, '0'));
   const [year, setYear] = useState(String(new Date().getFullYear()));
-  const [pastorName, setPastorName] = useState('Pastor David Morales');
+  const [pastorName, setPastorName] = useState(initialPastorName || 'Pastor');
   const [smlv, setSmlv] = useState(1750905);
   const [nationalPercentage, setNationalPercentage] = useState(21);
   const [grossTithe, setGrossTithe] = useState(5000000);
@@ -177,13 +177,19 @@ export default function TithesView({ tithes, userRole, onSaveTithe }) {
 
       {/* Pestaña 1: Calculadora Estricta de Diezmos */}
       {activeTab === 'calculator' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-            <Calculator className="w-6 h-6 text-blue-600" />
-            Liquidación de Diezmos
-          </h2>
+        <div className="space-y-6">
+          <div 
+            className={`flex flex-wrap items-center justify-between gap-4 ${isMobile ? 'p-6' : 'p-8'} rounded-[2rem] text-white shadow-2xl`}
+            style={{ backgroundImage: 'var(--gradient-tithes)', boxShadow: '0 25px 50px -12px var(--shadow-color)' }}
+          >
+            <div>
+              <h2 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-black mb-2 tracking-tight`}>Registrar Diezmo</h2>
+              <p className="text-sm text-orange-100 font-medium">Liquidación estricta y matemática de diezmos</p>
+            </div>
+            <Calculator className={`${isMobile ? 'w-8 h-8' : 'w-12 h-12'} text-white/80`} />
+          </div>
 
-          <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form onSubmit={handleSave} className={`grid grid-cols-1 ${isMobile ? '' : 'md:grid-cols-2'} gap-6 bg-slate-50 dark:bg-slate-900/40 ${isMobile ? 'p-4' : 'p-6'} rounded-[2rem] border border-slate-200 dark:border-slate-800`}>
             
             {/* Columna Izquierda: Entradas de Formulario */}
             <div className="space-y-4 bg-slate-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800">

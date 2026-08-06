@@ -9,7 +9,8 @@ export default function ReportsView({
   tithes,
   offerings,
   congregationName,
-  userRole
+  userRole,
+  isMobile
 }) {
   const [reportType, setReportType] = useState('COMMITTEES'); // 'COMMITTEES', 'TITHES', 'OFFERINGS'
   const [dateFrom, setDateFrom] = useState('');
@@ -146,29 +147,29 @@ export default function ReportsView({
     <div className="space-y-6">
       
       {/* Header & Selector de Reporte */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div 
+        className={`flex flex-wrap items-center justify-between gap-4 ${isMobile ? 'p-6' : 'p-8'} rounded-[2rem] text-white shadow-2xl`}
+        style={{ backgroundImage: 'var(--gradient-reports)', boxShadow: '0 25px 50px -12px var(--shadow-color)' }}
+      >
         <div>
-          <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-            <FileText className="w-7 h-7 text-blue-600" />
-            Módulo de Reportes Centralizados
-          </h2>
-          <p className="text-xs text-slate-500">Generación e impresión de estados financieros con fila obligatoria de sumatoria</p>
+          <h2 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-black mb-2 tracking-tight`}>Tablero de Reportes</h2>
+          <p className="text-sm text-cyan-100 font-medium opacity-90">Generación e impresión de estados financieros centralizados</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all"
+            className="flex items-center gap-2 px-5 py-3 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 text-white font-bold text-sm shadow-lg transition-all active:scale-95"
           >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Exportar Excel</span>
+            <FileSpreadsheet className="w-5 h-5" />
+            <span className={isMobile ? 'hidden' : 'inline'}>Exportar Excel</span>
           </button>
           <button
             onClick={handleExportPDF}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition-all"
+            className="flex items-center gap-2 px-5 py-3 rounded-full bg-white text-slate-900 hover:bg-slate-100 font-bold text-sm shadow-lg transition-all active:scale-95"
           >
-            <Download className="w-4 h-4" />
-            <span>Exportar PDF</span>
+            <Download className="w-5 h-5" />
+            <span className={isMobile ? 'hidden' : 'inline'}>Exportar PDF</span>
           </button>
         </div>
       </div>
