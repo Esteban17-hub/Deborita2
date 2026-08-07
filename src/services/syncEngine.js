@@ -24,9 +24,13 @@ if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
     isOnline = true;
     notifyStatusChange();
-    triggerBackgroundSync().then(() => {
-       fetchFreshDataFromCloud();
-    });
+    triggerBackgroundSync()
+      .then(() => {
+        fetchFreshDataFromCloud();
+      })
+      .catch(err => {
+        console.warn('Fallo sync on-line:', err);
+      });
   });
 
   window.addEventListener('offline', () => {
@@ -37,7 +41,9 @@ if (typeof window !== 'undefined') {
   // Polling automático cada 5 segundos: Envía pendientes y descarga novedades de otros dispositivos
   setInterval(() => {
     if (isOnline && !isSyncing) {
-      triggerBackgroundSync();
+      triggerBackgroundSync().catch(err => {
+        console.warn('Fallo en sync periódico, se detiene para evitar pérdida de datos.', err);
+      });
     }
   }, 5000);
 }
@@ -134,7 +140,9 @@ export async function queueOfflineAction(action, entity, data) {
 
   // Si estamos en línea, intentar sincronizar de inmediato
   if (isOnline) {
-    triggerBackgroundSync();
+    triggerBackgroundSync().catch(err => {
+      console.warn('Sync en segundo plano pausado:', err.message);
+    });
   }
 }
 
@@ -191,6 +199,7 @@ export async function triggerBackgroundSync() {
     }
   } catch (err) {
     console.error('Error durante la sincronización en segundo plano:', err);
+    throw err;
   } finally {
     isSyncing = false;
     notifyStatusChange();

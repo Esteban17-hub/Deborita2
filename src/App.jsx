@@ -145,9 +145,13 @@ export default function App() {
       }
 
       // Iniciar sincronización (para que baje datos si estaba offline)
-      triggerBackgroundSync().then(() => {
-         fetchFreshDataFromCloud();
-      });
+      triggerBackgroundSync()
+        .then(() => {
+          fetchFreshDataFromCloud();
+        })
+        .catch((err) => {
+          console.warn('La sincronización falló al iniciar. Se conserva la caché local intacta.', err);
+        });
     }
     initApp();
 
@@ -180,7 +184,7 @@ export default function App() {
       const commOfferings = offerings.filter(o => o.destinationCommitteeId === c.id && o.congregationId === congregationId);
       const offeringsIncome = commOfferings.reduce((acc, o) => acc + (o.amount || 0), 0);
 
-      const computedBalance = movsIncome - movsExpense + offeringsIncome;
+      const computedBalance = movsIncome - movsExpense; // Ofrendas se manejan como cuentas separadas
       return {
         ...c,
         balance: computedBalance
