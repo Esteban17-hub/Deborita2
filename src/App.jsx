@@ -174,6 +174,7 @@ export default function App() {
         })
         .catch((err) => {
           console.warn('La sincronización falló al iniciar. Se conserva la caché local intacta.', err);
+          toast.error('Error de Sincronización: Verifica tu conexión a internet o los permisos de base de datos.', { duration: 6000 });
         });
     }
     initApp();

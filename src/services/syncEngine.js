@@ -166,16 +166,15 @@ export async function triggerBackgroundSync() {
             const { error } = await supabase.from(item.entity).upsert(item.data);
             if (error) {
               console.error(`Error enviando ${item.entity} a Supabase:`, error);
-              // Evitar bloqueo de cola: si Supabase rechaza el registro, descartarlo.
-              await deleteRecord('syncQueue', item.id);
-              continue; 
+              // NUNCA eliminar de la cola si hay error, de lo contrario hay pérdida silenciosa de datos.
+              // Pausamos la sync para este y los siguientes elementos.
+              success = false;
             }
           } else if (item.action === 'DELETE') {
             const { error } = await supabase.from(item.entity).delete().match({ id: item.data.id });
             if (error) {
                console.error(`Error eliminando en Supabase:`, error);
-               await deleteRecord('syncQueue', item.id);
-               continue;
+               success = false;
             }
           }
         }
