@@ -5,6 +5,7 @@ import MoneyInput from './MoneyInput';
 
 export default function DashboardView({
   committees,
+  allCommittees = committees,
   movements,
   offerings,
   userRole,
@@ -106,7 +107,7 @@ export default function DashboardView({
             </button>
             <button
               onClick={() => setIsOfferingModalOpen(true)}
-              className="flex items-center gap-2 px-5 py-3 rounded-full bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-400 transition-all shadow-[0_0_15px_rgba(0,200,83,0.3)] active:scale-95"
+              className="flex items-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-orange-500 to-orange-400 text-white font-bold text-sm hover:from-orange-400 hover:to-orange-300 transition-all shadow-[0_0_15px_rgba(249,115,22,0.4)] active:scale-95"
             >
               <PlusCircle className="w-4 h-4" />
               <span>Agregar Ofrenda</span>
@@ -333,7 +334,7 @@ export default function DashboardView({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
           <div className="bg-slate-900 rounded-3xl max-w-md w-full p-6 lg:p-8 shadow-2xl border border-slate-800 my-8">
             <h3 className="text-xl font-black text-white mb-6 flex items-center gap-2">
-              <HandHeart className="w-6 h-6 text-emerald-400" /> Agregar Ofrenda
+              <HandHeart className="w-6 h-6 text-orange-400" /> Agregar Ofrenda
             </h3>
             <form onSubmit={handleCreateOffering} className="space-y-5">
               
@@ -348,7 +349,7 @@ export default function DashboardView({
                       setOfferingDay(deduceDayOfWeek(e.target.value));
                     }}
                     required
-                    className="w-full px-4 py-3 rounded-2xl border border-slate-700 bg-slate-800 text-white font-medium focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none transition-all [color-scheme:dark]"
+                    className="w-full px-4 py-3 rounded-2xl border border-slate-700 bg-slate-800 text-white font-medium focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none transition-all [color-scheme:dark]"
                   />
                 </div>
                 <div>
@@ -357,7 +358,7 @@ export default function DashboardView({
                     type="text"
                     value={offeringDay}
                     onChange={(e) => setOfferingDay(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl border border-slate-700 bg-slate-800 text-white font-medium focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none transition-all"
+                    className="w-full px-4 py-3 rounded-2xl border border-slate-700 bg-slate-800 text-white font-medium focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none transition-all"
                   />
                 </div>
               </div>
@@ -370,10 +371,10 @@ export default function DashboardView({
                   value={offeringCommitteeId}
                   onChange={(e) => setOfferingCommitteeId(e.target.value)}
                   required
-                  className="w-full px-4 py-3 rounded-2xl border border-slate-700 bg-slate-800 text-white font-medium focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none transition-all"
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-700 bg-slate-800 text-white font-medium focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none transition-all"
                 >
                   <option value="">Seleccione un destino...</option>
-                  {committees.map(c => (
+                  {allCommittees.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
@@ -396,7 +397,7 @@ export default function DashboardView({
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-sm shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all"
+                  className="px-6 py-3 rounded-full bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-400 hover:to-orange-300 text-white font-bold text-sm shadow-[0_0_15px_rgba(249,115,22,0.3)] transition-all"
                 >
                   Registrar Ofrenda
                 </button>

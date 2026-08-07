@@ -292,8 +292,7 @@ export default function App() {
     const updatedMov = {
       ...mov,
       annulled: true,
-      annulReason: reason,
-      updatedAt: Date.now()
+      annulReason: reason
     };
 
     // UI dinámicamente calcula saldos, no necesitamos alterar 'committees' en la DB
@@ -304,10 +303,24 @@ export default function App() {
   };
 
   const handleSaveTithe = async (titheData) => {
+    // Mapeo estricto al esquema de Supabase public.tithes
     const newTithe = {
       id: `t-${Date.now()}`,
       congregationId: congregationId,
-      ...titheData,
+      date: titheData.date,
+      month: titheData.month,
+      year: parseInt(titheData.year) || new Date().getFullYear(),
+      grossIncome: titheData.grossTithe, // TithesView envía grossTithe, DB espera grossIncome
+      nationalPercentage: titheData.nationalPercentage,
+      nationalShare: titheData.nationalTreasury, // TithesView envía nationalTreasury, DB espera nationalShare
+      localShare: titheData.localFundAport, // TithesView envía localFundAport, DB espera localShare
+      pastorTithe: 0,
+      pastorTithePercentage: 0,
+      netIncome: titheData.netIncome,
+      pastorAllocation: titheData.pastorAllocation,
+      pastorAllocationPercentage: titheData.correctedPoint, // Mapeamos correctedPoint aquí para no perderlo
+      balanceGroup: titheData.pastorName, // Mapeamos pastorName aquí ya que no existe columna pastorName
+      archived: false,
       createdAt: Date.now()
     };
 
@@ -317,10 +330,18 @@ export default function App() {
   };
 
   const handleAddOffering = async (offeringData) => {
+    // Solo enviamos a la DB los campos que existen en la tabla Supabase para evitar fallos de sincronización
+    const descriptionStr = offeringData.notes || offeringData.description || '';
+    const responsibleStr = offeringData.responsible ? `[${offeringData.responsible}] ` : '';
+    
     const newOffering = {
       id: `o-${Date.now()}`,
       congregationId: congregationId,
-      ...offeringData,
+      destinationCommitteeId: offeringData.destinationCommitteeId || null,
+      type: offeringData.type || 'OFRENDA',
+      amount: offeringData.amount,
+      description: (responsibleStr + descriptionStr).trim() || null,
+      date: offeringData.date,
       createdAt: Date.now()
     };
 
@@ -332,11 +353,15 @@ export default function App() {
   };
 
   const handleCreateProject = async (projectData) => {
+    // Mapeo estricto al esquema de Supabase public.projects
     const newProject = {
       id: `proj-${Date.now()}`,
       congregationId: congregationId,
-      ...projectData,
+      name: projectData.name,
+      description: projectData.description || null,
+      targetAmount: projectData.targetAmount || 0,
       totalRaised: 0,
+      status: projectData.status || 'ACTIVO',
       createdAt: Date.now()
     };
 
@@ -346,9 +371,13 @@ export default function App() {
   };
 
   const handleAddVote = async (voteData) => {
+    // Mapeo estricto al esquema de Supabase public.votes
     const newVote = {
       id: `v-${Date.now()}`,
-      ...voteData,
+      projectId: voteData.projectId,
+      voterName: voteData.memberName || voteData.voterName || 'Anónimo', // ProjectsView envía memberName
+      amount: voteData.amount,
+      date: voteData.date || new Date().toISOString().slice(0, 10),
       createdAt: Date.now()
     };
 
@@ -357,8 +386,8 @@ export default function App() {
     if (proj) {
       const updatedProj = {
         ...proj,
-        totalRaised: (proj.totalRaised || 0) + voteData.amount,
-        updatedAt: Date.now()
+        totalRaised: (proj.totalRaised || 0) + voteData.amount
+        // updatedAt: Date.now() -> No existe en el esquema public.projects
       };
       await putRecord('projects', updatedProj);
       await queueOfflineAction('UPDATE', 'projects', updatedProj);
@@ -466,6 +495,7 @@ export default function App() {
         {activeTab === 'dashboard' && (
           <DashboardView
             committees={activeCommittees.filter(c => !c.isOfferingOnly)}
+            allCommittees={activeCommittees}
             movements={activeMovements}
             offerings={activeOfferings}
             userRole={userRole}
