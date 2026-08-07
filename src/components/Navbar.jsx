@@ -45,13 +45,13 @@ export default function Navbar({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 shadow-sm">
+    <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-white/5 px-4 py-3 shadow-sm">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         
         {/* Brand & Congregation Name */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-md">
-            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+          <div className="w-10 h-10 rounded-2xl bg-slate-900 border border-white/5 flex items-center justify-center shadow-lg">
+            <img src="/logo.png" alt="Logo" className="w-7 h-7 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
           </div>
           <div>
             <h1 className="text-lg font-bold text-white leading-tight">

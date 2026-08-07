@@ -76,17 +76,17 @@ export default function CommitteesView({
       {viewMode === 'list' && (
         <div className="space-y-6">
           <div 
-            className={`flex flex-wrap items-center justify-between gap-4 ${isMobile ? 'p-6' : 'p-8'} rounded-[2rem] text-white shadow-2xl`}
-            style={{ backgroundImage: 'var(--gradient-committees)', boxShadow: '0 25px 50px -12px var(--shadow-color)' }}
+            className={`flex flex-wrap items-center justify-between gap-4 ${isMobile ? 'p-6' : 'p-8'} rounded-3xl text-white shadow-xl shadow-slate-900/50 bg-slate-900 border border-slate-800 relative overflow-hidden`}
           >
-            <div>
-              <h2 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-black mb-2 tracking-tight`}>Mis Comités</h2>
-              <p className="text-sm text-indigo-100 font-medium">Gestiona y revisa los fondos de cada departamento</p>
+            <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-blue-500/10 rounded-full blur-[60px] pointer-events-none"></div>
+            <div className="relative z-10">
+              <h2 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-black mb-1 tracking-tight`}>Mis Comités</h2>
+              <p className="text-sm text-slate-400 font-medium">Gestiona y revisa los fondos de cada departamento</p>
             </div>
             {!isReadOnly && (
               <button
                 onClick={() => setIsNewCommitteeOpen(true)}
-                className="flex items-center gap-2 px-5 py-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white font-bold text-sm shadow-lg transition-all active:scale-95"
+                className="flex items-center gap-2 px-5 py-3 rounded-full bg-blue-500 text-white font-bold text-sm shadow-[0_0_15px_rgba(14,165,233,0.3)] hover:bg-blue-400 transition-all active:scale-95 relative z-10"
               >
                 <Plus className="w-5 h-5" />
                 <span>Crear Comité</span>
@@ -102,33 +102,34 @@ export default function CommitteesView({
                 <div
                   key={c.id}
                   onClick={() => handleSelectCommittee(c.id)}
-                  className="p-6 rounded-[2rem] bg-slate-800/80 backdrop-blur-md border border-slate-700/50 hover:border-indigo-500/50 hover:bg-slate-800 shadow-xl hover:shadow-indigo-500/10 transition-all cursor-pointer flex flex-col gap-5 group"
+                  className="p-6 rounded-3xl bg-slate-900 border border-slate-800 hover:border-blue-500/50 shadow-xl shadow-slate-900/50 transition-all cursor-pointer flex flex-col gap-5 group relative overflow-hidden"
                 >
-                  <div className="flex justify-between items-start">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-colors pointer-events-none"></div>
+                  <div className="flex justify-between items-start relative z-10">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
                        <span className="text-xl font-bold">{c.name.charAt(0)}</span>
                     </div>
                   </div>
                   
-                  <div>
+                  <div className="relative z-10">
                     <h3 className="font-bold text-xl text-white leading-tight mb-2">
                       {c.name}
                     </h3>
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                       Saldo Actual
                     </span>
-                    <span className={`text-2xl font-black ${
+                    <span className={`text-3xl font-black tracking-tight ${
                       commBalance < 0 ? 'text-rose-400' : 'text-white'
                     }`}>
                       {formatCurrency(commBalance)}
                     </span>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-700/50 flex justify-between items-center mt-auto">
-                    <p className="text-xs text-slate-400 font-medium truncate max-w-[150px]">
-                      👤 {c.treasurer || 'Sin asignar'}
+                  <div className="pt-4 border-t border-slate-800 flex justify-between items-center mt-auto relative z-10">
+                    <p className="text-[11px] text-slate-500 font-medium truncate max-w-[150px]">
+                      Tesorero: <span className="text-slate-300">{c.treasurer || 'Sin asignar'}</span>
                     </p>
-                    <span className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                    <span className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">
                       →
                     </span>
                   </div>
@@ -143,32 +144,32 @@ export default function CommitteesView({
         const activeBalance = activeCommittee.balance || 0;
 
         return (
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6" id="committee-detail-panel">
+          <div className="bg-slate-900 rounded-3xl p-6 lg:p-8 border border-slate-800 shadow-xl shadow-slate-900/50 space-y-8" id="committee-detail-panel">
             
             <button
               onClick={() => setViewMode('list')}
-              className="text-sm font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-2 mb-4"
+              className="text-xs font-bold text-slate-400 hover:text-white transition-colors flex items-center gap-2 mb-2"
             >
               ← Volver al listado
             </button>
 
             {/* Header del Comité Seleccionado */}
-            <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-6 pb-8 border-b border-slate-800">
               <div>
-                <h2 className="text-3xl font-black text-slate-900 dark:text-white">{activeCommittee.name}</h2>
-                <p className="text-sm text-slate-500 font-medium mt-1">
-                  👤 Tesorero a cargo: <span className="font-bold text-slate-700 dark:text-slate-300">{activeCommittee.treasurer || 'Sin asignar'}</span>
+                <h2 className="text-3xl font-black text-white tracking-tight">{activeCommittee.name}</h2>
+                <p className="text-xs text-slate-500 font-medium mt-2">
+                  Tesorero a cargo: <span className="font-bold text-slate-300">{activeCommittee.treasurer || 'Sin asignar'}</span>
                 </p>
               </div>
 
               <div className="flex items-center gap-6">
                 <div className="text-right">
-                  <span className="text-xs font-bold text-slate-400 block uppercase mb-1">Saldo Actual</span>
-                  <p className={`text-3xl font-black ${activeBalance < 0 ? 'text-rose-600 animate-pulse' : 'text-slate-900 dark:text-white'}`}>
+                  <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider mb-1">Saldo Actual</span>
+                  <p className={`text-5xl font-black tracking-tight ${activeBalance < 0 ? 'text-rose-400 animate-pulse' : 'text-white'}`}>
                     {formatCurrency(activeBalance)}
                   </p>
                   {activeBalance < 0 && (
-                    <span className="text-[10px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-full inline-block mt-1">
+                    <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full inline-block mt-2">
                       ⚠️ Saldo Negativo Permitido
                     </span>
                   )}
@@ -177,7 +178,7 @@ export default function CommitteesView({
                 {!isReadOnly && (
                   <button
                     onClick={() => setIsNewMovementOpen(true)}
-                    className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-500/20 transition-all"
+                    className="flex items-center gap-2 px-5 py-3 rounded-full bg-blue-500 hover:bg-blue-400 text-white font-bold text-sm shadow-[0_0_15px_rgba(14,165,233,0.3)] transition-all active:scale-95"
                   >
                     <ArrowRightLeft className="w-4 h-4" />
                     <span>Nuevo Movimiento</span>
@@ -188,65 +189,65 @@ export default function CommitteesView({
 
             {/* Historial de Transacciones del Comité */}
             <div>
-              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4">Historial de Transacciones</h3>
+              <h3 className="text-lg font-bold text-white mb-6">Historial de Transacciones</h3>
               
               {committeeMovements.length === 0 ? (
-                <div className="text-center py-12 text-slate-400 text-sm font-medium bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                <div className="text-center py-12 text-slate-500 text-sm font-medium bg-slate-800/30 rounded-3xl border border-dashed border-slate-700">
                   No hay movimientos registrados para este comité.
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
+                  <table className="w-full text-left text-sm whitespace-nowrap">
                     <thead>
-                      <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold uppercase text-xs">
-                        <th className="pb-4">Fecha</th>
-                        <th className="pb-4">Tipo</th>
-                        <th className="pb-4">Descripción</th>
-                        <th className="pb-4 text-right">Monto</th>
-                        <th className="pb-4 text-center">Estado</th>
-                        {!isReadOnly && <th className="pb-4 text-right">Acción</th>}
+                      <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                        <th className="pb-4 px-2">Fecha</th>
+                        <th className="pb-4 px-2">Tipo</th>
+                        <th className="pb-4 px-2">Descripción</th>
+                        <th className="pb-4 px-2 text-right">Monto</th>
+                        <th className="pb-4 px-2 text-center">Estado</th>
+                        {!isReadOnly && <th className="pb-4 px-2 text-right">Acción</th>}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    <tbody className="divide-y divide-slate-800/50">
                       {committeeMovements.map((mov) => (
-                        <tr key={mov.id} className={mov.annulled ? 'opacity-50 bg-rose-50/30 dark:bg-rose-950/10' : ''}>
-                          <td className="py-4 font-semibold text-slate-700 dark:text-slate-300">
+                        <tr key={mov.id} className={`hover:bg-slate-800/30 transition-colors ${mov.annulled ? 'opacity-50' : ''}`}>
+                          <td className="py-4 px-2 font-medium text-slate-300">
                             {formatDate(mov.date)}
                           </td>
-                          <td className="py-4 font-bold">
-                            <span className={`px-3 py-1.5 rounded-lg text-[11px] ${
+                          <td className="py-4 px-2 font-bold">
+                            <span className={`px-3 py-1 rounded-full text-[10px] tracking-wide ${
                               mov.type === 'INGRESO'
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                                ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                                : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
                             }`}>
                               {mov.type}
                             </span>
                           </td>
-                          <td className="py-4 font-medium text-slate-800 dark:text-slate-200">
-                            <span className={mov.annulled ? 'line-through text-slate-400' : ''}>
+                          <td className="py-4 px-2 font-medium text-slate-300">
+                            <span className={mov.annulled ? 'line-through text-slate-500' : ''}>
                               {mov.description || 'Sin descripción'}
                             </span>
                             {mov.annulled && (
-                              <p className="text-[11px] text-rose-500 font-bold italic mt-1">
+                              <p className="text-[10px] text-rose-400 font-bold italic mt-1">
                                 Motivo anulación: {mov.annulReason}
                               </p>
                             )}
                           </td>
-                          <td className={`py-4 font-bold text-right ${
+                          <td className={`py-4 px-2 font-black text-right tracking-tight ${
                             mov.annulled 
-                              ? 'line-through text-slate-400' 
-                              : mov.type === 'INGRESO' ? 'text-emerald-600' : 'text-rose-600'
+                              ? 'line-through text-slate-500' 
+                              : mov.type === 'INGRESO' ? 'text-emerald-400' : 'text-rose-400'
                           }`}>
                             {mov.type === 'INGRESO' ? '+' : '-'}{formatCurrency(mov.amount)}
                           </td>
-                          <td className="py-4 text-center">
+                          <td className="py-4 px-2 text-center">
                             {mov.annulled ? (
-                              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600 bg-rose-100 dark:bg-rose-950 px-3 py-1 rounded-md">
-                                <Ban className="w-3.5 h-3.5" /> Anulado
+                              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-rose-500 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-full">
+                                <Ban className="w-3 h-3" /> Anulado
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-950 px-3 py-1 rounded-md">
-                                <CheckCircle className="w-3.5 h-3.5" /> Activo
+                              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-blue-500 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">
+                                <CheckCircle className="w-3 h-3" /> Activo
                               </span>
                             )}
                           </td>

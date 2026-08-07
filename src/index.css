@@ -45,13 +45,27 @@
    SISTEMA DE TEMAS DINÁMICOS
 ========================================= */
 
-/* Tema 1: Dark Premium (Default Oscuro Vibrante) */
+/* Tema 1: Dark Premium (Default Oscuro Vibrante - Estilo Finance) */
 :root[data-theme="dark-premium"] {
-  --gradient-committees: linear-gradient(to right, #1d4ed8, #4f46e5, #9333ea); /* blue-700 -> indigo-600 -> purple-600 */
-  --gradient-tithes: linear-gradient(to right, #c2410c, #d97706, #ca8a04); /* orange-700 -> amber-600 -> yellow-600 */
-  --gradient-projects: linear-gradient(to right, #0f766e, #059669, #14b8a6); /* teal-700 -> emerald-600 -> teal-500 */
-  --gradient-reports: linear-gradient(to right, #0891b2, #3b82f6, #6366f1); /* cyan-600 -> blue-500 -> indigo-500 */
-  --shadow-color: rgba(99, 102, 241, 0.2);
+  --gradient-committees: linear-gradient(to right, #0ea5e9, #3b82f6); /* cyan -> blue */
+  --gradient-tithes: linear-gradient(to right, #10b981, #059669); /* emerald */
+  --gradient-projects: linear-gradient(to right, #8b5cf6, #6366f1); /* violet -> indigo */
+  --gradient-reports: linear-gradient(to right, #f43f5e, #e11d48); /* rose */
+  --shadow-color: rgba(14, 165, 233, 0.15);
+
+  /* Overrides globales para estética Deep Navy (Reference App) */
+  --color-slate-950: #0B111A; /* Fondo global extra oscuro */
+  --color-slate-900: #141C2A; /* Fondos de tarjetas */
+  --color-slate-800: #1C2636; /* Bordes finos y tarjetas secundarias */
+  --color-slate-700: #293548; /* Bordes hover */
+  --color-slate-400: #899BB4; /* Textos secundarios mutados */
+  
+  --color-blue-500: #0EA5E9; /* Acentos Cyan vibrante */
+  --color-blue-600: #0284C7; /* Acentos Cyan hover */
+  --color-emerald-500: #00C853; /* Verde positivo neon */
+  --color-emerald-600: #00A644; /* Verde hover */
+  --color-rose-500: #FF3B30; /* Rojo negativo neon */
+  --color-rose-600: #E6352B; /* Rojo hover */
 }
 
 /* Tema 2: Corporate Blue (Formal Claro) */
