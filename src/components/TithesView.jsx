@@ -9,10 +9,11 @@ import {
   PointElement,
   LineElement,
   Title,
-  Tooltip,
+  Tooltip as ChartTooltip,
   Legend
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { toast } from 'react-hot-toast';
 
 ChartJS.register(
   CategoryScale,
@@ -20,24 +21,11 @@ ChartJS.register(
   PointElement,
   LineElement,
   Title,
-  Tooltip,
+  ChartTooltip,
   Legend
 );
 
-export default function TithesView({ tithes, userRole, isMobile, pastorName: initialPastorName, onSaveTithe }) {
-  // Ocultar módulo si es rol VISITA
-  if (userRole === 'VISITA') {
-    return (
-      <div className="bg-amber-50 dark:bg-amber-950/40 p-8 rounded-3xl border border-amber-200 dark:border-amber-900 text-center max-w-lg mx-auto">
-        <Lock className="w-12 h-12 text-amber-600 mx-auto mb-3" />
-        <h3 className="text-lg font-bold text-amber-900 dark:text-amber-200">Módulo de Diezmos Restringido</h3>
-        <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
-          Su rol actual (Visita - Solo Lectura) no tiene privilegios para consultar o gestionar la liquidación de diezmos congregacionales.
-        </p>
-      </div>
-    );
-  }
-
+export default function TithesView({ tithes, userRole, isMobile, pastorName: initialPastorName, onSaveTithe, onDeleteTithe }) {
   const [activeTab, setActiveTab] = useState('calculator'); // 'calculator', 'history', 'chart'
 
   // Entradas de la calculadora
@@ -85,17 +73,18 @@ export default function TithesView({ tithes, userRole, isMobile, pastorName: ini
       date: `${year}-${month}-28`
     });
 
-    alert('✅ Liquidación de diezmos guardada correctamente.');
+    toast.success('Liquidación de diezmos guardada correctamente.');
+    setGrossTithe(0);
     setActiveTab('history');
   };
 
   // Datos para gráfico de evolución del Diezmo Bruto
-  const monthsList = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
   const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
   
-  const chartDataValues = monthsList.map(m => {
-    const found = tithes.find(t => t.month === m && t.year === year);
-    return found ? found.grossTithe : 0;
+  const chartDataValues = monthNames.map((_, index) => {
+    const monthIndex = (index + 1).toString().padStart(2, '0');
+    const found = tithes.find(t => t.month === monthIndex && t.year === year);
+    return found ? found.grossIncome : 0;
   });
 
   const chartData = {
@@ -115,23 +104,36 @@ export default function TithesView({ tithes, userRole, isMobile, pastorName: ini
   // Cálculos de Resumen Anual
   const currentYearTithes = tithes.filter(t => t.year === year);
   
-  const avgGrossTithe = currentYearTithes.length > 0
-    ? currentYearTithes.reduce((acc, t) => acc + t.grossTithe, 0) / currentYearTithes.length
+  const avgGrossIncome = currentYearTithes.length > 0
+    ? currentYearTithes.reduce((acc, t) => acc + (t.grossIncome || 0), 0) / currentYearTithes.length
     : 0;
     
   const avgPastorAllocation = currentYearTithes.length > 0
-    ? currentYearTithes.reduce((acc, t) => acc + t.pastorAllocation, 0) / currentYearTithes.length
+    ? currentYearTithes.reduce((acc, t) => acc + (t.pastorAllocation || 0), 0) / currentYearTithes.length
     : 0;
 
   const maxGrossMonth = currentYearTithes.length > 0
-    ? currentYearTithes.reduce((max, t) => t.grossTithe > max.grossTithe ? t : max, currentYearTithes[0])
+    ? currentYearTithes.reduce((max, t) => ((t.grossIncome || 0) > (max.grossIncome || 0) ? t : max), currentYearTithes[0])
     : null;
 
   const minGrossMonth = currentYearTithes.length > 0
-    ? currentYearTithes.reduce((min, t) => t.grossTithe < min.grossTithe ? t : min, currentYearTithes[0])
+    ? currentYearTithes.reduce((min, t) => ((t.grossIncome || 0) < (min.grossIncome || 0) ? t : min), currentYearTithes[0])
     : null;
 
   const getMonthName = (m) => monthNames[parseInt(m) - 1] || '-';
+
+  // Ocultar módulo si es rol VISITA (early return after hooks)
+  if (userRole === 'VISITA') {
+    return (
+      <div className="bg-amber-50 dark:bg-amber-950/40 p-8 rounded-3xl border border-amber-200 dark:border-amber-900 text-center max-w-lg mx-auto">
+        <Lock className="w-12 h-12 text-amber-600 mx-auto mb-3" />
+        <h3 className="text-lg font-bold text-amber-900 dark:text-amber-200">Módulo de Diezmos Restringido</h3>
+        <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+          Su rol actual (Visita - Solo Lectura) no tiene privilegios para consultar o gestionar la liquidación de diezmos congregacionales.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -362,18 +364,34 @@ export default function TithesView({ tithes, userRole, isMobile, pastorName: ini
                     <th className="pb-3 text-right">Ingreso Neto</th>
                     <th className="pb-3 text-right">Puntos</th>
                     <th className="pb-3 text-right">Asign. Pastor</th>
+                    <th className="pb-3 text-right">Acción</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {tithes.map((t) => (
                     <tr key={t.id}>
                       <td className="py-3 font-bold text-slate-900 dark:text-white">{t.month}/{t.year}</td>
-                      <td className="py-3 font-semibold text-slate-700 dark:text-slate-300">{t.pastorName}</td>
-                      <td className="py-3 text-right font-bold text-slate-900 dark:text-white">{formatCurrency(t.grossTithe)}</td>
-                      <td className="py-3 text-right font-semibold text-rose-500">{formatCurrency(t.nationalTreasury)}</td>
-                      <td className="py-3 text-right font-bold text-emerald-600">{formatCurrency(t.netIncome)}</td>
-                      <td className="py-3 text-right font-mono font-bold text-amber-600">{t.correctedPoint || t.calculatedPoint} pts</td>
-                      <td className="py-3 text-right font-black text-emerald-600">{formatCurrency(t.pastorAllocation)}</td>
+                      <td className="py-3 font-semibold text-slate-700 dark:text-slate-300">{t.balanceGroup || pastorName || 'Pastor'}</td>
+                      <td className="py-3 text-right font-bold text-slate-900 dark:text-white">{formatCurrency(t.grossIncome || 0)}</td>
+                      <td className="py-3 text-right font-semibold text-rose-500">{formatCurrency(t.nationalShare || 0)}</td>
+                      <td className="py-3 text-right font-bold text-emerald-600">{formatCurrency(t.netIncome || 0)}</td>
+                      <td className="py-3 text-right font-mono font-bold text-amber-600">{t.pastorAllocationPercentage || 0} pts</td>
+                      <td className="py-3 text-right font-black text-emerald-600">{formatCurrency(t.pastorAllocation || 0)}</td>
+                      <td className="py-3 text-right">
+                        {userRole === 'ADMIN' && onDeleteTithe && (
+                          <button
+                            onClick={() => {
+                              if(window.confirm('¿Eliminar esta liquidación?')) {
+                                onDeleteTithe(t);
+                              }
+                            }}
+                            className="text-rose-500 hover:text-rose-700 bg-rose-50 dark:bg-rose-900/30 p-2 rounded-xl transition-colors"
+                            title="Eliminar registro"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -398,22 +416,22 @@ export default function TithesView({ tithes, userRole, isMobile, pastorName: ini
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700">
                 <span className="text-[10px] font-bold text-slate-400 uppercase">Ingreso Bruto Promedio</span>
-                <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-1">{formatCurrency(avgGrossTithe)}</p>
+                <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-1">{formatCurrency(avgGrossIncome)}</p>
               </div>
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Asignación Pastor Prom.</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Asign. Pastor Promedio</span>
                 <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-1">{formatCurrency(avgPastorAllocation)}</p>
               </div>
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Mes Mayor Ingreso Bruto</span>
-                <p className="text-lg font-black text-indigo-600 dark:text-indigo-400 mt-1">
-                  {maxGrossMonth ? `${getMonthName(maxGrossMonth.month)} (${formatCurrency(maxGrossMonth.grossTithe)})` : '-'}
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Mes Más Alto</span>
+                <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-1">
+                  {maxGrossMonth ? `${getMonthName(maxGrossMonth.month)} (${formatCurrency(maxGrossMonth.grossIncome)})` : '-'}
                 </p>
               </div>
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Mes Menor Ingreso Bruto</span>
-                <p className="text-lg font-black text-rose-600 dark:text-rose-400 mt-1">
-                  {minGrossMonth ? `${getMonthName(minGrossMonth.month)} (${formatCurrency(minGrossMonth.grossTithe)})` : '-'}
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Mes Más Bajo</span>
+                <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-1">
+                  {minGrossMonth ? `${getMonthName(minGrossMonth.month)} (${formatCurrency(minGrossMonth.grossIncome)})` : '-'}
                 </p>
               </div>
             </div>

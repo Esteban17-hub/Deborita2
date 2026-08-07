@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, ArrowRightLeft, Ban, AlertTriangle, CheckCircle, ShieldAlert } from 'lucide-react';
+import { Plus, ArrowRightLeft, Ban, CheckCircle, ShieldAlert } from 'lucide-react';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import MoneyInput from './MoneyInput';
 

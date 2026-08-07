@@ -10,7 +10,6 @@ export default function Navbar({
   connectedUsers,
   theme,
   setTheme,
-  isMobile,
   onLogout,
   onOpenDiagnostics,
   onOpenReset

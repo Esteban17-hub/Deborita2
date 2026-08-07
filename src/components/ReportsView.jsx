@@ -65,9 +65,8 @@ export default function ReportsView({
   } else if (reportType === 'TITHES' && !isReadOnly) {
     columns = [
       { header: 'Mes/Año', key: 'period' },
-      { header: 'Pastor', key: 'pastorName' },
-      { header: 'Diezmo Bruto', key: 'grossTithe', isCurrency: true },
-      { header: 'Tesorería Nac.', key: 'nationalTreasury', isCurrency: true },
+      { header: 'Diezmo Bruto', key: 'grossIncome', isCurrency: true },
+      { header: 'Tesorería Nac.', key: 'nationalShare', isCurrency: true },
       { header: 'Ingreso Neto', key: 'netIncome', isCurrency: true },
       { header: 'Puntos', key: 'points' },
       { header: 'Asign. Pastor', key: 'pastorAllocation', isCurrency: true }
@@ -81,12 +80,12 @@ export default function ReportsView({
       .map(t => ({
         ...t,
         period: `${t.month}/${t.year}`,
-        points: `${t.correctedPoint || t.calculatedPoint} pts`
+        points: `${t.pastorAllocationPercentage || 0} pts`
       }));
 
     totals = {
-      grossTithe: filteredData.reduce((acc, t) => acc + (t.grossTithe || 0), 0),
-      nationalTreasury: filteredData.reduce((acc, t) => acc + (t.nationalTreasury || 0), 0),
+      grossIncome: filteredData.reduce((acc, t) => acc + (t.grossIncome || 0), 0),
+      nationalShare: filteredData.reduce((acc, t) => acc + (t.nationalShare || 0), 0),
       netIncome: filteredData.reduce((acc, t) => acc + (t.netIncome || 0), 0),
       pastorAllocation: filteredData.reduce((acc, t) => acc + (t.pastorAllocation || 0), 0)
     };

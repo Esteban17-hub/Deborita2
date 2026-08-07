@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Wallet, TrendingUp, TrendingDown, HandHeart, PlusCircle, ArrowRightLeft, Users } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { formatCurrency, deduceDayOfWeek } from '../utils/formatters';
 import MoneyInput from './MoneyInput';
 
@@ -30,7 +31,7 @@ export default function DashboardView({
   const handleCreateMovement = (e) => {
     e.preventDefault();
     if (!movementCommitteeId || !movementAmount || movementAmount <= 0) {
-      alert("Por favor complete todos los campos correctamente.");
+      toast.error("Por favor complete todos los campos correctamente.");
       return;
     }
     onAddMovement({
@@ -43,12 +44,13 @@ export default function DashboardView({
     setIsMovementModalOpen(false);
     setMovementAmount('');
     setMovementDescription('');
+    toast.success("Movimiento registrado con éxito.");
   };
 
   const handleCreateOffering = (e) => {
     e.preventDefault();
     if (!offeringCommitteeId || !offeringAmount || offeringAmount <= 0) {
-      alert("Por favor complete todos los campos correctamente.");
+      toast.error("Por favor complete todos los campos correctamente.");
       return;
     }
     onAddOffering({
@@ -59,6 +61,7 @@ export default function DashboardView({
     });
     setIsOfferingModalOpen(false);
     setOfferingAmount('');
+    toast.success("Ofrenda registrada con éxito.");
   };
   const currentMonthYear = new Date().toISOString().slice(0, 7); // YYYY-MM
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { HandHeart, Calendar, BarChart2, PlusCircle } from 'lucide-react';
+import { HandHeart, BarChart2, PlusCircle } from 'lucide-react';
 import { formatCurrency, formatDate, deduceDayOfWeek } from '../utils/formatters';
 import MoneyInput from './MoneyInput';
 import {
@@ -26,7 +26,8 @@ export default function OfferingsView({
   offerings,
   committees,
   userRole,
-  onAddOffering
+  onAddOffering,
+  onDeleteOffering
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [offeringDate, setOfferingDate] = useState(new Date().toISOString().slice(0, 10));
@@ -156,6 +157,7 @@ export default function OfferingsView({
                   <th className="pb-3 text-right">Valor</th>
                   <th className="pb-3">Responsable</th>
                   <th className="pb-3">Observaciones</th>
+                  <th className="pb-3 text-right">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -169,6 +171,21 @@ export default function OfferingsView({
                       <td className="py-3 text-right font-black text-slate-900 dark:text-white">{formatCurrency(o.amount)}</td>
                       <td className="py-3 font-medium text-slate-600 dark:text-slate-400">{o.responsible}</td>
                       <td className="py-3 text-slate-500 italic">{o.notes || '-'}</td>
+                      <td className="py-3 text-right">
+                        {userRole === 'ADMIN' && onDeleteOffering && (
+                          <button
+                            onClick={() => {
+                              if(window.confirm('¿Eliminar esta ofrenda?')) {
+                                onDeleteOffering(o);
+                              }
+                            }}
+                            className="text-rose-500 hover:text-rose-700 bg-rose-50 dark:bg-rose-900/30 p-2 rounded-xl transition-colors"
+                            title="Eliminar registro"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}

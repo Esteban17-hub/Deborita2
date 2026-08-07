@@ -26,10 +26,10 @@ import {
   setupRealtimeListeners,
   subscribePresence
 } from './services/syncEngine';
-import { subscribeToSyncEvents, notifyDataChange } from './services/broadcast';
+import { subscribeToSyncEvents } from './services/broadcast';
+import { hashPin } from './utils/security';
 
 import {
-  LayoutDashboard,
   Home,
   Users,
   Calculator,
@@ -39,6 +39,7 @@ import {
   PieChart,
   Settings
 } from 'lucide-react';
+import { Toaster } from 'react-hot-toast';
 
 export default function App() {
   // Estado de usuario y autenticación
@@ -94,7 +95,29 @@ export default function App() {
       const projs = await getAllFromStore('projects');
       const vts = await getAllFromStore('votes');
 
-      setUsers(usrs || []);
+      // Migración de seguridad: Hashear PINs en texto plano (longitud < 64)
+      let usersToUpdate = usrs || [];
+      let migrationNeeded = false;
+      
+      const migratedUsers = usersToUpdate.map(u => {
+        if (u.pin && u.pin.length < 64) {
+          migrationNeeded = true;
+          return { ...u, pin: hashPin(u.pin) };
+        }
+        return u;
+      });
+
+      if (migrationNeeded) {
+        console.log('Realizando migración de seguridad de PINs...');
+        for (const mu of migratedUsers) {
+          await putRecord('users', mu);
+          await queueOfflineAction('UPDATE', 'users', mu);
+        }
+        setUsers(migratedUsers);
+      } else {
+        setUsers(usersToUpdate);
+      }
+
       setCongregations(congs || []);
       setCommittees(coms || []);
       setMovements(movs || []);
@@ -103,7 +126,7 @@ export default function App() {
       setProjects(projs || []);
       setVotes(vts || []);
 
-      return { usrs, congs, coms, movs, tiths, offs, projs, vts };
+      return { usrs: migratedUsers, congs, coms, movs, tiths, offs, projs, vts };
     } catch (err) {
       console.error('Error cargando datos desde IndexedDB:', err);
       return {};
@@ -138,7 +161,7 @@ export default function App() {
             localStorage.removeItem('deborita_session');
             setIsLoginOpen(true);
           }
-        } catch (e) {
+        } catch (_) {
           localStorage.removeItem('deborita_session');
           setIsLoginOpen(true);
         }
@@ -163,7 +186,7 @@ export default function App() {
       setConnectedUsers(count);
     });
 
-    const unsubBroadcast = subscribeToSyncEvents((event) => {
+    const unsubBroadcast = subscribeToSyncEvents(() => {
       loadAllData();
     });
 
@@ -182,7 +205,6 @@ export default function App() {
       const movsIncome = commMovs.filter(m => m.type === 'INGRESO').reduce((acc, m) => acc + (m.amount || 0), 0);
       const movsExpense = commMovs.filter(m => m.type === 'EGRESO').reduce((acc, m) => acc + (m.amount || 0), 0);
       const commOfferings = offerings.filter(o => o.destinationCommitteeId === c.id && o.congregationId === congregationId);
-      const offeringsIncome = commOfferings.reduce((acc, o) => acc + (o.amount || 0), 0);
 
       const computedBalance = movsIncome - movsExpense; // Ofrendas se manejan como cuentas separadas
       return {
@@ -208,9 +230,9 @@ export default function App() {
     await queueOfflineAction('CREATE', 'congregations', newCong);
 
     const defaultUsers = [
-      { id: `u-1-${id}`, congregationId: id, name: pastorName || 'Pastor', role: 'ADMIN', pin: '1234', createdAt: Date.now() },
-      { id: `u-2-${id}`, congregationId: id, name: treasurerName || 'Tesorero', role: 'TESORERO', pin: '1234', createdAt: Date.now() },
-      { id: `u-3-${id}`, congregationId: id, name: 'Visita', role: 'VISITA', pin: '1234', createdAt: Date.now() }
+      { id: `u-1-${id}`, congregationId: id, name: pastorName || 'Pastor', role: 'ADMIN', pin: hashPin('1234'), createdAt: Date.now() },
+      { id: `u-2-${id}`, congregationId: id, name: treasurerName || 'Tesorero', role: 'TESORERO', pin: hashPin('1234'), createdAt: Date.now() },
+      { id: `u-3-${id}`, congregationId: id, name: 'Visita', role: 'VISITA', pin: hashPin('1234'), createdAt: Date.now() }
     ];
     for (const u of defaultUsers) {
       await putRecord('users', u);
@@ -356,6 +378,19 @@ export default function App() {
     await loadAllData();
   };
 
+  const handleDeleteOffering = async (offering) => {
+    // Soft o Hard delete: Aquí usamos Hard Delete a nivel base de datos
+    await deleteRecord('offerings', offering.id);
+    await queueOfflineAction('DELETE', 'offerings', offering);
+    await loadAllData();
+  };
+
+  const handleDeleteTithe = async (tithe) => {
+    await deleteRecord('tithes', tithe.id);
+    await queueOfflineAction('DELETE', 'tithes', tithe);
+    await loadAllData();
+  };
+
   const handleCreateProject = async (projectData) => {
     // Mapeo estricto al esquema de Supabase public.projects
     const newProject = {
@@ -448,9 +483,22 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col font-sans transition-colors">
+    <div className={`min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300 ${isLoginOpen ? 'overflow-hidden' : ''}`}>
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          className: 'dark:bg-slate-800 dark:text-white',
+          style: {
+            borderRadius: '16px',
+            background: theme.includes('dark') ? '#1e293b' : '#ffffff',
+            color: theme.includes('dark') ? '#f8fafc' : '#0f172a',
+          },
+        }}
+      />
       
-      {/* Navbar Superior */}
+      {!isLoginOpen && (
+        <>
+          {/* Navbar Superior */}
       <Navbar
         congregationName={congregationName}
         userRole={userRole}
@@ -530,6 +578,7 @@ export default function App() {
             isMobile={isMobile}
             pastorName={users.find(u => u.congregationId === congregationId && u.role === 'ADMIN')?.name || 'Pastor'}
             onSaveTithe={handleSaveTithe}
+            onDeleteTithe={handleDeleteTithe}
           />
         )}
 
@@ -540,6 +589,7 @@ export default function App() {
             userRole={userRole}
             isMobile={isMobile}
             onAddOffering={handleAddOffering}
+            onDeleteOffering={handleDeleteOffering}
           />
         )}
 
@@ -597,6 +647,8 @@ export default function App() {
         <p className="font-semibold">Deborita Gestión Local - Sistema de Administración Financiera Congregacional</p>
         <p className="text-[11px] text-slate-400 mt-0.5">Soporte Offline-First con sincronización en la nube e IndexedDB local</p>
       </footer>
+        </>
+      )}
 
       {/* Modales Auxiliares */}
       <LoginModal

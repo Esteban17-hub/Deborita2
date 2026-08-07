@@ -3,6 +3,7 @@ import { supabase } from '../services/supabaseClient';
 import { getPendingCount } from '../services/syncEngine';
 import { getAllFromStore } from '../services/db';
 import { X, ShieldAlert, CheckCircle2, AlertTriangle, RefreshCw, Database } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 export default function DiagnosticsModal({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
@@ -64,7 +65,7 @@ export default function DiagnosticsModal({ isOpen, onClose }) {
 
   const handleForceSync = async () => {
     if (!supabase) {
-      alert("El conector de Supabase no está inicializado. Corrige las variables primero.");
+      toast.error("El conector de Supabase no está inicializado. Corrige las variables primero.");
       return;
     }
 
@@ -122,8 +123,8 @@ export default function DiagnosticsModal({ isOpen, onClose }) {
         await caches.delete(name);
       }
     }
-    alert('Caché limpiado exitosamente. La aplicación se recargará para descargar la última versión.');
-    window.location.reload(true);
+    toast.success('Caché limpiado exitosamente. La aplicación se recargará.');
+    setTimeout(() => window.location.reload(), 1500);
   };
 
   return (
