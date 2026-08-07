@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Wallet, TrendingUp, TrendingDown, HandHeart, PlusCircle, ArrowRightLeft, Users } from 'lucide-react';
-import { formatCurrency } from '../utils/formatters';
+import { formatCurrency, deduceDayOfWeek } from '../utils/formatters';
+import MoneyInput from './MoneyInput';
 
 export default function DashboardView({
   committees,
@@ -8,10 +9,56 @@ export default function DashboardView({
   offerings,
   userRole,
   congregationName,
-  onOpenMovementModal,
-  onOpenOfferingModal,
-  onSelectTab
+  onSelectTab,
+  onAddMovement,
+  onAddOffering
 }) {
+  const [isMovementModalOpen, setIsMovementModalOpen] = useState(false);
+  const [movementType, setMovementType] = useState('INGRESO');
+  const [movementAmount, setMovementAmount] = useState('');
+  const [movementDate, setMovementDate] = useState(new Date().toISOString().slice(0, 10));
+  const [movementDescription, setMovementDescription] = useState('');
+  const [movementCommitteeId, setMovementCommitteeId] = useState('');
+
+  const [isOfferingModalOpen, setIsOfferingModalOpen] = useState(false);
+  const [offeringDate, setOfferingDate] = useState(new Date().toISOString().slice(0, 10));
+  const [offeringDay, setOfferingDay] = useState(deduceDayOfWeek(new Date().toISOString().slice(0, 10)));
+  const [offeringAmount, setOfferingAmount] = useState('');
+  const [offeringCommitteeId, setOfferingCommitteeId] = useState('');
+
+  const handleCreateMovement = (e) => {
+    e.preventDefault();
+    if (!movementCommitteeId || !movementAmount || movementAmount <= 0) {
+      alert("Por favor complete todos los campos correctamente.");
+      return;
+    }
+    onAddMovement({
+      committeeId: movementCommitteeId,
+      type: movementType,
+      amount: movementAmount,
+      description: movementDescription,
+      date: movementDate
+    });
+    setIsMovementModalOpen(false);
+    setMovementAmount('');
+    setMovementDescription('');
+  };
+
+  const handleCreateOffering = (e) => {
+    e.preventDefault();
+    if (!offeringCommitteeId || !offeringAmount || offeringAmount <= 0) {
+      alert("Por favor complete todos los campos correctamente.");
+      return;
+    }
+    onAddOffering({
+      destinationCommitteeId: offeringCommitteeId,
+      date: offeringDate,
+      day: offeringDay,
+      amount: offeringAmount
+    });
+    setIsOfferingModalOpen(false);
+    setOfferingAmount('');
+  };
   const currentMonthYear = new Date().toISOString().slice(0, 7); // YYYY-MM
 
   // Saldo total consolidado
@@ -51,14 +98,14 @@ export default function DashboardView({
           </div>
           <div className="flex items-center gap-3 relative z-10">
             <button
-              onClick={onOpenMovementModal}
-              className="flex items-center gap-2 px-5 py-3 rounded-full bg-slate-800 border border-slate-700 text-slate-200 font-bold text-sm hover:bg-slate-700 hover:text-white transition-all shadow-lg active:scale-95"
+              onClick={() => setIsMovementModalOpen(true)}
+              className="flex items-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-blue-600 to-blue-400 text-white font-bold text-sm hover:from-blue-500 hover:to-blue-300 transition-all shadow-[0_0_15px_rgba(59,130,246,0.4)] active:scale-95"
             >
               <ArrowRightLeft className="w-4 h-4" />
               <span>Registrar Movimiento</span>
             </button>
             <button
-              onClick={onOpenOfferingModal}
+              onClick={() => setIsOfferingModalOpen(true)}
               className="flex items-center gap-2 px-5 py-3 rounded-full bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-400 transition-all shadow-[0_0_15px_rgba(0,200,83,0.3)] active:scale-95"
             >
               <PlusCircle className="w-4 h-4" />
@@ -180,6 +227,184 @@ export default function DashboardView({
           ))}
         </div>
       </div>
+
+      {/* Modal Nuevo Movimiento desde Dashboard */}
+      {isMovementModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-slate-900 rounded-3xl max-w-md w-full p-6 lg:p-8 shadow-2xl border border-slate-800 my-8">
+            <h3 className="text-xl font-black text-white mb-6">
+              Registrar Movimiento
+            </h3>
+            <form onSubmit={handleCreateMovement} className="space-y-5">
+              
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Seleccionar Comité <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={movementCommitteeId}
+                  onChange={(e) => setMovementCommitteeId(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-700 bg-slate-800 text-white font-medium focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all"
+                >
+                  <option value="">Seleccione un comité...</option>
+                  {committees.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setMovementType('INGRESO')}
+                  className={`py-3 rounded-2xl font-bold text-sm border transition-all ${
+                    movementType === 'INGRESO'
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                      : 'bg-slate-800/50 text-slate-400 border-slate-700 hover:bg-slate-800'
+                  }`}
+                >
+                  🟢 Ingreso (+)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMovementType('EGRESO')}
+                  className={`py-3 rounded-2xl font-bold text-sm border transition-all ${
+                    movementType === 'EGRESO'
+                      ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                      : 'bg-slate-800/50 text-slate-400 border-slate-700 hover:bg-slate-800'
+                  }`}
+                >
+                  🔴 Egreso (-)
+                </button>
+              </div>
+
+              <MoneyInput
+                label="Monto del Movimiento"
+                value={movementAmount}
+                onChange={setMovementAmount}
+                required
+              />
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Fecha</label>
+                <input
+                  type="date"
+                  value={movementDate}
+                  onChange={(e) => setMovementDate(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-700 bg-slate-800 text-white font-medium focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all [color-scheme:dark]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Descripción (Opcional)</label>
+                <input
+                  type="text"
+                  value={movementDescription}
+                  onChange={(e) => setMovementDescription(e.target.value)}
+                  placeholder="Detalle de la transacción, responsable..."
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-700 bg-slate-800 text-white font-medium focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all placeholder:text-slate-500"
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsMovementModalOpen(false)}
+                  className="px-6 py-3 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-3 rounded-full bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-500 hover:to-blue-300 text-white font-bold text-sm shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all"
+                >
+                  Guardar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Agregar Ofrenda desde Dashboard */}
+      {isOfferingModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-slate-900 rounded-3xl max-w-md w-full p-6 lg:p-8 shadow-2xl border border-slate-800 my-8">
+            <h3 className="text-xl font-black text-white mb-6 flex items-center gap-2">
+              <HandHeart className="w-6 h-6 text-emerald-400" /> Agregar Ofrenda
+            </h3>
+            <form onSubmit={handleCreateOffering} className="space-y-5">
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Fecha</label>
+                  <input
+                    type="date"
+                    value={offeringDate}
+                    onChange={(e) => {
+                      setOfferingDate(e.target.value);
+                      setOfferingDay(deduceDayOfWeek(e.target.value));
+                    }}
+                    required
+                    className="w-full px-4 py-3 rounded-2xl border border-slate-700 bg-slate-800 text-white font-medium focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none transition-all [color-scheme:dark]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Día</label>
+                  <input
+                    type="text"
+                    value={offeringDay}
+                    onChange={(e) => setOfferingDay(e.target.value)}
+                    className="w-full px-4 py-3 rounded-2xl border border-slate-700 bg-slate-800 text-white font-medium focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Destino / Comité <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={offeringCommitteeId}
+                  onChange={(e) => setOfferingCommitteeId(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-700 bg-slate-800 text-white font-medium focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none transition-all"
+                >
+                  <option value="">Seleccione un destino...</option>
+                  {committees.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <MoneyInput
+                label="Valor de Ofrenda"
+                value={offeringAmount}
+                onChange={setOfferingAmount}
+                required
+              />
+
+              <div className="flex gap-3 justify-end pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsOfferingModalOpen(false)}
+                  className="px-6 py-3 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-sm shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all"
+                >
+                  Registrar Ofrenda
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

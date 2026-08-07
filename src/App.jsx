@@ -437,7 +437,7 @@ export default function App() {
 
       {/* Menú de Navegación por Pestañas (Estilo App Premium) */}
       <nav className="bg-slate-900/80 backdrop-blur-xl border-b border-slate-800/50 px-4 py-3 sticky top-[61px] z-30">
-        <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 overflow-x-auto scrollbar-none">
+        <div className="max-w-7xl mx-auto flex items-center justify-start sm:justify-center gap-2 overflow-x-auto scrollbar-none">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -471,9 +471,9 @@ export default function App() {
             userRole={userRole}
             congregationName={congregationName}
             isMobile={isMobile}
-            onOpenMovementModal={() => setActiveTab('committees')}
-            onOpenOfferingModal={() => setActiveTab('offerings')}
             onSelectTab={setActiveTab}
+            onAddMovement={handleAddMovement}
+            onAddOffering={handleAddOffering}
           />
         )}
 
