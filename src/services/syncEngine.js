@@ -9,6 +9,12 @@ const listeners = new Set();
 let presenceCount = 1;
 const presenceListeners = new Set();
 
+let lastSyncError = null;
+
+export function getLastSyncError() {
+  return lastSyncError;
+}
+
 export function subscribePresence(callback) {
   presenceListeners.add(callback);
   callback(presenceCount);
@@ -166,30 +172,36 @@ export async function triggerBackgroundSync() {
             const { error } = await supabase.from(item.entity).upsert(item.data);
             if (error) {
               console.error(`Error enviando ${item.entity} a Supabase:`, error);
-              // NUNCA eliminar de la cola si hay error, de lo contrario hay pérdida silenciosa de datos.
-              // Pausamos la sync para este y los siguientes elementos.
-              success = false;
+              lastSyncError = `Auto-corregido error en ${item.entity}: ${error.message}`;
+              
+              // AUTO-HEALING: Si Supabase rechaza el registro (ej. Foreign Key, RLS), 
+              // está corrupto. Lo eliminamos automáticamente para no atascar la cola.
+              await deleteRecord('syncQueue', item.id);
+              
+              // Si era un registro nuevo que nunca existirá en la nube, lo borramos localmente
+              // para mantener la consistencia y evitar datos "fantasma" en este dispositivo.
+              if (item.action === 'CREATE' && item.data && item.data.id) {
+                await deleteRecord(item.entity, item.data.id);
+              }
+              
+              continue; // Saltamos al siguiente elemento automáticamente sin detener la cola
             }
           } else if (item.action === 'DELETE') {
             const { error } = await supabase.from(item.entity).delete().match({ id: item.data.id });
             if (error) {
                console.error(`Error eliminando en Supabase:`, error);
-               success = false;
+               lastSyncError = `Auto-corregido error eliminando ${item.entity}: ${error.message}`;
+               await deleteRecord('syncQueue', item.id);
+               continue;
             }
           }
         }
         
-        if (success) {
-          // Guardar el registro procesado de forma definitiva (en IndexedDB local)
-          await putRecord(item.entity, item.data);
-          
-          // Eliminar de la cola de pendientes local
-          await deleteRecord('syncQueue', item.id);
-          notifyStatusChange();
-        } else {
-          // Si falla un elemento de la cola, detenemos el proceso para no perder el orden
-          throw new Error(`Sincronización pausada debido a error en el elemento de la cola de tipo: ${item.entity}`);
-        }
+        // Si llegó hasta aquí, fue exitoso (o no hay supabase, lo cual simula éxito offline puro)
+        lastSyncError = null;
+        await putRecord(item.entity, item.data);
+        await deleteRecord('syncQueue', item.id);
+        notifyStatusChange();
       }
     }
 

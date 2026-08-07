@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { supabase } from '../services/supabaseClient';
-import { getPendingCount } from '../services/syncEngine';
+import { getPendingCount, getLastSyncError } from '../services/syncEngine';
 import { getAllFromStore } from '../services/db';
 import { X, ShieldAlert, CheckCircle2, AlertTriangle, RefreshCw, Database } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { clearStore } from '../services/db';
 
 export default function DiagnosticsModal({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
@@ -58,6 +59,7 @@ export default function DiagnosticsModal({ isOpen, onClose }) {
       pingError,
       queryData,
       pendingQueueSize,
+      lastSyncError: getLastSyncError(),
       userAgent: navigator.userAgent
     });
     setLoading(false);
@@ -127,6 +129,24 @@ export default function DiagnosticsModal({ isOpen, onClose }) {
     setTimeout(() => window.location.reload(), 1500);
   };
 
+  const handleClearQueue = async () => {
+    if (!window.confirm("¿Estás seguro de eliminar la cola de sincronización pendiente? Perderás los datos no sincronizados de este dispositivo.")) return;
+    
+    setSyncingLocal(true);
+    setSyncLog(prev => [...prev, "Limpiando cola de pendientes local..."]);
+    try {
+      await clearStore('syncQueue');
+      setSyncLog(prev => [...prev, "Cola limpiada exitosamente."]);
+      toast.success("Cola de sincronización vaciada.");
+      await runDiagnostics();
+    } catch (e) {
+      setSyncLog(prev => [...prev, `Error limpiando cola: ${e.message}`]);
+      toast.error("Error al limpiar cola.");
+    } finally {
+      setSyncingLocal(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative">
@@ -163,7 +183,6 @@ export default function DiagnosticsModal({ isOpen, onClose }) {
                 <span>Ejecutar Diagnóstico</span>
               )}
             </button>
-
             <button
               onClick={handleForceSync}
               disabled={syncingLocal}
@@ -182,6 +201,34 @@ export default function DiagnosticsModal({ isOpen, onClose }) {
               )}
             </button>
           </div>
+
+          {results && results.pendingQueueSize > 0 && (
+            <div className="mt-4 flex flex-col gap-2">
+              {results.lastSyncError && (
+                <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg text-xs font-mono break-words">
+                  <strong>Último Error de Servidor:</strong><br/> {results.lastSyncError}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleForceSync}
+                  disabled={syncingLocal || !results.pingOk}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 dark:bg-slate-800 text-white rounded-xl font-medium hover:bg-slate-800 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  <RefreshCw className={`w-4 h-4 ${syncingLocal ? 'animate-spin' : ''}`} />
+                  Forzar Sincronización
+                </button>
+                <button
+                  onClick={handleClearQueue}
+                  disabled={syncingLocal}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-900/50 text-white rounded-xl font-medium hover:bg-red-700 dark:hover:bg-red-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  <AlertTriangle className="w-4 h-4" />
+                  Vaciar Cola (Peligro)
+                </button>
+              </div>
+            </div>
+          )}
 
           <button
             onClick={handleClearCache}
