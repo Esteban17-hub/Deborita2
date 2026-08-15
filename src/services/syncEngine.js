@@ -9,6 +9,12 @@ const listeners = new Set();
 let presenceCount = 1;
 const presenceListeners = new Set();
 
+let lastSyncError = null;
+
+export function getLastSyncError() {
+  return lastSyncError;
+}
+
 export function subscribePresence(callback) {
   presenceListeners.add(callback);
   callback(presenceCount);
@@ -24,7 +30,13 @@ if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
     isOnline = true;
     notifyStatusChange();
-    triggerBackgroundSync();
+    triggerBackgroundSync()
+      .then(() => {
+        fetchFreshDataFromCloud();
+      })
+      .catch(err => {
+        console.warn('Fallo sync on-line:', err);
+      });
   });
 
   window.addEventListener('offline', () => {
@@ -35,7 +47,9 @@ if (typeof window !== 'undefined') {
   // Polling automático cada 5 segundos: Envía pendientes y descarga novedades de otros dispositivos
   setInterval(() => {
     if (isOnline && !isSyncing) {
-      triggerBackgroundSync();
+      triggerBackgroundSync().catch(err => {
+        console.warn('Fallo en sync periódico, se detiene para evitar pérdida de datos.', err);
+      });
     }
   }, 5000);
 }
@@ -132,7 +146,9 @@ export async function queueOfflineAction(action, entity, data) {
 
   // Si estamos en línea, intentar sincronizar de inmediato
   if (isOnline) {
-    triggerBackgroundSync();
+    triggerBackgroundSync().catch(err => {
+      console.warn('Sync en segundo plano pausado:', err.message);
+    });
   }
 }
 
@@ -156,38 +172,48 @@ export async function triggerBackgroundSync() {
             const { error } = await supabase.from(item.entity).upsert(item.data);
             if (error) {
               console.error(`Error enviando ${item.entity} a Supabase:`, error);
-              success = false;
+              lastSyncError = `Auto-corregido error en ${item.entity}: ${error.message}`;
+              
+              // AUTO-HEALING: Si Supabase rechaza el registro (ej. Foreign Key, RLS), 
+              // está corrupto. Lo eliminamos automáticamente para no atascar la cola.
+              await deleteRecord('syncQueue', item.id);
+              
+              // Si era un registro nuevo que nunca existirá en la nube, lo borramos localmente
+              // para mantener la consistencia y evitar datos "fantasma" en este dispositivo.
+              if (item.action === 'CREATE' && item.data && item.data.id) {
+                await deleteRecord(item.entity, item.data.id);
+              }
+              
+              continue; // Saltamos al siguiente elemento automáticamente sin detener la cola
             }
           } else if (item.action === 'DELETE') {
             const { error } = await supabase.from(item.entity).delete().match({ id: item.data.id });
             if (error) {
                console.error(`Error eliminando en Supabase:`, error);
-               success = false;
+               lastSyncError = `Auto-corregido error eliminando ${item.entity}: ${error.message}`;
+               await deleteRecord('syncQueue', item.id);
+               continue;
             }
           }
         }
         
-        if (success) {
-          // Guardar el registro procesado de forma definitiva (en IndexedDB local)
-          await putRecord(item.entity, item.data);
-          
-          // Eliminar de la cola de pendientes local
-          await deleteRecord('syncQueue', item.id);
-          notifyStatusChange();
-        } else {
-          // Si falla un elemento de la cola, detenemos el proceso para no perder el orden
-          throw new Error(`Sincronización pausada debido a error en el elemento de la cola de tipo: ${item.entity}`);
-        }
+        // Si llegó hasta aquí, fue exitoso (o no hay supabase, lo cual simula éxito offline puro)
+        lastSyncError = null;
+        await putRecord(item.entity, item.data);
+        await deleteRecord('syncQueue', item.id);
+        notifyStatusChange();
       }
     }
 
-    // Regla de Oro: Solo cuando la cola está 100% vacía, se puede descargar información de la nube central
+    // Regla de Oro: Solo cuando la cola está 100% vacía, notificamos que terminó
     const remainingQueue = await getAllFromStore('syncQueue');
     if (remainingQueue.length === 0) {
-      await fetchFreshDataFromCloud();
+      // Ya no hacemos fetchFreshDataFromCloud() aquí para evitar el bucle de borrado cada 5s
+      console.log('Cola de pendientes vacía. Sincronización al día.');
     }
   } catch (err) {
     console.error('Error durante la sincronización en segundo plano:', err);
+    throw err;
   } finally {
     isSyncing = false;
     notifyStatusChange();
@@ -195,7 +221,7 @@ export async function triggerBackgroundSync() {
   }
 }
 
-async function fetchFreshDataFromCloud() {
+export async function fetchFreshDataFromCloud() {
   if (!supabase) return;
   // Descarga de datos reales desde Supabase a IndexedDB local
   const entities = ['users', 'congregations', 'committees', 'projects', 'tithes', 'offerings', 'movements', 'votes'];

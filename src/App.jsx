@@ -9,6 +9,8 @@ import ProjectsView from './components/ProjectsView';
 import ReportsView from './components/ReportsView';
 import StatisticsView from './components/StatisticsView';
 import SettingsView from './components/SettingsView';
+import MultiDeviceSimulator from './components/MultiDeviceSimulator';
+import TesoritoAI from './components/TesoritoAI';
 import DiagnosticsModal from './components/DiagnosticsModal';
 import ResetModal from './components/ResetModal';
 import useMediaQuery from './hooks/useMediaQuery';
@@ -16,27 +18,31 @@ import useMediaQuery from './hooks/useMediaQuery';
 import {
   seedInitialData,
   getAllFromStore,
-  putRecord
+  putRecord,
+  deleteRecord
 } from './services/db';
 import {
   subscribeNetworkStatus,
   queueOfflineAction,
   triggerBackgroundSync,
+  fetchFreshDataFromCloud,
   setupRealtimeListeners,
   subscribePresence
 } from './services/syncEngine';
-import { subscribeToSyncEvents, notifyDataChange } from './services/broadcast';
+import { subscribeToSyncEvents } from './services/broadcast';
+import { hashPin } from './utils/security';
 
 import {
-  LayoutDashboard,
   Home,
   Users,
   Calculator,
   HandHeart,
   Target,
   FileText,
-  PieChart
+  PieChart,
+  Settings
 } from 'lucide-react';
+import { Toaster, toast } from 'react-hot-toast';
 
 export default function App() {
   // Estado de usuario y autenticación
@@ -92,7 +98,29 @@ export default function App() {
       const projs = await getAllFromStore('projects');
       const vts = await getAllFromStore('votes');
 
-      setUsers(usrs || []);
+      // Migración de seguridad: Hashear PINs en texto plano (longitud < 64)
+      let usersToUpdate = usrs || [];
+      let migrationNeeded = false;
+      
+      const migratedUsers = usersToUpdate.map(u => {
+        if (u.pin && u.pin.length < 64) {
+          migrationNeeded = true;
+          return { ...u, pin: hashPin(u.pin) };
+        }
+        return u;
+      });
+
+      if (migrationNeeded) {
+        console.log('Realizando migración de seguridad de PINs...');
+        for (const mu of migratedUsers) {
+          await putRecord('users', mu);
+          await queueOfflineAction('UPDATE', 'users', mu);
+        }
+        setUsers(migratedUsers);
+      } else {
+        setUsers(usersToUpdate);
+      }
+
       setCongregations(congs || []);
       setCommittees(coms || []);
       setMovements(movs || []);
@@ -101,7 +129,7 @@ export default function App() {
       setProjects(projs || []);
       setVotes(vts || []);
 
-      return { usrs, congs, coms, movs, tiths, offs, projs, vts };
+      return { usrs: migratedUsers, congs, coms, movs, tiths, offs, projs, vts };
     } catch (err) {
       console.error('Error cargando datos desde IndexedDB:', err);
       return {};
@@ -136,14 +164,21 @@ export default function App() {
             localStorage.removeItem('deborita_session');
             setIsLoginOpen(true);
           }
-        } catch (e) {
+        } catch (_) {
           localStorage.removeItem('deborita_session');
           setIsLoginOpen(true);
         }
       }
 
       // Iniciar sincronización (para que baje datos si estaba offline)
-      triggerBackgroundSync();
+      triggerBackgroundSync()
+        .then(() => {
+          fetchFreshDataFromCloud();
+        })
+        .catch((err) => {
+          console.warn('La sincronización falló al iniciar. Se conserva la caché local intacta.', err);
+          toast.error('Error de Sincronización: Verifica tu conexión a internet o los permisos de base de datos.', { duration: 6000 });
+        });
     }
     initApp();
 
@@ -155,7 +190,7 @@ export default function App() {
       setConnectedUsers(count);
     });
 
-    const unsubBroadcast = subscribeToSyncEvents((event) => {
+    const unsubBroadcast = subscribeToSyncEvents(() => {
       loadAllData();
     });
 
@@ -174,9 +209,8 @@ export default function App() {
       const movsIncome = commMovs.filter(m => m.type === 'INGRESO').reduce((acc, m) => acc + (m.amount || 0), 0);
       const movsExpense = commMovs.filter(m => m.type === 'EGRESO').reduce((acc, m) => acc + (m.amount || 0), 0);
       const commOfferings = offerings.filter(o => o.destinationCommitteeId === c.id && o.congregationId === congregationId);
-      const offeringsIncome = commOfferings.reduce((acc, o) => acc + (o.amount || 0), 0);
 
-      const computedBalance = movsIncome - movsExpense + offeringsIncome;
+      const computedBalance = movsIncome - movsExpense; // Ofrendas se manejan como cuentas separadas
       return {
         ...c,
         balance: computedBalance
@@ -200,9 +234,9 @@ export default function App() {
     await queueOfflineAction('CREATE', 'congregations', newCong);
 
     const defaultUsers = [
-      { id: `u-1-${id}`, congregationId: id, name: pastorName || 'Pastor', role: 'ADMIN', pin: '1234', createdAt: Date.now() },
-      { id: `u-2-${id}`, congregationId: id, name: treasurerName || 'Tesorero', role: 'TESORERO', pin: '1234', createdAt: Date.now() },
-      { id: `u-3-${id}`, congregationId: id, name: 'Visita', role: 'VISITA', pin: '1234', createdAt: Date.now() }
+      { id: `u-1-${id}`, congregationId: id, name: pastorName || 'Pastor', role: 'ADMIN', pin: hashPin('1234'), createdAt: Date.now() },
+      { id: `u-2-${id}`, congregationId: id, name: treasurerName || 'Tesorero', role: 'TESORERO', pin: hashPin('1234'), createdAt: Date.now() },
+      { id: `u-3-${id}`, congregationId: id, name: 'Visita', role: 'VISITA', pin: hashPin('1234'), createdAt: Date.now() }
     ];
     for (const u of defaultUsers) {
       await putRecord('users', u);
@@ -273,18 +307,8 @@ export default function App() {
       createdAt: Date.now()
     };
 
-    // Actualizar saldo del comité (Regla de Oro: Permite saldo negativo)
-    const committee = committees.find(c => c.id === movementData.committeeId);
-    if (committee) {
-      const delta = movementData.type === 'INGRESO' ? movementData.amount : -movementData.amount;
-      const updatedCommittee = {
-        ...committee,
-        balance: (committee.balance || 0) + delta,
-        updatedAt: Date.now()
-      };
-      await putRecord('committees', updatedCommittee);
-      await queueOfflineAction('UPDATE', 'committees', updatedCommittee);
-    }
+    // UI dinámicamente calcula saldos vía 'activeCommittees', no necesitamos alterar 'committees' en la DB
+    // Esto evita condiciones de carrera (Lost Update) en escenarios multi-dispositivo offline
 
     await putRecord('movements', newMovement);
     await queueOfflineAction('CREATE', 'movements', newMovement);
@@ -298,22 +322,10 @@ export default function App() {
     const updatedMov = {
       ...mov,
       annulled: true,
-      annulReason: reason,
-      updatedAt: Date.now()
+      annulReason: reason
     };
 
-    // Revertir cálculo matemático en el saldo del comité
-    const committee = committees.find(c => c.id === mov.committeeId);
-    if (committee) {
-      const reverseDelta = mov.type === 'INGRESO' ? -mov.amount : mov.amount;
-      const updatedCommittee = {
-        ...committee,
-        balance: (committee.balance || 0) + reverseDelta,
-        updatedAt: Date.now()
-      };
-      await putRecord('committees', updatedCommittee);
-      await queueOfflineAction('UPDATE', 'committees', updatedCommittee);
-    }
+    // UI dinámicamente calcula saldos, no necesitamos alterar 'committees' en la DB
 
     await putRecord('movements', updatedMov);
     await queueOfflineAction('ANNUL', 'movements', updatedMov);
@@ -321,10 +333,24 @@ export default function App() {
   };
 
   const handleSaveTithe = async (titheData) => {
+    // Mapeo estricto al esquema de Supabase public.tithes
     const newTithe = {
       id: `t-${Date.now()}`,
       congregationId: congregationId,
-      ...titheData,
+      date: titheData.date,
+      month: titheData.month,
+      year: parseInt(titheData.year) || new Date().getFullYear(),
+      grossIncome: titheData.grossTithe, // TithesView envía grossTithe, DB espera grossIncome
+      nationalPercentage: titheData.nationalPercentage,
+      nationalShare: titheData.nationalTreasury, // TithesView envía nationalTreasury, DB espera nationalShare
+      localShare: titheData.localFundAport, // TithesView envía localFundAport, DB espera localShare
+      pastorTithe: 0,
+      pastorTithePercentage: 0,
+      netIncome: titheData.netIncome,
+      pastorAllocation: titheData.pastorAllocation,
+      pastorAllocationPercentage: titheData.correctedPoint, // Mapeamos correctedPoint aquí para no perderlo
+      balanceGroup: titheData.pastorName, // Mapeamos pastorName aquí ya que no existe columna pastorName
+      archived: false,
       createdAt: Date.now()
     };
 
@@ -334,40 +360,55 @@ export default function App() {
   };
 
   const handleAddOffering = async (offeringData) => {
+    // Solo enviamos a la DB los campos que existen en la tabla Supabase para evitar fallos de sincronización
+    const descriptionStr = offeringData.notes || offeringData.description || '';
+    const responsibleStr = offeringData.responsible ? `[${offeringData.responsible}] ` : '';
+    
     const newOffering = {
       id: `o-${Date.now()}`,
       congregationId: congregationId,
-      ...offeringData,
+      destinationCommitteeId: offeringData.destinationCommitteeId || null,
+      type: offeringData.type || 'OFRENDA',
+      amount: offeringData.amount,
+      description: (responsibleStr + descriptionStr).trim() || null,
+      date: offeringData.date,
       createdAt: Date.now()
     };
 
-    // Si la ofrenda va a un comité específico, sumar al saldo del comité
-    if (offeringData.destinationCommitteeId) {
-      const com = committees.find(c => c.id === offeringData.destinationCommitteeId);
-      if (com) {
-        const updatedCom = {
-          ...com,
-          balance: (com.balance || 0) + offeringData.amount,
-          updatedAt: Date.now()
-        };
-        await putRecord('committees', updatedCom);
-        await queueOfflineAction('UPDATE', 'committees', updatedCom);
-      }
-    }
+    // UI dinámicamente calcula saldos, no necesitamos alterar 'committees' en la DB
 
     await putRecord('offerings', newOffering);
     await queueOfflineAction('CREATE', 'offerings', newOffering);
     await loadAllData();
   };
 
+  const handleDeleteOffering = async (offering) => {
+    // Soft o Hard delete: Aquí usamos Hard Delete a nivel base de datos
+    await deleteRecord('offerings', offering.id);
+    await queueOfflineAction('DELETE', 'offerings', offering);
+    await loadAllData();
+  };
+
+  const handleDeleteTithe = async (tithe) => {
+    await deleteRecord('tithes', tithe.id);
+    await queueOfflineAction('DELETE', 'tithes', tithe);
+    await loadAllData();
+  };
+
   const handleCreateProject = async (projectData) => {
-    const newProject = {
-      id: `proj-${Date.now()}`,
-      congregationId: congregationId,
-      ...projectData,
-      totalRaised: 0,
-      createdAt: Date.now()
-    };
+    // Mapeo estricto al esquema de Supabase public.projects
+      const newProject = {
+        id: `proj-${Date.now()}`,
+        congregationId: congregationId,
+        name: projectData.name,
+        description: projectData.description,
+        targetAmount: projectData.targetAmount || 0,
+        totalRaised: 0,
+        startDate: projectData.startDate || null,
+        endDate: projectData.endDate || null,
+        status: projectData.status || 'ACTIVO',
+        createdAt: Date.now()
+      };
 
     await putRecord('projects', newProject);
     await queueOfflineAction('CREATE', 'projects', newProject);
@@ -375,19 +416,23 @@ export default function App() {
   };
 
   const handleAddVote = async (voteData) => {
-    const newVote = {
-      id: `v-${Date.now()}`,
-      ...voteData,
-      createdAt: Date.now()
-    };
+    // Mapeo estricto al esquema de Supabase public.votes
+      const newVote = {
+        id: `v-${Date.now()}`,
+        projectId: voteData.projectId,
+        memberName: voteData.memberName || voteData.voterName || 'Anónimo', // Asegurando el nombre correcto para la BD
+        amount: voteData.amount,
+        date: voteData.date || new Date().toISOString().slice(0, 10),
+        createdAt: Date.now()
+      };
 
     // Actualizar total recaudado del proyecto
     const proj = projects.find(p => p.id === voteData.projectId);
     if (proj) {
       const updatedProj = {
         ...proj,
-        totalRaised: (proj.totalRaised || 0) + voteData.amount,
-        updatedAt: Date.now()
+        totalRaised: (proj.totalRaised || 0) + voteData.amount
+        // updatedAt: Date.now() -> No existe en el esquema public.projects
       };
       await putRecord('projects', updatedProj);
       await queueOfflineAction('UPDATE', 'projects', updatedProj);
@@ -432,6 +477,68 @@ export default function App() {
     await loadAllData();
   };
 
+  const handleAIAction = async (action, data) => {
+    try {
+      switch (action) {
+        case 'CREATE_MOVEMENT':
+          // Buscar comité por nombre (coincidencia parcial)
+          const foundCommMov = activeCommittees.find(c => c.name.toLowerCase().includes(data.committeeName?.toLowerCase() || ''));
+          await handleAddMovement({
+            committeeId: foundCommMov ? foundCommMov.id : (activeCommittees[0]?.id || ''),
+            type: data.type,
+            amount: data.amount,
+            description: data.description,
+            date: data.date
+          });
+          break;
+        case 'CREATE_OFFERING':
+          const foundCommOff = activeCommittees.find(c => c.name.toLowerCase().includes(data.destinationCommitteeName?.toLowerCase() || ''));
+          await handleAddOffering({
+            destinationCommitteeId: foundCommOff ? foundCommOff.id : (activeCommittees[0]?.id || ''),
+            type: 'OFRENDA',
+            amount: data.amount,
+            responsible: '',
+            description: data.description,
+            date: data.date
+          });
+          break;
+        case 'CREATE_TITHE':
+          const gross = data.grossIncome;
+          const national = gross * 0.10;
+          const local = gross * 0.10;
+          const net = gross - national - local;
+          const alloc = net * 0.50;
+          await handleSaveTithe({
+            date: data.date,
+            month: data.date.substring(5, 7),
+            year: data.date.substring(0, 4),
+            grossTithe: gross,
+            nationalPercentage: 10,
+            nationalTreasury: national,
+            localFundAport: local,
+            netIncome: net,
+            pastorAllocation: alloc,
+            correctedPoint: 50,
+            pastorName: data.memberOrGroupName
+          });
+          break;
+        case 'CREATE_PROJECT':
+          await handleCreateProject({
+            name: data.name,
+            description: data.description,
+            targetAmount: data.targetAmount,
+            status: 'ACTIVO',
+            startDate: data.date,
+            endDate: null
+          });
+          break;
+      }
+    } catch (err) {
+      console.error(err);
+      throw new Error('Error ejecutando la acción de Tesorito: ' + err.message);
+    }
+  };
+
   const navItems = [
     { id: 'dashboard', label: 'Inicio', icon: Home },
     { id: 'committees', label: 'Comités', icon: Users },
@@ -444,9 +551,26 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col font-sans transition-colors">
+    <div className={`min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300 ${isLoginOpen ? 'overflow-hidden' : ''}`}>
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          className: 'dark:bg-slate-800 dark:text-white',
+          style: {
+            borderRadius: '16px',
+            background: theme.includes('dark') ? '#1e293b' : '#ffffff',
+            color: theme.includes('dark') ? '#f8fafc' : '#0f172a',
+          },
+        }}
+      />
       
-      {/* Navbar Superior */}
+      {userRole === 'ADMIN' && (
+        <TesoritoAI onAIAction={handleAIAction} />
+      )}
+
+      {!isLoginOpen && (
+        <>
+          {/* Navbar Superior */}
       <Navbar
         congregationName={congregationName}
         userRole={userRole}
@@ -464,9 +588,9 @@ export default function App() {
         onOpenReset={() => setIsResetOpen(true)}
       />
 
-      {/* Menú de Navegación por Pestañas */}
-      <nav className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-2 sticky top-[61px] z-30 shadow-xs">
-        <div className="max-w-7xl mx-auto flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
+      {/* Menú de Navegación por Pestañas (Estilo App Premium) */}
+      <nav className="bg-slate-900/80 backdrop-blur-xl border-b border-slate-800/50 px-4 py-3 sticky top-[61px] z-30">
+        <div className="max-w-7xl mx-auto flex items-center justify-start sm:justify-center gap-2 overflow-x-auto scrollbar-none">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -474,14 +598,16 @@ export default function App() {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                className={`flex flex-col items-center justify-center gap-1 min-w-[72px] py-2 px-3 rounded-2xl transition-all duration-300 ${
                   isActive
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-slate-800 text-blue-500 shadow-[0_0_15px_rgba(14,165,233,0.15)]'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                <span>{item.label}</span>
+                <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+                <span className={`text-[10px] font-medium tracking-wide ${isActive ? 'font-bold' : ''}`}>
+                  {item.label}
+                </span>
               </button>
             );
           })}
@@ -493,13 +619,15 @@ export default function App() {
         {activeTab === 'dashboard' && (
           <DashboardView
             committees={activeCommittees.filter(c => !c.isOfferingOnly)}
+            allCommittees={activeCommittees}
             movements={activeMovements}
             offerings={activeOfferings}
             userRole={userRole}
+            congregationName={congregationName}
             isMobile={isMobile}
-            onOpenMovementModal={() => setActiveTab('committees')}
-            onOpenOfferingModal={() => setActiveTab('offerings')}
             onSelectTab={setActiveTab}
+            onAddMovement={handleAddMovement}
+            onAddOffering={handleAddOffering}
           />
         )}
 
@@ -522,6 +650,7 @@ export default function App() {
             isMobile={isMobile}
             pastorName={users.find(u => u.congregationId === congregationId && u.role === 'ADMIN')?.name || 'Pastor'}
             onSaveTithe={handleSaveTithe}
+            onDeleteTithe={handleDeleteTithe}
           />
         )}
 
@@ -532,6 +661,7 @@ export default function App() {
             userRole={userRole}
             isMobile={isMobile}
             onAddOffering={handleAddOffering}
+            onDeleteOffering={handleDeleteOffering}
           />
         )}
 
@@ -589,6 +719,8 @@ export default function App() {
         <p className="font-semibold">Deborita Gestión Local - Sistema de Administración Financiera Congregacional</p>
         <p className="text-[11px] text-slate-400 mt-0.5">Soporte Offline-First con sincronización en la nube e IndexedDB local</p>
       </footer>
+        </>
+      )}
 
       {/* Modales Auxiliares */}
       <LoginModal

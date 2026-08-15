@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Building2, User, KeyRound, Save, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { hashPin, verifyPin } from '../utils/security';
 
 export default function SettingsView({
   congregationId,
@@ -33,17 +35,17 @@ export default function SettingsView({
   const [pinError, setPinError] = useState('');
   const [pinSuccess, setPinSuccess] = useState('');
 
-  const handleSaveCongregation = (e) => {
+  const handleSaveCongregation = async (e) => {
     e.preventDefault();
     if (!isAdmin) return;
-    onUpdateCongregation({
+    await onUpdateCongregation({
       name: editCongName.trim(),
       city: editCongCity.trim()
     });
-    alert('✅ Datos de la congregación actualizados correctamente.');
+    toast.success('Datos de la congregación actualizados correctamente.');
   };
 
-  const handleSaveUsers = (e) => {
+  const handleSaveUsers = async (e) => {
     e.preventDefault();
     if (!isAdmin) return;
     
@@ -51,8 +53,8 @@ export default function SettingsView({
     if (adminUser) updatedUsers.push({ ...adminUser, name: editPastorName.trim() });
     if (treasurerUser) updatedUsers.push({ ...treasurerUser, name: editTreasurerName.trim() });
     
-    onUpdateUsers(updatedUsers);
-    alert('✅ Nombres de usuarios actualizados correctamente.');
+    await onUpdateUsers(updatedUsers);
+    toast.success('Nombres de usuarios actualizados correctamente.');
   };
 
   const handleChangePin = (e) => {
@@ -61,7 +63,7 @@ export default function SettingsView({
     setPinSuccess('');
 
     // Validaciones
-    if (currentPin !== currentUser?.pin) {
+    if (!verifyPin(currentPin, currentUser?.pin)) {
       setPinError('El PIN actual es incorrecto.');
       return;
     }
@@ -78,8 +80,8 @@ export default function SettingsView({
       return;
     }
 
-    // Actualizar PIN del usuario logueado
-    onUpdateUsers([{ ...currentUser, pin: newPin }]);
+    // Actualizar PIN del usuario logueado con hash
+    onUpdateUsers([{ ...currentUser, pin: hashPin(newPin) }]);
     setPinSuccess('PIN actualizado de forma segura. Use su nuevo PIN en el próximo inicio de sesión.');
     setCurrentPin('');
     setNewPin('');

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Building2, User, ShieldCheck, X, KeyRound } from 'lucide-react';
+import { Building2, User, ShieldCheck, KeyRound } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { verifyPin } from '../utils/security';
 
 export default function LoginModal({ isOpen, onClose, onLogin, currentCongregation, currentRole, congregations = [], users = [], onCreateCongregation }) {
   // Inicializar estado con la primera congregación si no hay una actual
@@ -41,9 +43,8 @@ export default function LoginModal({ isOpen, onClose, onLogin, currentCongregati
         setNewCongregationName('');
         setNewPastorName('');
         setNewTreasurerName('');
-        // Alert of successful creation and defaults
-        alert(`Congregación creada con éxito.\nUsuarios creados con PIN 1234.`);
-      } catch (err) {
+        toast.success(`Congregación creada con éxito.\nUsuarios creados con PIN 1234.`);
+      } catch (_) {
         setError('Error al crear congregación.');
       }
       return;
@@ -57,7 +58,7 @@ export default function LoginModal({ isOpen, onClose, onLogin, currentCongregati
       return;
     }
     
-    if (user.pin !== pin) {
+    if (!verifyPin(pin, user.pin)) {
       setError('PIN incorrecto. Intente nuevamente.');
       return;
     }
@@ -78,14 +79,6 @@ export default function LoginModal({ isOpen, onClose, onLogin, currentCongregati
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
       <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative">
-        
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
         <div className="flex items-center gap-3 mb-6">
           <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center">
             <Building2 className="w-7 h-7" />
