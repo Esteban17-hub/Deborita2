@@ -547,7 +547,7 @@ export default function CommitteesView({
                 <div className="space-y-4">
                   
                   {/* Encabezado y Métricas del Filtro */}
-                  <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <div>
                       <h3 className="text-sm font-black uppercase text-slate-900 dark:text-white flex items-center gap-2">
                         <Filter className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -562,7 +562,7 @@ export default function CommitteesView({
 
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="px-3.5 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-950 dark:text-emerald-200 font-black text-xs border border-emerald-300 dark:border-emerald-800 shadow-xs">
-                        💰 Suma Aportes / Ingresos: +{formatCurrency(filteredIngresos)}
+                        💰 Ingresos: +{formatCurrency(filteredIngresos)}
                       </span>
                       <span className="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 font-bold text-xs border border-rose-200 dark:border-rose-800">
                         Egresos: -{formatCurrency(filteredEgresos)}
@@ -570,8 +570,18 @@ export default function CommitteesView({
                       <span className="px-3.5 py-1.5 rounded-xl bg-blue-100 dark:bg-blue-950/80 text-blue-950 dark:text-blue-200 font-black text-xs border border-blue-300 dark:border-blue-800 shadow-xs">
                         Neto: {formatCurrency(filteredNeto)}
                       </span>
+                    </div>
+                  </div>
 
-                      {/* Botones de Exportación: Excel, PDF, WhatsApp y Copiar Texto */}
+                  {/* BARRA DESTACADA DE EXPORTACIÓN Y COMPARTIR */}
+                  <div className="flex flex-wrap items-center justify-between gap-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800/90 dark:to-blue-950/40 p-3.5 rounded-2xl border border-blue-200/90 dark:border-blue-900/50 shadow-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black uppercase text-blue-950 dark:text-blue-200 flex items-center gap-1.5">
+                        📤 Exportar / Compartir (Orden 1 al 31):
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
                       <button
                         type="button"
                         onClick={() => {
@@ -584,8 +594,8 @@ export default function CommitteesView({
                           }));
                           exportToExcel(exportData, `Reporte_${activeCommittee.name.replace(/\s+/g, '_')}`);
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
-                        title="Descargar reporte en Excel"
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm hover:scale-105 transition-all cursor-pointer"
+                        title="Descargar reporte en Excel (.csv)"
                       >
                         <FileSpreadsheet className="w-3.5 h-3.5" />
                         <span>Excel</span>
@@ -604,8 +614,8 @@ export default function CommitteesView({
                             totals: { income: filteredIngresos, expense: filteredEgresos, net: filteredNeto }
                           });
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 font-bold text-xs border border-slate-300 dark:border-slate-700 transition-all cursor-pointer"
-                        title="Imprimir reporte / PDF"
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-black text-xs shadow-sm hover:scale-105 transition-all cursor-pointer"
+                        title="Imprimir reporte membretado / Guardar en PDF"
                       >
                         <Printer className="w-3.5 h-3.5" />
                         <span>PDF</span>
@@ -624,7 +634,7 @@ export default function CommitteesView({
                             totals: { income: filteredIngresos, expense: filteredEgresos, net: filteredNeto }
                           });
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs shadow-sm hover:scale-105 transition-all cursor-pointer"
                         title="Compartir reporte por WhatsApp"
                       >
                         <Share2 className="w-3.5 h-3.5" />
@@ -644,8 +654,8 @@ export default function CommitteesView({
                             totals: { income: filteredIngresos, expense: filteredEgresos, net: filteredNeto }
                           });
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
-                        title="Copiar o compartir resumen en texto al portapapeles"
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-sm hover:scale-105 transition-all cursor-pointer"
+                        title="Copiar resumen en texto al portapapeles"
                       >
                         <Copy className="w-3.5 h-3.5" />
                         <span>Copiar Texto</span>
@@ -659,10 +669,10 @@ export default function CommitteesView({
                             setMovSelectedType('ALL');
                             setMovSelectedStatus('ALL');
                           }}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 font-bold text-xs border border-slate-300 dark:border-slate-700 transition-all cursor-pointer"
+                          className="flex items-center gap-1 px-3 py-2 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 hover:bg-rose-200 font-bold text-xs border border-rose-300 dark:border-rose-800 transition-all cursor-pointer"
                         >
                           <X className="w-3.5 h-3.5" />
-                          <span>Limpiar</span>
+                          <span>Limpiar Filtros</span>
                         </button>
                       )}
                     </div>

@@ -533,28 +533,35 @@ export default function OfferingsView({
               <div className="bg-amber-50/30 dark:bg-amber-950/15 rounded-3xl p-6 border border-amber-200/70 dark:border-amber-900/40 shadow-sm space-y-4">
                 
                 {/* Cabecera y Resumen de Filtrado */}
-                <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-amber-200/80 dark:border-amber-900/50 shadow-sm">
                   <div>
                     <h3 className="text-sm font-black text-amber-950 dark:text-amber-200 uppercase tracking-wider flex items-center gap-2">
                       <Filter className="w-4 h-4 text-amber-600" />
-                      Registro Histórico de Ofrendas (Día 1 al 31)
+                      Registro Histórico de Ofrendas ({sortedFilteredOfferings.length} de {safeOfferings.length})
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                      Mostrando <strong className="text-amber-800 dark:text-amber-300">{sortedFilteredOfferings.length}</strong> de <strong>{safeOfferings.length}</strong> ofrendas registradas
-                      {tableMonthFilter !== 'ALL' && (
-                        <span className="ml-2 font-bold text-amber-700 dark:text-amber-400">
-                          (Mes: {monthsList.find(m => m.code === tableMonthFilter)?.name})
-                        </span>
-                      )}
-                    </p>
+                    {tableMonthFilter !== 'ALL' && (
+                      <p className="text-xs font-bold text-amber-700 dark:text-amber-400 mt-0.5">
+                        🗓️ Mes filtrado: <strong className="uppercase">{monthsList.find(m => m.code === tableMonthFilter)?.name}</strong> (Orden del día 1 al 31)
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="px-3.5 py-1.5 rounded-xl bg-amber-100 dark:bg-amber-950/80 text-amber-950 dark:text-amber-200 font-black text-xs border border-amber-300/80 dark:border-amber-800 shadow-xs">
                       💰 Suma Total: {formatCurrency(filteredTotal)}
                     </span>
+                  </div>
+                </div>
 
-                    {/* Botón Excel */}
+                {/* BARRA DESTACADA DE EXPORTACIÓN Y COMPARTIR */}
+                <div className="flex flex-wrap items-center justify-between gap-2.5 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-slate-800/90 dark:to-amber-950/40 p-3.5 rounded-2xl border border-amber-200/90 dark:border-amber-900/50 shadow-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black uppercase text-amber-950 dark:text-amber-200 flex items-center gap-1.5">
+                      📤 Exportar / Compartir (Orden 1 al 31):
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
                     <button
                       type="button"
                       onClick={() => {
@@ -571,14 +578,13 @@ export default function OfferingsView({
                         });
                         exportToExcel(exportData, 'Historial_Ofrendas');
                       }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
-                      title="Descargar reporte en Excel"
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm hover:scale-105 transition-all cursor-pointer"
+                      title="Descargar reporte en Excel (.csv)"
                     >
                       <FileSpreadsheet className="w-3.5 h-3.5" />
                       <span>Excel</span>
                     </button>
 
-                    {/* Botón PDF */}
                     <button
                       type="button"
                       onClick={() => {
@@ -591,14 +597,13 @@ export default function OfferingsView({
                           committeeMap
                         });
                       }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 font-bold text-xs border border-slate-300 dark:border-slate-700 transition-all cursor-pointer"
-                      title="Imprimir reporte / PDF"
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-black text-xs shadow-sm hover:scale-105 transition-all cursor-pointer"
+                      title="Imprimir reporte membretado / Guardar en PDF"
                     >
                       <Printer className="w-3.5 h-3.5" />
                       <span>PDF</span>
                     </button>
 
-                    {/* Botón WhatsApp */}
                     <button
                       type="button"
                       onClick={() => {
@@ -611,14 +616,13 @@ export default function OfferingsView({
                           committeeMap
                         });
                       }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs shadow-sm hover:scale-105 transition-all cursor-pointer"
                       title="Compartir reporte por WhatsApp"
                     >
                       <Share2 className="w-3.5 h-3.5" />
                       <span>WhatsApp</span>
                     </button>
 
-                    {/* Botón Copiar Texto */}
                     <button
                       type="button"
                       onClick={() => {
@@ -631,8 +635,8 @@ export default function OfferingsView({
                           committeeMap
                         });
                       }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
-                      title="Copiar o compartir resumen en texto al portapapeles"
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-sm hover:scale-105 transition-all cursor-pointer"
+                      title="Copiar resumen en texto al portapapeles"
                     >
                       <Copy className="w-3.5 h-3.5" />
                       <span>Copiar Texto</span>
@@ -646,7 +650,7 @@ export default function OfferingsView({
                           setSelectedCommittee('ALL');
                           setSelectedDay('ALL');
                         }}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 hover:bg-rose-200 font-bold text-xs border border-rose-300 dark:border-rose-800 transition-all cursor-pointer"
+                        className="flex items-center gap-1 px-3 py-2 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 hover:bg-rose-200 font-bold text-xs border border-rose-300 dark:border-rose-800 transition-all cursor-pointer"
                       >
                         <X className="w-3.5 h-3.5" />
                         <span>Limpiar Filtros</span>
