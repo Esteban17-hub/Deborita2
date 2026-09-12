@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -8,6 +10,34 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Outfit', 'Inter', sans-serif;
   }
+}
+
+/* Base Light Theme Colors & Gradients (Vibrant, high-contrast, modern SaaS style) */
+:root {
+  --bg-app: #f8fafc;
+  --bg-card: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --border-card: #e2e8f0;
+  --gradient-committees: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 50%, #60a5fa 100%);
+  --gradient-tithes: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
+  --gradient-projects: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 50%, #a78bfa 100%);
+  --gradient-reports: linear-gradient(135deg, #be123c 0%, #e11d48 50%, #f43f5e 100%);
+  --shadow-color: rgba(30, 41, 59, 0.08);
+}
+
+:root[data-theme="modern-light"] {
+  --bg-app: #f8fafc;
+  --bg-card: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --border-card: #e2e8f0;
+  --gradient-committees: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 50%, #60a5fa 100%);
+  --gradient-tithes: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
+  --gradient-projects: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 50%, #a78bfa 100%);
+  --gradient-reports: linear-gradient(135deg, #be123c 0%, #e11d48 50%, #f43f5e 100%);
+  --shadow-color: rgba(30, 41, 59, 0.08);
 }
 
 /* Ocultar barra de scroll en contenedores cuando sea necesario */

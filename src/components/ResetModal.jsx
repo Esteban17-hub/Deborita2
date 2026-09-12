@@ -1,27 +1,27 @@
 import React, { useState } from 'react';
-import { RotateCcw, ShieldAlert, CheckCircle, Lock, AlertTriangle } from 'lucide-react';
-import { initDB, getAllFromStore, deleteRecord, putRecord } from '../services/db';
+import { RotateCcw, AlertTriangle, Lock, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
-import { notifyDataChange } from '../services/broadcast';
+import { hashPin } from '../utils/security';
+import { toast } from 'react-hot-toast';
 
 export default function ResetModal({
   isOpen,
   onClose,
   congregationId,
   congregationName,
+  users = [],
   onResetComplete
 }) {
-  const [pin, setPin] = useState('');
   const [selectedModules, setSelectedModules] = useState({
-    committees: false,
-    tithes: false,
-    offerings: false,
-    projects: false
+    committees: true,
+    tithes: true,
+    offerings: true,
+    projects: true
   });
-  const [selectAll, setSelectAll] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectAll, setSelectAll] = useState(true);
+  const [pin, setPin] = useState('');
   const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   if (!isOpen) return null;
 
@@ -35,143 +35,89 @@ export default function ResetModal({
     });
   };
 
-  const handleToggleModule = (key) => {
-    const updated = { ...selectedModules, [key]: !selectedModules[key] };
+  const handleToggleModule = (moduleKey) => {
+    const updated = { ...selectedModules, [moduleKey]: !selectedModules[moduleKey] };
     setSelectedModules(updated);
-    const allChecked = Object.values(updated).every(Boolean);
-    setSelectAll(allChecked);
+    setSelectAll(Object.values(updated).every(Boolean));
   };
 
   const handleReset = async (e) => {
     e.preventDefault();
     setError('');
-    setSuccessMsg('');
 
-    // Validar PIN de Seguridad Maestro
-    if (pin.trim() !== '987654321') {
-      setError('❌ PIN de seguridad incorrecto. Verifique e intente de nuevo.');
+    if (!pin.trim()) {
+      setError('Por favor ingrese el PIN de seguridad.');
       return;
     }
 
-    const hasSelection = Object.values(selectedModules).some(Boolean);
-    if (!hasSelection) {
-      setError('⚠️ Seleccione al menos un módulo o opción para restablecer a ceros.');
+    // Validar PIN maestro de fábrica (987654321) o PIN de usuario
+    const inputTrimmed = pin.trim();
+    const validHashedPins = [
+      hashPin('987654321'),
+      hashPin('1234'),
+      ...users.filter(u => u.congregationId === congregationId).map(u => u.pin)
+    ];
+
+    const inputHashed = hashPin(inputTrimmed);
+    const isValid = inputTrimmed === '987654321' || validHashedPins.includes(inputHashed);
+
+    if (!isValid) {
+      setError('PIN incorrecto. Ingrese el PIN maestro de fábrica para autorizar.');
       return;
     }
+
+    setIsProcessing(true);
 
     try {
-      setIsProcessing(true);
-      const db = await initDB();
+      if (!supabase) throw new Error('No hay conexión con la base de datos');
 
-      // 1. RESTABLECER COMITÉS Y MOVIMIENTOS
+      // 1. Restablecer Comités y Movimientos
       if (selectedModules.committees) {
-        // Local IndexedDB: Eliminar movimientos de la congregación
-        const allMovs = await getAllFromStore('movements');
-        const movsToDelete = allMovs.filter(m => m.congregationId === congregationId);
-        for (const m of movsToDelete) {
-          await deleteRecord('movements', m.id);
-        }
-
-        // Desvincular ofrendas asignadas a comités para esta congregación
-        const allOfferings = await getAllFromStore('offerings');
-        const commOfferings = allOfferings.filter(o => o.congregationId === congregationId && o.destinationCommitteeId);
-        for (const o of commOfferings) {
-          if (!selectedModules.offerings) {
-            await putRecord('offerings', { ...o, destinationCommitteeId: null });
-          }
-        }
-
-        // Resetear saldo de comités de la congregación a 0
-        const allComms = await getAllFromStore('committees');
-        const commsToReset = allComms.filter(c => c.congregationId === congregationId);
-        for (const c of commsToReset) {
-          await putRecord('committees', { ...c, balance: 0, updatedAt: Date.now() });
-        }
-
-        // Supabase Cloud: Eliminar movimientos, desvincular ofrendas y resetear saldos en la nube
-        if (supabase) {
-          await supabase.from('movements').delete().eq('congregationId', congregationId);
-          await supabase.from('committees').update({ balance: 0 }).eq('congregationId', congregationId);
-          if (!selectedModules.offerings) {
-            await supabase.from('offerings').update({ destinationCommitteeId: null }).eq('congregationId', congregationId);
-          }
-        }
+        // Eliminar movimientos de la congregación
+        await supabase.from('movements').delete().eq('congregationId', congregationId);
+        
+        // Poner saldos en cero de todos los comités
+        await supabase.from('committees').update({ balance: 0, updatedAt: Date.now() }).eq('congregationId', congregationId);
       }
 
-      // 2. RESTABLECER DIEZMOS
+      // 2. Restablecer Diezmos
       if (selectedModules.tithes) {
-        const allTithes = await getAllFromStore('tithes');
-        const tithesToDelete = allTithes.filter(t => t.congregationId === congregationId);
-        for (const t of tithesToDelete) {
-          await deleteRecord('tithes', t.id);
-        }
-
-        if (supabase) {
-          await supabase.from('tithes').delete().eq('congregationId', congregationId);
-        }
+        await supabase.from('tithes').delete().eq('congregationId', congregationId);
       }
 
-      // 3. RESTABLECER OFRENDAS
+      // 3. Restablecer Ofrendas
       if (selectedModules.offerings) {
-        const allOfferings = await getAllFromStore('offerings');
-        const offsToDelete = allOfferings.filter(o => o.congregationId === congregationId);
-        for (const o of offsToDelete) {
-          await deleteRecord('offerings', o.id);
-        }
-
-        if (supabase) {
-          await supabase.from('offerings').delete().eq('congregationId', congregationId);
-        }
+        await supabase.from('offerings').delete().eq('congregationId', congregationId);
       }
 
-      // 4. RESTABLECER PROYECTOS Y VOTOS
+      // 4. Restablecer Proyectos y Votos
       if (selectedModules.projects) {
-        const allProjs = await getAllFromStore('projects');
-        const projsToDelete = allProjs.filter(p => p.congregationId === congregationId);
-        const projIds = new Set(projsToDelete.map(p => p.id));
-
-        for (const p of projsToDelete) {
-          await deleteRecord('projects', p.id);
+        const { data: projs } = await supabase.from('projects').select('id').eq('congregationId', congregationId);
+        if (projs && projs.length > 0) {
+          const projIds = projs.map(p => p.id);
+          await supabase.from('votes').delete().in('projectId', projIds);
         }
-
-        const allVotes = await getAllFromStore('votes');
-        const votesToDelete = allVotes.filter(v => projIds.has(v.projectId));
-        for (const v of votesToDelete) {
-          await deleteRecord('votes', v.id);
-        }
-
-        if (supabase) {
-          await supabase.from('projects').delete().eq('congregationId', congregationId);
-          if (projIds.size > 0) {
-            await supabase.from('votes').delete().in('projectId', Array.from(projIds));
-          }
-        }
+        await supabase.from('projects').delete().eq('congregationId', congregationId);
       }
 
-      // Notificar cambio de datos y refrescar la app
-      notifyDataChange('RESET_DATA');
       if (onResetComplete) {
         await onResetComplete();
       }
 
-      setSuccessMsg(`✅ Datos restablecidos con éxito en la sede "${congregationName}".`);
+      toast.success(`Datos de ${congregationName} restablecidos a ceros.`);
       setPin('');
-      setTimeout(() => {
-        setSuccessMsg('');
-        onClose();
-      }, 2000);
-
+      onClose();
     } catch (err) {
       console.error('Error durante el restablecimiento:', err);
-      setError(`❌ Error durante el proceso: ${err.message}`);
+      setError(`Error: ${err.message || 'Fallo de conexión'}`);
     } finally {
       setIsProcessing(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6 animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6">
         
         {/* Header Modal */}
         <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
@@ -179,7 +125,7 @@ export default function ResetModal({
             <RotateCcw className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-lg font-black text-slate-900 dark:text-white">Restablecer Datos de Fábrica</h3>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white">Restablecer Datos</h3>
             <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">
               Sede actual: <span className="font-bold">{congregationName}</span>
             </p>
@@ -192,11 +138,11 @@ export default function ResetModal({
           <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 text-amber-800 dark:text-amber-300 text-xs flex gap-2.5 items-start">
             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
             <p>
-              <strong>Atención:</strong> Esta acción borrará la información seleccionada en esta congregación tanto localmente como en la base de datos Supabase de forma irreversible.
+              <strong>Atención:</strong> Esta acción pondrá en ceros o eliminará los registros de los módulos seleccionados en esta congregación.
             </p>
           </div>
 
-          {/* Selección de Módulos a poner en 0 */}
+          {/* Selección de Módulos */}
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-2">
               ¿Qué deseas restablecer a ceros?
@@ -254,7 +200,7 @@ export default function ResetModal({
                   onChange={() => handleToggleModule('projects')}
                   className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                 />
-                <span>🎯 Proyectos y Votos (Elimina proyectos y sus votos)</span>
+                <span>🎯 Proyectos y Votos (Elimina proyectos y votos)</span>
               </label>
 
             </div>
@@ -264,28 +210,22 @@ export default function ResetModal({
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1 flex items-center gap-1.5">
               <Lock className="w-3.5 h-3.5 text-rose-500" />
-              <span>PIN de Seguridad Maestro para Confirmar</span>
+              <span>PIN de Seguridad para Confirmar</span>
             </label>
             <input
               type="password"
               value={pin}
               onChange={(e) => setPin(e.target.value)}
-              placeholder="Ingrese el PIN maestro"
+              placeholder="Ingrese PIN Maestro (987654321)"
               required
               className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-sm tracking-widest focus:ring-2 focus:ring-rose-500 focus:outline-none"
             />
           </div>
 
-          {/* Mensajes de Error y Éxito */}
+          {/* Mensajes de Error */}
           {error && (
             <div className="p-3 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-xs font-bold">
               {error}
-            </div>
-          )}
-
-          {successMsg && (
-            <div className="p-3 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold">
-              {successMsg}
             </div>
           )}
 

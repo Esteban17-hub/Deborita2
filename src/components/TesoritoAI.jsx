@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Bot, X, Send, Image as ImageIcon, CheckCircle2, AlertTriangle, Settings, Loader2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Bot, X, Send, Image as ImageIcon, CheckCircle2, AlertTriangle, Settings, Loader2, Mic, MicOff } from 'lucide-react';
 import { processWithTesorito } from '../services/aiEngine';
 import { toast } from 'react-hot-toast';
 
@@ -12,8 +12,70 @@ export default function TesoritoAI({ onAIAction }) {
   const [pendingConfirmation, setPendingConfirmation] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [apiKey, setApiKey] = useState(localStorage.getItem('deborita_gemini_key') || '');
+  const [isListening, setIsListening] = useState(false);
   
   const fileInputRef = useRef(null);
+  const recognitionRef = useRef(null);
+
+  // Inicializar Web Speech API para dictado por voz
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'es-CO'; // Español
+
+      recognition.onresult = (event) => {
+        let currentTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          currentTranscript += event.results[i][0].transcript;
+        }
+        if (currentTranscript.trim()) {
+          setText(prev => {
+            const separator = prev && !prev.endsWith(' ') ? ' ' : '';
+            return prev + separator + currentTranscript;
+          });
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        if (event.error !== 'no-speech') {
+          toast.error(`Error en dictado: ${event.error}`);
+        }
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+    }
+  }, []);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      toast.error('Tu navegador no soporta dictado por voz. Usa Google Chrome o Edge.');
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+      toast.success('Dictado pausado.');
+    } else {
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+        toast.success('Escuchando... Dicta tu instrucción contable.');
+      } catch (err) {
+        console.error('Error starting recognition:', err);
+        setIsListening(false);
+      }
+    }
+  };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -36,8 +98,9 @@ export default function TesoritoAI({ onAIAction }) {
   };
 
   const handleSaveSettings = () => {
-    if (apiKey.trim()) {
-      localStorage.setItem('deborita_gemini_key', apiKey.trim());
+    const cleanKey = apiKey.trim();
+    if (cleanKey) {
+      localStorage.setItem('deborita_gemini_key', cleanKey);
       toast.success('Clave API guardada exitosamente.');
       setShowSettings(false);
     } else {
@@ -132,15 +195,15 @@ export default function TesoritoAI({ onAIAction }) {
             <div className="space-y-4">
               <h4 className="font-bold text-slate-800 dark:text-white">Configuración de Inteligencia Artificial</h4>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Tesorito requiere una clave de Google Gemini (gemini-1.5-flash). Puedes configurarla aquí de manera local para este dispositivo.
+                Tesorito funciona con claves API de <strong>Groq</strong> (ej. <code>gsk_...</code>) o <strong>Google Gemini</strong> (ej. <code>AIzaSy...</code>).
               </p>
               <div>
-                <label className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1 block">API Key de Gemini</label>
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1 block">Clave API (Groq o Gemini)</label>
                 <input
-                  type="password"
+                  type="text"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="AIzaSy..."
+                  placeholder="gsk_... o AIzaSy..."
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 outline-none"
                 />
               </div>
@@ -224,12 +287,36 @@ export default function TesoritoAI({ onAIAction }) {
                   className="hidden"
                 />
                 <button
+                  type="button"
                   onClick={() => fileInputRef.current?.click()}
                   className="p-3 text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 rounded-xl transition-colors flex items-center justify-center gap-2"
                   title="Subir Imagen/Recibo"
                 >
                   <ImageIcon className="w-5 h-5" />
-                  <span className="text-sm font-medium">Foto</span>
+                  <span className="text-sm font-medium hidden sm:inline">Foto</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={toggleListening}
+                  className={`p-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                    isListening
+                      ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/40 ring-2 ring-red-400'
+                      : 'text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400'
+                  }`}
+                  title={isListening ? 'Detener dictado' : 'Dictar por voz'}
+                >
+                  {isListening ? (
+                    <>
+                      <MicOff className="w-5 h-5" />
+                      <span className="text-sm font-bold">Escuchando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="w-5 h-5" />
+                      <span className="text-sm font-medium hidden sm:inline">Dictar</span>
+                    </>
+                  )}
                 </button>
                 
                 <button

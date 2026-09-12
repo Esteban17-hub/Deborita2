@@ -1,24 +1,34 @@
 import React, { useState } from 'react';
-import { Building2, User, ShieldCheck, KeyRound } from 'lucide-react';
+import { Building2, User, ShieldCheck, KeyRound, Crown, Lock, ShieldAlert } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { verifyPin } from '../utils/security';
 
-export default function LoginModal({ isOpen, onClose, onLogin, currentCongregation, currentRole, congregations = [], users = [], onCreateCongregation }) {
-  // Inicializar estado con la primera congregación si no hay una actual
+export default function LoginModal({ 
+  isOpen, 
+  onClose, 
+  onLogin, 
+  currentCongregation, 
+  currentRole, 
+  congregations = [], 
+  users = [] 
+}) {
   const defaultCongId = congregations.find(c => c.name === currentCongregation)?.id || (congregations.length > 0 ? congregations[0].id : '');
   
+  // Modo de Login: 'congregational' o 'superadmin'
+  const [loginMode, setLoginMode] = useState('congregational');
+  
+  // Estados para Acceso Congregacional
   const [congregationId, setCongregationId] = useState(defaultCongId);
   const [role, setRole] = useState(currentRole || 'TESORERO');
   const [pin, setPin] = useState('');
+  
+  // Estados para Acceso SuperAdmin
+  const [superAdminPin, setSuperAdminPin] = useState('');
+  
   const [error, setError] = useState('');
   const [remember, setRemember] = useState(true);
-  
-  const [isCreating, setIsCreating] = useState(false);
-  const [newCongregationName, setNewCongregationName] = useState('');
-  const [newPastorName, setNewPastorName] = useState('');
-  const [newTreasurerName, setNewTreasurerName] = useState('');
 
-  // Sincronizar el select cuando las congregaciones cargan
+  // Sincronizar select cuando cargan las congregaciones
   React.useEffect(() => {
     if (!congregationId && congregations.length > 0) {
       setCongregationId(congregations[0].id);
@@ -31,30 +41,36 @@ export default function LoginModal({ isOpen, onClose, onLogin, currentCongregati
     e.preventDefault();
     setError('');
 
-    if (isCreating) {
-      if (!newCongregationName.trim()) {
-        setError('El nombre de la congregación es obligatorio.');
+    // --- ACCESO SUPERADMIN ---
+    if (loginMode === 'superadmin') {
+      const superUser = users.find(u => u.role === 'SUPERADMIN');
+      if (!superUser) {
+        setError('El usuario SuperAdmin aún no se ha inicializado en la base de datos.');
         return;
       }
-      try {
-        const newId = await onCreateCongregation(newCongregationName.trim(), newPastorName.trim(), newTreasurerName.trim());
-        setCongregationId(newId);
-        setIsCreating(false);
-        setNewCongregationName('');
-        setNewPastorName('');
-        setNewTreasurerName('');
-        toast.success(`Congregación creada con éxito.\nUsuarios creados con PIN 1234.`);
-      } catch (_) {
-        setError('Error al crear congregación.');
+
+      if (!verifyPin(superAdminPin, superUser.pin)) {
+        setError('PIN de SuperAdmin incorrecto.');
+        return;
       }
+
+      onLogin({
+        congregation: 'Panel General',
+        congregationId: congregations[0]?.id || 'global',
+        username: superUser.name || 'SuperAdmin',
+        role: 'SUPERADMIN',
+        remember: remember
+      });
+      setSuperAdminPin('');
+      onClose();
       return;
     }
 
-    // Validar en la lista de usuarios
+    // --- ACCESO CONGREGACIONAL REGULAR ---
     const user = users.find(u => u.congregationId === congregationId && u.role === role);
     
     if (!user) {
-      setError('Rol no encontrado para esta congregación.');
+      setError('No se encontró un usuario con este rol para la congregación seleccionada.');
       return;
     }
     
@@ -66,120 +82,148 @@ export default function LoginModal({ isOpen, onClose, onLogin, currentCongregati
     const selectedCongregation = congregations.find(c => c.id === congregationId);
     
     onLogin({ 
-      congregation: selectedCongregation.name,
-      congregationId: selectedCongregation.id, 
+      congregation: selectedCongregation ? selectedCongregation.name : 'Mi Congregación',
+      congregationId: congregationId, 
       username: user.name, 
       role: user.role,
       remember: remember
     });
-    setPin(''); // limpiar por seguridad
+    setPin('');
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center">
-            <Building2 className="w-7 h-7" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md animate-fade-in">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-200 dark:border-slate-800 relative space-y-5">
+        
+        {/* Encabezado */}
+        <div className="flex items-center gap-3">
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-md ${
+            loginMode === 'superadmin'
+              ? 'bg-gradient-to-br from-indigo-600 to-purple-700 text-white shadow-indigo-500/25'
+              : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-blue-500/25'
+          }`}>
+            {loginMode === 'superadmin' ? (
+              <Crown className="w-6 h-6 text-amber-300 animate-pulse" />
+            ) : (
+              <Building2 className="w-6 h-6 text-white" />
+            )}
           </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Acceso al Sistema</h2>
-            <p className="text-xs text-slate-500">Gestión Ejecutiva de Comités</p>
+            <h2 className="text-xl font-black text-slate-900 dark:text-white">
+              {loginMode === 'superadmin' ? 'Acceso SuperAdmin' : 'Acceso al Sistema'}
+            </h2>
+            <p className="text-xs text-slate-500 font-medium">
+              {loginMode === 'superadmin' ? 'Panel de Control Maestro' : 'Gestión Contable Congregacional'}
+            </p>
           </div>
+        </div>
+
+        {/* Selector de Pestaña de Acceso: Congregacional vs SuperAdmin */}
+        <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl">
+          <button
+            type="button"
+            onClick={() => { setLoginMode('congregational'); setError(''); }}
+            className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              loginMode === 'congregational'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-black'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Sede Local</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setLoginMode('superadmin'); setError(''); }}
+            className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              loginMode === 'superadmin'
+                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-sm font-black'
+                : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'
+            }`}
+          >
+            <Crown className="w-3.5 h-3.5 text-amber-300" />
+            <span>SuperAdmin</span>
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          {isCreating ? (
-            // --- VISTA: CREAR NUEVA CONGREGACIÓN ---
+          {loginMode === 'superadmin' ? (
+            // --- VISTA: ACCESO SUPERADMIN ---
             <div className="space-y-4 animate-fade-in">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                  Nombre de la Nueva Congregación
-                </label>
-                <div className="relative">
-                  <Building2 className="w-5 h-5 absolute left-3.5 top-3 text-slate-400" />
-                  <input
-                    type="text"
-                    value={newCongregationName}
-                    onChange={(e) => setNewCongregationName(e.target.value)}
-                    required
-                    placeholder="Ej. Zuluaga-Central D21"
-                    className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
+              <div className="p-4 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/50 space-y-2">
+                <div className="flex items-center gap-2 text-indigo-950 dark:text-indigo-200 font-bold text-xs">
+                  <ShieldAlert className="w-4 h-4 text-indigo-600" />
+                  <span>Usuario Maestro: <strong>SuperAdmin</strong></span>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                  Nombre del Pastor
-                </label>
-                <div className="relative">
-                  <ShieldCheck className="w-5 h-5 absolute left-3.5 top-3 text-slate-400" />
-                  <input
-                    type="text"
-                    value={newPastorName}
-                    onChange={(e) => setNewPastorName(e.target.value)}
-                    required
-                    placeholder="Ej. Ever Bustos Ramirez"
-                    className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                  Nombre del Tesorero(a)
-                </label>
-                <div className="relative">
-                  <User className="w-5 h-5 absolute left-3.5 top-3 text-slate-400" />
-                  <input
-                    type="text"
-                    value={newTreasurerName}
-                    onChange={(e) => setNewTreasurerName(e.target.value)}
-                    required
-                    placeholder="Ej. Nubia Castro"
-                    className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-                <p className="mt-2 text-[10px] text-slate-500">
-                  Se inicializarán los 11 comités por defecto y 3 usuarios base (Pastor, Tesorero, Visita) con PIN 1234.
+                <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                  Acceso con privilegios de creación, autorización de sedes y gestión de usuarios.
                 </p>
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  PIN de Acceso SuperAdmin
+                </label>
+                <div className="relative">
+                  <KeyRound className="w-5 h-5 absolute left-3.5 top-3 text-slate-400" />
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    value={superAdminPin}
+                    onChange={(e) => setSuperAdminPin(e.target.value.replace(/[^0-9]/g, ''))}
+                    required
+                    autoFocus
+                    placeholder="Ingrese su PIN de seguridad"
+                    className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono font-bold text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+              </div>
+
               {error && (
-                <p className="text-red-600 text-sm font-semibold">{error}</p>
+                <p className="text-red-600 text-xs font-bold bg-red-50 dark:bg-red-950/40 p-2 rounded-xl border border-red-200 dark:border-red-900">
+                  {error}
+                </p>
               )}
+
+              <div className="flex items-center gap-2 mt-2">
+                <input
+                  type="checkbox"
+                  id="remember-super"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <label htmlFor="remember-super" className="text-xs font-semibold text-slate-600 dark:text-slate-400 cursor-pointer">
+                  Recordar sesión de SuperAdmin
+                </label>
+              </div>
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-500/25 transition-all"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black text-sm shadow-xl shadow-indigo-500/25 transition-all cursor-pointer mt-2"
               >
-                Crear e Inicializar Congregación
-              </button>
-
-              <button
-                type="button"
-                onClick={() => { setIsCreating(false); setError(''); }}
-                className="w-full py-2 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors"
-              >
-                Volver al Acceso
+                Entrar al Panel de Administración
               </button>
             </div>
           ) : (
-            // --- VISTA: ACCESO EXISTENTE ---
+            // --- VISTA: ACCESO CONGREGACIONAL REGULAR ---
             <div className="space-y-4 animate-fade-in">
+              
               {/* 1. Selector de Congregación */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                  Congregación
+                  🏛️ Congregación
                 </label>
                 <select
                   value={congregationId}
                   onChange={(e) => setCongregationId(e.target.value)}
                   required
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
                 >
                   {congregations.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
@@ -190,15 +234,15 @@ export default function LoginModal({ isOpen, onClose, onLogin, currentCongregati
               {/* 2. Rol de Acceso */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                  Rol de Acceso / Usuario
+                  👤 Rol de Acceso / Usuario
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setRole('ADMIN')}
-                    className={`p-3 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 ${
+                    className={`p-3 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
                       role === 'ADMIN'
-                        ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-500/20'
+                        ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-500/20 font-black'
                         : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                     }`}
                   >
@@ -209,9 +253,9 @@ export default function LoginModal({ isOpen, onClose, onLogin, currentCongregati
                   <button
                     type="button"
                     onClick={() => setRole('TESORERO')}
-                    className={`p-3 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 ${
+                    className={`p-3 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
                       role === 'TESORERO'
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-500/20'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-500/20 font-black'
                         : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                     }`}
                   >
@@ -222,9 +266,9 @@ export default function LoginModal({ isOpen, onClose, onLogin, currentCongregati
                   <button
                     type="button"
                     onClick={() => setRole('VISITA')}
-                    className={`p-3 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 ${
+                    className={`p-3 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
                       role === 'VISITA'
-                        ? 'bg-amber-600 text-white border-amber-600 shadow-md shadow-amber-500/20'
+                        ? 'bg-amber-600 text-white border-amber-600 shadow-md shadow-amber-500/20 font-black'
                         : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                     }`}
                   >
@@ -237,7 +281,7 @@ export default function LoginModal({ isOpen, onClose, onLogin, currentCongregati
               {/* 3. PIN de Seguridad */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                  PIN de Acceso
+                  🔑 PIN de Acceso
                 </label>
                 <div className="relative">
                   <KeyRound className="w-5 h-5 absolute left-3.5 top-3 text-slate-400" />
@@ -250,13 +294,15 @@ export default function LoginModal({ isOpen, onClose, onLogin, currentCongregati
                     onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ''))}
                     required
                     placeholder="Ingrese su PIN numérico"
-                    className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono font-bold text-xs focus:ring-2 focus:ring-blue-500 outline-none"
                   />
                 </div>
               </div>
 
               {error && (
-                <p className="text-red-600 text-sm font-semibold">{error}</p>
+                <p className="text-red-600 text-xs font-bold bg-red-50 dark:bg-red-950/40 p-2 rounded-xl border border-red-200 dark:border-red-900">
+                  {error}
+                </p>
               )}
 
               {role === 'VISITA' && (
@@ -280,23 +326,13 @@ export default function LoginModal({ isOpen, onClose, onLogin, currentCongregati
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-500/25 transition-all mt-4"
+                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-sm shadow-lg shadow-blue-500/25 transition-all cursor-pointer mt-2"
               >
-                Ingresar a la Congregación
+                Ingresar a la Sede
               </button>
-              
-              <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 text-center">
-                <p className="text-xs text-slate-500 mb-2">¿Necesita configurar una nueva sede?</p>
-                <button
-                  type="button"
-                  onClick={() => { setIsCreating(true); setError(''); }}
-                  className="text-xs font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors underline"
-                >
-                  Crear Nueva Congregación
-                </button>
-              </div>
             </div>
           )}
+
         </form>
 
       </div>

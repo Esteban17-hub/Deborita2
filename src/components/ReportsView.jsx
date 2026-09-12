@@ -74,13 +74,17 @@ export default function ReportsView({
 
     filteredData = tithes
       .filter(t => {
-        if (selectedYear !== 'ALL' && t.year !== selectedYear) return false;
+        if (selectedYear !== 'ALL' && String(t.year) !== String(selectedYear)) return false;
         return true;
       })
       .map(t => ({
         ...t,
         period: `${t.month}/${t.year}`,
-        points: `${t.pastorAllocationPercentage || 0} pts`
+        grossIncome: t.grossTithe ?? t.grossIncome ?? 0,
+        nationalShare: t.nationalTreasury ?? t.nationalShare ?? 0,
+        netIncome: t.netIncome ?? 0,
+        points: `${t.correctedPoint ?? t.pastorAllocationPercentage ?? 0} pts`,
+        pastorAllocation: t.pastorAllocation ?? 0
       }));
 
     totals = {
@@ -96,6 +100,7 @@ export default function ReportsView({
       { header: 'Día', key: 'dayOfWeek' },
       { header: 'Comité Destino', key: 'committeeName' },
       { header: 'Responsable', key: 'responsible' },
+      { header: 'Observaciones', key: 'observation' },
       { header: 'Monto Ofrendado', key: 'amount', isCurrency: true }
     ];
 
@@ -111,11 +116,14 @@ export default function ReportsView({
       })
       .map(o => {
         const com = committees.find(c => c.id === o.destinationCommitteeId);
+        const obs = (o.notes || o.description || '').replace(/^\[|\]$/g, '').trim();
         return {
           ...o,
           formattedDate: formatDate(o.date),
           dayOfWeek: o.dayOfWeek || deduceDayOfWeek(o.date),
-          committeeName: com ? com.name : 'General'
+          committeeName: com ? com.name : 'General',
+          responsible: o.responsible || 'Tesorero General',
+          observation: obs || '-'
         };
       });
 
@@ -139,7 +147,7 @@ export default function ReportsView({
       TITHES: 'Liquidacion_Diezmos',
       OFFERINGS: 'Ofrendas_Locales'
     };
-    exportToExcel(titlesMap[reportType], columns, filteredData, totals);
+    exportToExcel(titlesMap[reportType], columns, filteredData, totals, congregationName);
   };
 
   return (
@@ -251,48 +259,118 @@ export default function ReportsView({
         </div>
       </div>
 
-      {/* Vista Previa de la Tabla con Fila Final de Totales Obligatoria */}
+      {/* Vista Previa de la Tabla con Fila Final de Totales Obligatoria y Alto Contraste */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
-        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">Vista Previa del Reporte ({filteredData.length} registros)</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
+            Vista Previa del Reporte <span className="text-blue-600 dark:text-blue-400">({filteredData.length} registros)</span>
+          </h3>
+        </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+          <table className="w-full text-left text-xs whitespace-nowrap">
             <thead>
-              <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold uppercase">
+              <tr className="bg-slate-100 dark:bg-slate-800/90 border-b-2 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-black uppercase text-[11px] tracking-wider">
                 {columns.map((col, idx) => (
-                  <th key={idx} className={`pb-3 ${col.isCurrency ? 'text-right' : ''}`}>
+                  <th key={idx} className={`py-3.5 px-4 ${col.isCurrency ? 'text-right' : col.key === 'status' || col.key === 'type' ? 'text-center' : ''}`}>
                     {col.header}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {filteredData.map((row, rowIdx) => (
-                <tr key={rowIdx}>
-                  {columns.map((col, colIdx) => (
-                    <td key={colIdx} className={`py-3 ${col.isCurrency ? 'text-right font-bold' : 'font-medium'}`}>
-                      {col.isCurrency ? formatCurrency(row[col.key]) : (row[col.key] ?? '-')}
-                    </td>
-                  ))}
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
+              {filteredData.length === 0 ? (
+                <tr>
+                  <td colSpan={columns.length} className="text-center py-8 text-slate-400 font-medium">
+                    No hay registros para los filtros seleccionados.
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                filteredData.map((row, rowIdx) => (
+                  <tr key={rowIdx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    {columns.map((col, colIdx) => {
+                      const val = row[col.key];
+
+                      if (col.key === 'status') {
+                        return (
+                          <td key={colIdx} className="py-3.5 px-4 text-center">
+                            {val === 'Anulado' ? (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-black bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                                Anulado
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-black bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800">
+                                Activo
+                              </span>
+                            )}
+                          </td>
+                        );
+                      }
+
+                      if (col.key === 'type') {
+                        return (
+                          <td key={colIdx} className="py-3.5 px-4 text-center">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-black ${
+                              val === 'INGRESO'
+                                ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                                : 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
+                            }`}>
+                              {val}
+                            </span>
+                          </td>
+                        );
+                      }
+
+                      if (col.key === 'observation') {
+                        return (
+                          <td key={colIdx} className="py-3.5 px-4">
+                            {val && val !== '-' ? (
+                              <span className="inline-block px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 font-black text-[11px]">
+                                {val}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 font-normal italic">—</span>
+                            )}
+                          </td>
+                        );
+                      }
+
+                      if (col.isCurrency) {
+                        return (
+                          <td key={colIdx} className="py-3.5 px-4 text-right font-black text-slate-900 dark:text-white text-sm">
+                            {formatCurrency(val)}
+                          </td>
+                        );
+                      }
+
+                      return (
+                        <td key={colIdx} className="py-3.5 px-4 font-bold text-slate-800 dark:text-slate-200">
+                          {val ?? '-'}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))
+              )}
 
               {/* FILA OBLIGATORIA DE SUMATORIA TOTAL */}
-              <tr className="bg-indigo-50 dark:bg-indigo-950/60 font-black text-indigo-950 dark:text-indigo-200 border-t-2 border-indigo-300 dark:border-indigo-800">
-                {columns.map((col, colIdx) => {
-                  if (colIdx === 0) {
-                    return <td key={colIdx} className="py-4">TOTAL GENERAL</td>;
-                  }
-                  if (col.isCurrency && totals[col.key] !== undefined) {
-                    return (
-                      <td key={colIdx} className="py-4 text-right text-sm">
-                        {formatCurrency(totals[col.key])}
-                      </td>
-                    );
-                  }
-                  return <td key={colIdx} className="py-4">-</td>;
-                })}
-              </tr>
+              {filteredData.length > 0 && (
+                <tr className="bg-blue-50 dark:bg-blue-950/70 font-black text-blue-950 dark:text-blue-100 border-t-2 border-blue-300 dark:border-blue-700">
+                  {columns.map((col, colIdx) => {
+                    if (colIdx === 0) {
+                      return <td key={colIdx} className="py-4 px-4 text-xs font-black tracking-wider uppercase">TOTAL GENERAL</td>;
+                    }
+                    if (col.isCurrency && totals[col.key] !== undefined) {
+                      return (
+                        <td key={colIdx} className="py-4 px-4 text-right text-sm font-black">
+                          {formatCurrency(totals[col.key])}
+                        </td>
+                      );
+                    }
+                    return <td key={colIdx} className="py-4 px-4 text-center">-</td>;
+                  })}
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

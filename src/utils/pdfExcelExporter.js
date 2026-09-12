@@ -1,50 +1,72 @@
 
+import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency } from './formatters';
 
-export function exportToExcel(reportTitle, columns, data, totals) {
-  let csvContent = "";
-  
-  // Headers
-  const headers = columns.map(c => `"${c.header}"`).join(",");
-  csvContent += headers + "\n";
+export function exportToExcel(reportTitle, columns, data, totals, congregationName = 'Deborita Gestión Local') {
+  // 1. Preparar las filas estructuradas para la hoja de Excel
+  const wsData = [];
 
-  // Rows
-  const rows = data.map((item) => {
-    return columns.map((col) => {
-      let val = item[col.key];
+  // Encabezados institucionales
+  wsData.push([congregationName || 'Deborita Gestión Local']);
+  wsData.push([`Informe: ${reportTitle}`]);
+  wsData.push([`Fecha de Generación: ${new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}`]);
+  wsData.push([]); // Fila en blanco
+
+  // Fila de encabezados de columna
+  const headerRow = columns.map(c => c.header);
+  wsData.push(headerRow);
+
+  // Filas de datos
+  data.forEach((item) => {
+    const row = columns.map((col) => {
+      const val = item[col.key];
       if (col.isCurrency) {
-        val = formatCurrency(val);
+        if (typeof val === 'number') return val;
+        const parsed = parseFloat(String(val).replace(/[^0-9.-]+/g, ''));
+        return isNaN(parsed) ? 0 : parsed;
       }
-      return `"${(val ?? '').toString().replace(/"/g, '""')}"`;
-    }).join(",");
+      return val ?? '-';
+    });
+    wsData.push(row);
   });
 
-  csvContent += rows.join("\n") + "\n";
-
-  // Totals
+  // Fila de Totales
   if (totals) {
-    const totalsRow = columns.map((col, index) => {
-      if (index === 0) return '"TOTAL GENERAL"';
+    const totalRow = columns.map((col, index) => {
+      if (index === 0) return 'TOTAL GENERAL';
       if (col.isCurrency && totals[col.key] !== undefined) {
-        return `"${formatCurrency(totals[col.key])}"`;
+        const tVal = totals[col.key];
+        return typeof tVal === 'number' ? tVal : (parseFloat(String(tVal).replace(/[^0-9.-]+/g, '')) || 0);
       }
-      return '"-"';
-    }).join(",");
-    csvContent += totalsRow + "\n";
+      return '';
+    });
+    wsData.push(totalRow);
   }
 
-  // Trigger download (BOM for UTF-8 Excel compatibility)
-  const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.setAttribute("href", url);
-  const fileName = `${reportTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`;
-  link.setAttribute("download", fileName);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  // 2. Crear la hoja de trabajo a partir del arreglo de datos
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // 3. Configurar anchos automáticos de columnas (Auto-fit Columns)
+  const colWidths = columns.map((col, cIdx) => {
+    let maxLen = col.header.length;
+    data.forEach(item => {
+      const cellVal = String(item[col.key] ?? '');
+      if (cellVal.length > maxLen) maxLen = cellVal.length;
+    });
+    return { wch: Math.max(maxLen + 4, 14) };
+  });
+  ws['!cols'] = colWidths;
+
+  // 4. Crear el Libro de Trabajo (Workbook)
+  const wb = XLSX.utils.book_new();
+  const safeSheetName = (reportTitle || 'Reporte').replace(/[:\\\/\?\*\[\]]/g, '').slice(0, 30);
+  XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
+
+  // 5. Descargar archivo .xlsx nativo
+  const fileName = `${reportTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  XLSX.writeFile(wb, fileName);
 }
 
 export function exportToPDF(reportTitle, congregationName, columns, data, totals) {
