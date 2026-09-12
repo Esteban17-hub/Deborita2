@@ -1109,6 +1109,7 @@ export default function App() {
             committees={activeCommittees.filter(c => !c.isOfferingOnly)}
             movements={activeMovements}
             userRole={userRole}
+            congregationName={congregationName}
             isMobile={isMobile}
             onCreateCommittee={handleCreateCommittee}
             onUpdateCommittee={handleUpdateCommittee}
@@ -1136,6 +1137,7 @@ export default function App() {
             offerings={activeOfferings}
             committees={activeCommittees} // Aquí sí van todos, incluyendo Junta Local
             userRole={userRole}
+            congregationName={congregationName}
             isMobile={isMobile}
             onAddOffering={handleAddOffering}
             onUpdateOffering={handleUpdateOffering}

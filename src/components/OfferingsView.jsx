@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { HandHeart, BarChart2, PlusCircle, Pencil, Trash2, Search, Filter, X, Calendar, Layers, ChevronLeft, ChevronRight, Sparkles, TrendingUp, Share2, Printer, FileSpreadsheet } from 'lucide-react';
 import { formatCurrency, formatDate, deduceDayOfWeek } from '../utils/formatters';
-import { exportToExcel, shareOfferingWhatsApp, printOfficialReceipt } from '../utils/exportHelpers';
+import { exportToExcel, shareOfferingWhatsApp, printOfficialReceipt, printFilteredOfferingsReport, shareOfferingsReportWhatsApp } from '../utils/exportHelpers';
 import MoneyInput from './MoneyInput';
 import {
   Chart as ChartJS,
@@ -34,6 +34,7 @@ export default function OfferingsView({
   offerings = [],
   committees = [],
   userRole = 'ADMIN',
+  congregationName = 'Gestión Local',
   isMobile = false,
   onAddOffering,
   onUpdateOffering,
@@ -503,7 +504,9 @@ export default function OfferingsView({
               return true;
             });
 
-            const filteredTotal = filteredOfferings.reduce((sum, o) => sum + (o.amount || 0), 0);
+            // Orden cronológico estricto del 1 al 31 para filtros y reportes
+            const sortedFilteredOfferings = [...filteredOfferings].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+            const filteredTotal = sortedFilteredOfferings.reduce((sum, o) => sum + (o.amount || 0), 0);
             const hasActiveFilters = tableMonthFilter !== 'ALL' || selectedCommittee !== 'ALL' || selectedDay !== 'ALL' || searchQuery.trim() !== '';
 
             const monthsList = [
@@ -521,6 +524,11 @@ export default function OfferingsView({
               { code: '12', name: 'Diciembre' }
             ];
 
+            const committeeMap = {};
+            safeCommittees.forEach(c => {
+              committeeMap[c.id] = c.name;
+            });
+
             return (
               <div className="bg-amber-50/30 dark:bg-amber-950/15 rounded-3xl p-6 border border-amber-200/70 dark:border-amber-900/40 shadow-sm space-y-4">
                 
@@ -529,10 +537,10 @@ export default function OfferingsView({
                   <div>
                     <h3 className="text-sm font-black text-amber-950 dark:text-amber-200 uppercase tracking-wider flex items-center gap-2">
                       <Filter className="w-4 h-4 text-amber-600" />
-                      Registro Histórico de Ofrendas (Orden Reciente)
+                      Registro Histórico de Ofrendas (Día 1 al 31)
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                      Mostrando <strong className="text-amber-800 dark:text-amber-300">{filteredOfferings.length}</strong> de <strong>{safeOfferings.length}</strong> ofrendas registradas
+                      Mostrando <strong className="text-amber-800 dark:text-amber-300">{sortedFilteredOfferings.length}</strong> de <strong>{safeOfferings.length}</strong> ofrendas registradas
                       {tableMonthFilter !== 'ALL' && (
                         <span className="ml-2 font-bold text-amber-700 dark:text-amber-400">
                           (Mes: {monthsList.find(m => m.code === tableMonthFilter)?.name})
@@ -546,10 +554,11 @@ export default function OfferingsView({
                       💰 Suma Total: {formatCurrency(filteredTotal)}
                     </span>
 
+                    {/* Botón Excel */}
                     <button
                       type="button"
                       onClick={() => {
-                        const exportData = filteredOfferings.map(o => {
+                        const exportData = sortedFilteredOfferings.map(o => {
                           const com = safeCommittees.find(c => c.id === o.destinationCommitteeId);
                           return {
                             'Fecha': formatDate(o.date),
@@ -562,10 +571,51 @@ export default function OfferingsView({
                         });
                         exportToExcel(exportData, 'Historial_Ofrendas');
                       }}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                      title="Descargar reporte en Excel"
                     >
                       <FileSpreadsheet className="w-3.5 h-3.5" />
-                      <span>Exportar Excel</span>
+                      <span>Excel</span>
+                    </button>
+
+                    {/* Botón PDF */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const monthObj = monthsList.find(m => m.code === tableMonthFilter);
+                        printFilteredOfferingsReport({
+                          congregationName,
+                          monthName: monthObj ? monthObj.name : 'Historial Completo',
+                          offerings: sortedFilteredOfferings,
+                          totalAmount: filteredTotal,
+                          committeeMap
+                        });
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 font-bold text-xs border border-slate-300 dark:border-slate-700 transition-all cursor-pointer"
+                      title="Imprimir reporte / PDF"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>PDF</span>
+                    </button>
+
+                    {/* Botón WhatsApp */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const monthObj = monthsList.find(m => m.code === tableMonthFilter);
+                        shareOfferingsReportWhatsApp({
+                          congregationName,
+                          monthName: monthObj ? monthObj.name : 'Historial Completo',
+                          offerings: sortedFilteredOfferings,
+                          totalAmount: filteredTotal,
+                          committeeMap
+                        });
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                      title="Compartir reporte por WhatsApp"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>WhatsApp</span>
                     </button>
 
                     {hasActiveFilters && (
@@ -674,7 +724,7 @@ export default function OfferingsView({
                   <>
                     {/* 1. VISTA MÓVIL: Tarjetas compactas con botón EDITAR y ELIMINAR siempre visible (Celulares) */}
                     <div className="block sm:hidden space-y-3">
-                      {filteredOfferings.map(o => {
+                      {sortedFilteredOfferings.map(o => {
                         const com = safeCommittees.find(c => c.id === o.destinationCommitteeId);
                         return (
                           <div 
@@ -719,7 +769,6 @@ export default function OfferingsView({
                               </div>
                             )}
 
-                            {/* Botones de Acción Móvil Grandes y Fáciles de Tocar */}
                             {/* Botones de Acción Móvil */}
                             <div className="flex items-center gap-2 pt-2 border-t border-amber-100 dark:border-slate-800 flex-wrap">
                               <button
@@ -736,7 +785,7 @@ export default function OfferingsView({
                                   printOfficialReceipt({
                                     title: 'Comprobante de Ofrenda',
                                     subtitle: `Destino: ${com?.name || 'General'}`,
-                                    congregationName: 'Gestión Local',
+                                    congregationName,
                                     date: formatDate(o.date),
                                     details: [
                                       { label: 'Fecha de Recaudación', value: formatDate(o.date) },
@@ -795,7 +844,7 @@ export default function OfferingsView({
                             {tableMonthFilter !== 'ALL' ? `Suma Total Mes (${monthsList.find(m => m.code === tableMonthFilter)?.name})` : 'Suma Total Ofrendas'}
                           </span>
                           <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
-                            {filteredOfferings.length} {filteredOfferings.length === 1 ? 'registro' : 'registros'}
+                            {sortedFilteredOfferings.length} {sortedFilteredOfferings.length === 1 ? 'registro' : 'registros'}
                           </span>
                         </div>
                         <span className="text-xl font-black text-amber-950 dark:text-amber-100">
@@ -819,7 +868,7 @@ export default function OfferingsView({
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-amber-100/80 dark:divide-slate-800 bg-white dark:bg-slate-900">
-                          {filteredOfferings.map(o => {
+                          {sortedFilteredOfferings.map(o => {
                             const com = safeCommittees.find(c => c.id === o.destinationCommitteeId);
                             return (
                               <tr key={o.id} className="hover:bg-amber-50/50 dark:hover:bg-slate-800/50 transition-colors">
@@ -852,7 +901,7 @@ export default function OfferingsView({
                                         printOfficialReceipt({
                                           title: 'Comprobante de Ofrenda',
                                           subtitle: `Destino: ${com?.name || 'General'}`,
-                                          congregationName: 'Gestión Local',
+                                          congregationName,
                                           date: formatDate(o.date),
                                           details: [
                                             { label: 'Fecha de Recaudación', value: formatDate(o.date) },

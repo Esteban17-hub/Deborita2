@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ArrowRightLeft, Ban, CheckCircle, ShieldAlert, Pencil, Trash2, ArrowLeft, Search, Filter, X, Calendar, Layers, Palette, Check } from 'lucide-react';
+import { Plus, ArrowRightLeft, Ban, CheckCircle, ShieldAlert, Pencil, Trash2, ArrowLeft, Search, Filter, X, Calendar, Layers, Palette, Check, Share2, Printer, FileSpreadsheet } from 'lucide-react';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import { exportToExcel, printFilteredCommitteeReport, shareCommitteeReportWhatsApp } from '../utils/exportHelpers';
 import MoneyInput from './MoneyInput';
 
 // Paleta cromática disponible para los comités
@@ -109,6 +110,7 @@ export default function CommitteesView({
   committees = [],
   movements = [],
   userRole = 'ADMIN',
+  congregationName = 'Gestión Local',
   isMobile = false,
   onCreateCommittee,
   onUpdateCommittee,
@@ -534,6 +536,15 @@ export default function CommitteesView({
                 { code: '12', name: 'Diciembre' }
               ];
 
+              // Ordenar movimientos por fecha del día 1 al 31 (Ascendente)
+              const sortedMovements = [...filteredMovements].sort((a, b) => {
+                const dateA = a.date || '';
+                const dateB = b.date || '';
+                const cmp = dateA.localeCompare(dateB);
+                if (cmp !== 0) return cmp;
+                return (a.createdAt || 0) - (b.createdAt || 0);
+              });
+
               return (
                 <div className="space-y-4">
                   
@@ -542,11 +553,11 @@ export default function CommitteesView({
                     <div>
                       <h3 className="text-sm font-black uppercase text-slate-900 dark:text-white flex items-center gap-2">
                         <Filter className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        Historial de Transacciones ({filteredMovements.length} de {committeeMovements.length})
+                        Historial de Transacciones ({sortedMovements.length} de {committeeMovements.length})
                       </h3>
                       {movSelectedMonth !== 'ALL' && (
                         <p className="text-xs text-blue-700 dark:text-blue-300 font-bold mt-0.5">
-                          🗓️ Período filtrado: <strong className="uppercase">{monthsList.find(m => m.code === movSelectedMonth)?.name}</strong>
+                          🗓️ Período filtrado: <strong className="uppercase">{monthsList.find(m => m.code === movSelectedMonth)?.name}</strong> (Orden del 1 al 31)
                         </p>
                       )}
                     </div>
@@ -561,6 +572,67 @@ export default function CommitteesView({
                       <span className="px-3.5 py-1.5 rounded-xl bg-blue-100 dark:bg-blue-950/80 text-blue-950 dark:text-blue-200 font-black text-xs border border-blue-300 dark:border-blue-800 shadow-xs">
                         Neto: {formatCurrency(filteredNeto)}
                       </span>
+
+                      {/* Botones de Exportación: Excel, PDF y WhatsApp */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const exportData = sortedMovements.map(m => ({
+                            'Fecha': formatDate(m.date),
+                            'Tipo': m.type,
+                            'Descripción': m.description || '',
+                            'Monto': m.type === 'INGRESO' ? m.amount : -m.amount,
+                            'Estado': m.annulled ? `Anulado (${m.annulReason || ''})` : 'Activo'
+                          }));
+                          exportToExcel(exportData, `Reporte_${activeCommittee.name.replace(/\s+/g, '_')}`);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                        title="Descargar reporte en Excel"
+                      >
+                        <FileSpreadsheet className="w-3.5 h-3.5" />
+                        <span>Excel</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const monthObj = monthsList.find(m => m.code === movSelectedMonth);
+                          printFilteredCommitteeReport({
+                            congregationName,
+                            committeeName: activeCommittee.name,
+                            treasurerName: activeCommittee.treasurer || 'Tesorero(a)',
+                            monthName: monthObj ? monthObj.name : 'Período Completo',
+                            movements: sortedMovements,
+                            totals: { income: filteredIngresos, expense: filteredEgresos, net: filteredNeto }
+                          });
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 font-bold text-xs border border-slate-300 dark:border-slate-700 transition-all cursor-pointer"
+                        title="Imprimir reporte / PDF"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>PDF</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const monthObj = monthsList.find(m => m.code === movSelectedMonth);
+                          shareCommitteeReportWhatsApp({
+                            congregationName,
+                            committeeName: activeCommittee.name,
+                            treasurerName: activeCommittee.treasurer || 'Tesorero(a)',
+                            monthName: monthObj ? monthObj.name : 'Período Completo',
+                            movements: sortedMovements,
+                            totals: { income: filteredIngresos, expense: filteredEgresos, net: filteredNeto }
+                          });
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                        title="Compartir reporte por WhatsApp"
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
+                        <span>WhatsApp</span>
+                      </button>
+
                       {hasActiveMovFilters && (
                         <button
                           onClick={() => {
@@ -651,7 +723,7 @@ export default function CommitteesView({
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
-                          {filteredMovements.map((mov) => (
+                          {sortedMovements.map((mov) => (
                             <tr key={mov.id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${mov.annulled ? 'opacity-60' : ''}`}>
                               <td className="py-3.5 px-3 font-bold text-slate-900 dark:text-white">
                                 {formatDate(mov.date)}
