@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { HandHeart, BarChart2, PlusCircle, Pencil, Trash2, Search, Filter, X, Calendar, Layers, ChevronLeft, ChevronRight, Sparkles, TrendingUp, Share2, Printer, FileSpreadsheet } from 'lucide-react';
-import { formatCurrency, formatDate, deduceDayOfWeek } from '../utils/formatters';
-import { exportToExcel, shareOfferingWhatsApp, printOfficialReceipt, printFilteredOfferingsReport, shareOfferingsReportWhatsApp } from '../utils/exportHelpers';
+import { HandHeart, BarChart2, PlusCircle, Pencil, Trash2, Search, Filter, X, Calendar, Layers, ChevronLeft, ChevronRight, Sparkles, TrendingUp, Share2, Printer, FileSpreadsheet, Copy } from 'lucide-react';
+import { formatCurrency, formatDate, deduceDayOfWeek, compareDatesAsc } from '../utils/formatters';
+import { exportToExcel, shareOfferingWhatsApp, printOfficialReceipt, printFilteredOfferingsReport, shareOfferingsReportWhatsApp, copyOfferingsSummaryText } from '../utils/exportHelpers';
 import MoneyInput from './MoneyInput';
 import {
   Chart as ChartJS,
@@ -505,7 +505,7 @@ export default function OfferingsView({
             });
 
             // Orden cronológico estricto del 1 al 31 para filtros y reportes
-            const sortedFilteredOfferings = [...filteredOfferings].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+            const sortedFilteredOfferings = [...filteredOfferings].sort((a, b) => compareDatesAsc(a.date, b.date));
             const filteredTotal = sortedFilteredOfferings.reduce((sum, o) => sum + (o.amount || 0), 0);
             const hasActiveFilters = tableMonthFilter !== 'ALL' || selectedCommittee !== 'ALL' || selectedDay !== 'ALL' || searchQuery.trim() !== '';
 
@@ -616,6 +616,26 @@ export default function OfferingsView({
                     >
                       <Share2 className="w-3.5 h-3.5" />
                       <span>WhatsApp</span>
+                    </button>
+
+                    {/* Botón Copiar Texto */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const monthObj = monthsList.find(m => m.code === tableMonthFilter);
+                        copyOfferingsSummaryText({
+                          congregationName,
+                          monthName: monthObj ? monthObj.name : 'Historial Completo',
+                          offerings: sortedFilteredOfferings,
+                          totalAmount: filteredTotal,
+                          committeeMap
+                        });
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                      title="Copiar o compartir resumen en texto al portapapeles"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copiar Texto</span>
                     </button>
 
                     {hasActiveFilters && (

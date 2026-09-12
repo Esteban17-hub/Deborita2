@@ -52,3 +52,34 @@ export function getCurrentMonthYear() {
   const year = now.getFullYear();
   return { month, year: String(year) };
 }
+
+/**
+ * Convierte cualquier formato de fecha a un número comparable YYYYMMDD para ordenamiento exacto del día 1 al 31
+ */
+export function parseDateToNumber(dateStr) {
+  if (!dateStr) return 0;
+  if (typeof dateStr === 'number') return dateStr;
+  const str = String(dateStr).trim();
+  // Si formato YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const parts = str.slice(0, 10).split('-');
+    return parseInt(`${parts[0]}${parts[1]}${parts[2]}`, 10);
+  }
+  // Si formato DD/MM/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(str)) {
+    const parts = str.split('/');
+    const d = parts[0].padStart(2, '0');
+    const m = parts[1].padStart(2, '0');
+    const y = parts[2].slice(0, 4);
+    return parseInt(`${y}${m}${d}`, 10);
+  }
+  const timestamp = new Date(str).getTime();
+  return isNaN(timestamp) ? 0 : timestamp;
+}
+
+/**
+ * Función de ordenamiento cronológico ascendente (Día 1 al 31)
+ */
+export function compareDatesAsc(dateA, dateB) {
+  return parseDateToNumber(dateA) - parseDateToNumber(dateB);
+}

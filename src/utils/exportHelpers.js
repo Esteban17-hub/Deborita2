@@ -1,5 +1,35 @@
-import { formatCurrency, formatDate } from './formatters';
+import { formatCurrency, formatDate, compareDatesAsc } from './formatters';
 import { toast } from 'react-hot-toast';
+
+/**
+ * Función auxiliar para copiar texto con fallback robusto para todos los navegadores
+ */
+export async function copyTextToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      console.warn('navigator.clipboard failed, trying fallback', e);
+    }
+  }
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  textArea.style.position = 'fixed';
+  textArea.style.left = '-999999px';
+  textArea.style.top = '-999999px';
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  let successful = false;
+  try {
+    successful = document.execCommand('copy');
+  } catch (err) {
+    console.error('Fallback execCommand failed', err);
+  }
+  document.body.removeChild(textArea);
+  return successful;
+}
 
 /**
  * Exporta un arreglo de objetos a un archivo Excel (.csv con BOM UTF-8)
@@ -205,8 +235,8 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
     return;
   }
 
-  // Ordenar movimientos por fecha del 1 al 31 (ascendente)
-  const sorted = [...movements].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  // Ordenar movimientos por fecha del día 1 al 31 (ascendente)
+  const sorted = [...movements].sort((a, b) => compareDatesAsc(a.date, b.date));
 
   const rowsHtml = sorted.map(m => `
     <tr style="border-bottom: 1px solid #e2e8f0; ${m.annulled ? 'opacity: 0.5;' : ''}">
@@ -312,11 +342,10 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
 }
 
 /**
- * Comparte el reporte filtrado de un comité por WhatsApp
+ * Genera el texto estructurado del resumen de un comité
  */
-export function shareCommitteeReportWhatsApp({ committeeName, treasurerName = '', monthName = '', movements = [], totals = { income: 0, expense: 0, net: 0 }, congregationName = '' }) {
-  // Ordenar movimientos por fecha del 1 al 31
-  const sorted = [...movements].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+export function buildCommitteeSummaryText({ committeeName, treasurerName = '', monthName = '', movements = [], totals = { income: 0, expense: 0, net: 0 }, congregationName = '' }) {
+  const sorted = [...movements].sort((a, b) => compareDatesAsc(a.date, b.date));
 
   let text = `📊 *REPORTE DE COMITÉ: ${committeeName.toUpperCase()}*\n`;
   if (congregationName) text += `🏛️ *Congregación:* ${congregationName}\n`;
@@ -342,9 +371,38 @@ export function shareCommitteeReportWhatsApp({ committeeName, treasurerName = ''
 
   text += `====================================\n`;
   text += `_Generado por Sistema Deborita Gestión Local_`;
+  return text;
+}
 
+/**
+ * Copia o Comparte el resumen en texto de un comité
+ */
+export async function copyCommitteeSummaryText(params) {
+  const text = buildCommitteeSummaryText(params);
+  await copyTextToClipboard(text);
+
+  if (navigator.share && /mobile|android|iphone|ipad/i.test(navigator.userAgent)) {
+    try {
+      await navigator.share({
+        title: `Reporte ${params.committeeName}`,
+        text: text
+      });
+      return;
+    } catch (e) {
+      // Ignorar si el usuario cancela la ventana nativa
+    }
+  }
+
+  toast.success('📋 ¡Resumen en texto copiado al portapapeles!');
+}
+
+/**
+ * Comparte el reporte filtrado de un comité por WhatsApp
+ */
+export function shareCommitteeReportWhatsApp(params) {
+  const text = buildCommitteeSummaryText(params);
   const encoded = encodeURI(text);
-  navigator.clipboard.writeText(text);
+  copyTextToClipboard(text);
   toast.success('Reporte copiado. Abriendo WhatsApp...');
   window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
 }
@@ -359,8 +417,8 @@ export function printFilteredOfferingsReport({ monthName = '', offerings = [], t
     return;
   }
 
-  // Ordenar ofrendas por fecha del 1 al 31 (ascendente)
-  const sorted = [...offerings].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  // Ordenar ofrendas por fecha del día 1 al 31 (ascendente)
+  const sorted = [...offerings].sort((a, b) => compareDatesAsc(a.date, b.date));
 
   const rowsHtml = sorted.map(o => {
     const comName = committeeMap[o.destinationCommitteeId] || 'General';
@@ -458,11 +516,10 @@ export function printFilteredOfferingsReport({ monthName = '', offerings = [], t
 }
 
 /**
- * Comparte el reporte filtrado de ofrendas por WhatsApp
+ * Genera el texto estructurado del resumen de ofrendas
  */
-export function shareOfferingsReportWhatsApp({ monthName = '', offerings = [], totalAmount = 0, congregationName = '', committeeMap = {} }) {
-  // Ordenar ofrendas por fecha del 1 al 31
-  const sorted = [...offerings].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+export function buildOfferingsSummaryText({ monthName = '', offerings = [], totalAmount = 0, congregationName = '', committeeMap = {} }) {
+  const sorted = [...offerings].sort((a, b) => compareDatesAsc(a.date, b.date));
 
   let text = `✨ *REPORTE OFICIAL DE RECAUDACIÓN DE OFRENDAS*\n`;
   if (congregationName) text += `🏛️ *Congregación:* ${congregationName}\n`;
@@ -484,9 +541,39 @@ export function shareOfferingsReportWhatsApp({ monthName = '', offerings = [], t
 
   text += `====================================\n`;
   text += `_Generado por Sistema Deborita Gestión Local_`;
+  return text;
+}
 
+/**
+ * Copia o Comparte el resumen en texto de ofrendas
+ */
+export async function copyOfferingsSummaryText(params) {
+  const text = buildOfferingsSummaryText(params);
+  await copyTextToClipboard(text);
+
+  if (navigator.share && /mobile|android|iphone|ipad/i.test(navigator.userAgent)) {
+    try {
+      await navigator.share({
+        title: `Reporte de Ofrendas`,
+        text: text
+      });
+      return;
+    } catch (e) {
+      // Ignorar si cancela el share nativo
+    }
+  }
+
+  toast.success('📋 ¡Resumen en texto copiado al portapapeles!');
+}
+
+/**
+ * Comparte el reporte filtrado de ofrendas por WhatsApp
+ */
+export function shareOfferingsReportWhatsApp(params) {
+  const text = buildOfferingsSummaryText(params);
   const encoded = encodeURI(text);
-  navigator.clipboard.writeText(text);
+  copyTextToClipboard(text);
   toast.success('Reporte de ofrendas copiado. Abriendo WhatsApp...');
   window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
 }
+

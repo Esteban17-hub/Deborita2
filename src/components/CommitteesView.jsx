@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ArrowRightLeft, Ban, CheckCircle, ShieldAlert, Pencil, Trash2, ArrowLeft, Search, Filter, X, Calendar, Layers, Palette, Check, Share2, Printer, FileSpreadsheet } from 'lucide-react';
-import { formatCurrency, formatDate } from '../utils/formatters';
-import { exportToExcel, printFilteredCommitteeReport, shareCommitteeReportWhatsApp } from '../utils/exportHelpers';
+import { Plus, ArrowRightLeft, Ban, CheckCircle, ShieldAlert, Pencil, Trash2, ArrowLeft, Search, Filter, X, Calendar, Layers, Palette, Check, Share2, Printer, FileSpreadsheet, Copy } from 'lucide-react';
+import { formatCurrency, formatDate, compareDatesAsc } from '../utils/formatters';
+import { exportToExcel, printFilteredCommitteeReport, shareCommitteeReportWhatsApp, copyCommitteeSummaryText } from '../utils/exportHelpers';
 import MoneyInput from './MoneyInput';
 
 // Paleta cromática disponible para los comités
@@ -536,11 +536,9 @@ export default function CommitteesView({
                 { code: '12', name: 'Diciembre' }
               ];
 
-              // Ordenar movimientos por fecha del día 1 al 31 (Ascendente)
+              // Ordenar movimientos por fecha del día 1 al 31 (Ascendente estricto)
               const sortedMovements = [...filteredMovements].sort((a, b) => {
-                const dateA = a.date || '';
-                const dateB = b.date || '';
-                const cmp = dateA.localeCompare(dateB);
+                const cmp = compareDatesAsc(a.date, b.date);
                 if (cmp !== 0) return cmp;
                 return (a.createdAt || 0) - (b.createdAt || 0);
               });
@@ -573,7 +571,7 @@ export default function CommitteesView({
                         Neto: {formatCurrency(filteredNeto)}
                       </span>
 
-                      {/* Botones de Exportación: Excel, PDF y WhatsApp */}
+                      {/* Botones de Exportación: Excel, PDF, WhatsApp y Copiar Texto */}
                       <button
                         type="button"
                         onClick={() => {
@@ -631,6 +629,26 @@ export default function CommitteesView({
                       >
                         <Share2 className="w-3.5 h-3.5" />
                         <span>WhatsApp</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const monthObj = monthsList.find(m => m.code === movSelectedMonth);
+                          copyCommitteeSummaryText({
+                            congregationName,
+                            committeeName: activeCommittee.name,
+                            treasurerName: activeCommittee.treasurer || 'Tesorero(a)',
+                            monthName: monthObj ? monthObj.name : 'Período Completo',
+                            movements: sortedMovements,
+                            totals: { income: filteredIngresos, expense: filteredEgresos, net: filteredNeto }
+                          });
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                        title="Copiar o compartir resumen en texto al portapapeles"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copiar Texto</span>
                       </button>
 
                       {hasActiveMovFilters && (
@@ -794,7 +812,7 @@ export default function CommitteesView({
                         <tfoot>
                           <tr className="bg-slate-100/90 dark:bg-slate-800/90 border-t-2 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-black text-xs">
                             <td className="py-3.5 px-3 uppercase tracking-wider font-black text-slate-800 dark:text-slate-200">
-                              TOTAL ({filteredMovements.length} {filteredMovements.length === 1 ? 'REG.' : 'REGS.'})
+                              TOTAL ({sortedMovements.length} {sortedMovements.length === 1 ? 'REG.' : 'REGS.'})
                             </td>
                             <td className="py-3.5 px-3 font-bold text-slate-400 text-center">-</td>
                             <td className="py-3.5 px-3 font-bold text-slate-700 dark:text-slate-300">
