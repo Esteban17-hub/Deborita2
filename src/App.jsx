@@ -754,6 +754,7 @@ export default function App() {
         name: userData.name,
         role: userData.role,
         pin: userData.pin,
+        committeeId: userData.committeeId || null,
         createdAt: Date.now()
       };
       const { error } = await supabase.from('users').insert(newUser);
@@ -771,7 +772,8 @@ export default function App() {
       const { error } = await supabase.from('users').update({
         name: userData.name,
         role: userData.role,
-        congregationId: userData.congregationId
+        congregationId: userData.congregationId,
+        committeeId: userData.committeeId || null
       }).eq('id', userId);
       if (error) throw error;
       toast.success('Usuario actualizado con éxito');
