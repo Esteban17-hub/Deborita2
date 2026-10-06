@@ -1199,11 +1199,15 @@ export default function App() {
             congregationName={congregationName}
             congregationCity={congregations.find(c => c.id === congregationId)?.city}
             users={users}
+            committees={committees}
             userRole={userRole}
             currentUser={users.find(u => u.congregationId === congregationId && u.role === userRole)}
             isMobile={isMobile}
             onUpdateCongregation={handleUpdateCongregationSettings}
             onUpdateUsers={handleUpdateUsersSettings}
+            onCreateUser={handleCreateUser}
+            onDeleteUser={handleDeleteUser}
+            onResetPin={handleResetPin}
           />
         )}
       </main>
