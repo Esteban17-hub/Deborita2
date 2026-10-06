@@ -174,7 +174,7 @@ export default function App() {
           );
 
           if (validUser) {
-            setCongregationId(parsed.congregationId || (loadedData.congs[0]?.id || 'global'));
+            setCongregationId(parsed.congregationId || (loadedData?.congs?.[0]?.id || 'global'));
             setCongregationName(parsed.congregation || 'Panel General');
             setUserName(parsed.username);
             setUserRole(parsed.role);

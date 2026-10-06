@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Building2, User, ShieldCheck, KeyRound, Crown, Lock, ShieldAlert } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { verifyPin } from '../utils/security';
@@ -13,7 +13,11 @@ export default function LoginModal({
   users = [],
   committees = []
 }) {
-  const defaultCongId = congregations.find(c => c.name === currentCongregation)?.id || (congregations.length > 0 ? congregations[0].id : '');
+  const safeCongregations = Array.isArray(congregations) ? congregations : [];
+  const safeUsers = Array.isArray(users) ? users : [];
+  const safeCommittees = Array.isArray(committees) ? committees : [];
+
+  const defaultCongId = safeCongregations.find(c => c.name === currentCongregation)?.id || (safeCongregations.length > 0 ? safeCongregations[0].id : '');
   
   // Modo de Login: 'congregational' o 'superadmin'
   const [loginMode, setLoginMode] = useState('congregational');
@@ -32,15 +36,15 @@ export default function LoginModal({
 
   // Sincronizar select cuando cargan las congregaciones
   React.useEffect(() => {
-    if (!congregationId && congregations.length > 0) {
-      setCongregationId(congregations[0].id);
+    if (!congregationId && safeCongregations.length > 0) {
+      setCongregationId(safeCongregations[0].id);
     }
-  }, [congregations, congregationId]);
+  }, [safeCongregations, congregationId]);
 
   // Lista de usuarios de comités para la congregación seleccionada
   const committeeUsers = useMemo(() => {
-    return users.filter(u => u.congregationId === congregationId && u.role === 'COMITE');
-  }, [users, congregationId]);
+    return safeUsers.filter(u => u.congregationId === congregationId && u.role === 'COMITE');
+  }, [safeUsers, congregationId]);
 
   React.useEffect(() => {
     if (role === 'COMITE' && committeeUsers.length > 0) {
@@ -58,7 +62,7 @@ export default function LoginModal({
 
     // --- ACCESO SUPERADMIN ---
     if (loginMode === 'superadmin') {
-      const superUser = users.find(u => u.role === 'SUPERADMIN');
+      const superUser = safeUsers.find(u => u.role === 'SUPERADMIN');
       if (!superUser) {
         setError('El usuario SuperAdmin aún no se ha inicializado en la base de datos.');
         return;
@@ -71,7 +75,7 @@ export default function LoginModal({
 
       onLogin({
         congregation: 'Panel General',
-        congregationId: congregations[0]?.id || 'global',
+        congregationId: safeCongregations[0]?.id || 'global',
         username: superUser.name || 'SuperAdmin',
         role: 'SUPERADMIN',
         committeeId: null,
@@ -91,7 +95,7 @@ export default function LoginModal({
         return;
       }
     } else {
-      user = users.find(u => u.congregationId === congregationId && u.role === role);
+      user = safeUsers.find(u => u.congregationId === congregationId && u.role === role);
     }
     
     if (!user) {
@@ -104,7 +108,7 @@ export default function LoginModal({
       return;
     }
 
-    const selectedCongregation = congregations.find(c => c.id === congregationId);
+    const selectedCongregation = safeCongregations.find(c => c.id === congregationId);
     
     onLogin({ 
       congregation: selectedCongregation ? selectedCongregation.name : 'Mi Congregación',

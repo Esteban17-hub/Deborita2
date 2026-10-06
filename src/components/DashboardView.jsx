@@ -5,10 +5,10 @@ import { formatCurrency, deduceDayOfWeek } from '../utils/formatters';
 import MoneyInput from './MoneyInput';
 
 export default function DashboardView({
-  committees,
-  allCommittees = committees,
-  movements,
-  offerings,
+  committees = [],
+  allCommittees = [],
+  movements = [],
+  offerings = [],
   userRole,
   congregationName,
   onSelectTab,
