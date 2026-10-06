@@ -39,6 +39,7 @@ export default function Navbar({
       case 'SUPERADMIN': return '👑 Super Administrador';
       case 'ADMIN': return 'Pastor - Administrador';
       case 'TESORERO': return 'Tesorero General';
+      case 'COMITE': return 'Tesorero de Comité';
       case 'VISITA': return 'Visita (Solo Lectura)';
       default: return userRole;
     }

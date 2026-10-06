@@ -47,6 +47,7 @@ export default function AdminView({
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [targetCongId, setTargetCongId] = useState(congregations[0]?.id || '');
+  const [targetCommitteeId, setTargetCommitteeId] = useState('');
   const [userNameInput, setUserNameInput] = useState('');
   const [userRoleInput, setUserRoleInput] = useState('TESORERO');
   const [userPinInput, setUserPinInput] = useState('1234');
@@ -144,7 +145,10 @@ export default function AdminView({
   // Manejadores de Usuarios
   const handleOpenCreateUser = () => {
     setEditingUser(null);
-    setTargetCongId(congregations[0]?.id || '');
+    const initialCong = congregations[0]?.id || '';
+    setTargetCongId(initialCong);
+    const firstComm = committees.find(c => c.congregationId === initialCong);
+    setTargetCommitteeId(firstComm?.id || '');
     setUserNameInput('');
     setUserRoleInput('TESORERO');
     setUserPinInput('1234');
@@ -154,6 +158,7 @@ export default function AdminView({
   const handleOpenEditUser = (user) => {
     setEditingUser(user);
     setTargetCongId(user.congregationId);
+    setTargetCommitteeId(user.committeeId || '');
     setUserNameInput(user.name || '');
     setUserRoleInput(user.role || 'TESORERO');
     setIsUserModalOpen(true);
@@ -166,12 +171,18 @@ export default function AdminView({
       return;
     }
 
+    if (userRoleInput === 'COMITE' && !targetCommitteeId) {
+      toast.error('Debe seleccionar un comité para este usuario');
+      return;
+    }
+
     if (editingUser) {
       if (onUpdateUser) {
         await onUpdateUser(editingUser.id, {
           name: userNameInput.trim(),
           role: userRoleInput,
-          congregationId: targetCongId
+          congregationId: targetCongId,
+          committeeId: userRoleInput === 'COMITE' ? targetCommitteeId : null
         });
       }
     } else {
@@ -184,7 +195,8 @@ export default function AdminView({
           congregationId: targetCongId,
           name: userNameInput.trim(),
           role: userRoleInput,
-          pin: hashPin(userPinInput.trim())
+          pin: hashPin(userPinInput.trim()),
+          committeeId: userRoleInput === 'COMITE' ? targetCommitteeId : null
         });
       }
     }
@@ -561,9 +573,17 @@ export default function AdminView({
                             ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-300 border border-purple-300' 
                             : u.role === 'TESORERO'
                             ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300'
+                            : u.role === 'COMITE'
+                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-300'
                             : 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300'
                         }`}>
-                          {u.role === 'ADMIN' ? 'Pastor Titular' : u.role === 'TESORERO' ? 'Tesorero Local' : 'Visita / Auditor'}
+                          {u.role === 'ADMIN' 
+                            ? 'Pastor Titular' 
+                            : u.role === 'TESORERO' 
+                            ? 'Tesorero Local' 
+                            : u.role === 'COMITE'
+                            ? `Comité: ${committees.find(c => c.id === u.committeeId)?.name || 'Asignado'}`
+                            : 'Visita / Auditor'}
                         </span>
                       </td>
 
@@ -896,7 +916,16 @@ export default function AdminView({
                 </label>
                 <select
                   value={targetCongId}
-                  onChange={(e) => setTargetCongId(e.target.value)}
+                  onChange={(e) => {
+                    const newCongId = e.target.value;
+                    setTargetCongId(newCongId);
+                    const comms = committees.filter(c => c.congregationId === newCongId);
+                    if (comms.length > 0) {
+                      setTargetCommitteeId(comms[0].id);
+                    } else {
+                      setTargetCommitteeId('');
+                    }
+                  }}
                   required
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
                 >
@@ -926,14 +955,48 @@ export default function AdminView({
                 </label>
                 <select
                   value={userRoleInput}
-                  onChange={(e) => setUserRoleInput(e.target.value)}
+                  onChange={(e) => {
+                    const newRole = e.target.value;
+                    setUserRoleInput(newRole);
+                    if (newRole === 'COMITE' && !targetCommitteeId) {
+                      const comms = committees.filter(c => c.congregationId === targetCongId);
+                      if (comms.length > 0) setTargetCommitteeId(comms[0].id);
+                    }
+                  }}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
                 >
                   <option value="ADMIN">ADMIN (Pastor - Control Total de la Sede)</option>
                   <option value="TESORERO">TESORERO (Gestión Financiera)</option>
+                  <option value="COMITE">COMITÉ (Tesorero de Comité Específico)</option>
                   <option value="VISITA">VISITA (Modo Consulta / Auditoría)</option>
                 </select>
               </div>
+
+              {/* Selector de Comité Específico si el Rol es COMITE */}
+              {userRoleInput === 'COMITE' && (
+                <div className="p-3.5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border-2 border-blue-300 dark:border-blue-800 space-y-1.5 animate-fade-in">
+                  <label className="block text-xs font-black text-blue-950 dark:text-blue-200 uppercase">
+                    🏛️ Comité Asignado *
+                  </label>
+                  <select
+                    value={targetCommitteeId}
+                    onChange={(e) => setTargetCommitteeId(e.target.value)}
+                    required
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-black text-xs focus:ring-2 focus:ring-blue-500 outline-none"
+                  >
+                    {committees.filter(c => c.congregationId === targetCongId).length === 0 ? (
+                      <option value="">No hay comités creados en esta sede</option>
+                    ) : (
+                      committees.filter(c => c.congregationId === targetCongId).map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))
+                    )}
+                  </select>
+                  <p className="text-[10px] text-blue-700 dark:text-blue-300 font-medium">
+                    Este usuario solo podrá ver y registrar movimientos de este comité en específico y ver ofrendas.
+                  </p>
+                </div>
+              )}
 
               {!editingUser && (
                 <div>

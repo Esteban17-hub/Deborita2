@@ -10,7 +10,8 @@ export default function LoginModal({
   currentCongregation, 
   currentRole, 
   congregations = [], 
-  users = [] 
+  users = [],
+  committees = []
 }) {
   const defaultCongId = congregations.find(c => c.name === currentCongregation)?.id || (congregations.length > 0 ? congregations[0].id : '');
   
@@ -20,6 +21,7 @@ export default function LoginModal({
   // Estados para Acceso Congregacional
   const [congregationId, setCongregationId] = useState(defaultCongId);
   const [role, setRole] = useState(currentRole || 'TESORERO');
+  const [selectedUserId, setSelectedUserId] = useState('');
   const [pin, setPin] = useState('');
   
   // Estados para Acceso SuperAdmin
@@ -34,6 +36,19 @@ export default function LoginModal({
       setCongregationId(congregations[0].id);
     }
   }, [congregations, congregationId]);
+
+  // Lista de usuarios de comités para la congregación seleccionada
+  const committeeUsers = useMemo(() => {
+    return users.filter(u => u.congregationId === congregationId && u.role === 'COMITE');
+  }, [users, congregationId]);
+
+  React.useEffect(() => {
+    if (role === 'COMITE' && committeeUsers.length > 0) {
+      if (!selectedUserId || !committeeUsers.some(u => u.id === selectedUserId)) {
+        setSelectedUserId(committeeUsers[0].id);
+      }
+    }
+  }, [role, committeeUsers, selectedUserId]);
 
   if (!isOpen) return null;
 
@@ -59,6 +74,7 @@ export default function LoginModal({
         congregationId: congregations[0]?.id || 'global',
         username: superUser.name || 'SuperAdmin',
         role: 'SUPERADMIN',
+        committeeId: null,
         remember: remember
       });
       setSuperAdminPin('');
@@ -67,7 +83,16 @@ export default function LoginModal({
     }
 
     // --- ACCESO CONGREGACIONAL REGULAR ---
-    const user = users.find(u => u.congregationId === congregationId && u.role === role);
+    let user;
+    if (role === 'COMITE') {
+      user = committeeUsers.find(u => u.id === selectedUserId) || committeeUsers[0];
+      if (!user) {
+        setError('No hay un usuario de comité creado para esta congregación.');
+        return;
+      }
+    } else {
+      user = users.find(u => u.congregationId === congregationId && u.role === role);
+    }
     
     if (!user) {
       setError('No se encontró un usuario con este rol para la congregación seleccionada.');
@@ -86,6 +111,7 @@ export default function LoginModal({
       congregationId: congregationId, 
       username: user.name, 
       role: user.role,
+      committeeId: user.committeeId || null,
       remember: remember
     });
     setPin('');
@@ -236,47 +262,89 @@ export default function LoginModal({
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                   👤 Rol de Acceso / Usuario
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <button
                     type="button"
                     onClick={() => setRole('ADMIN')}
-                    className={`p-3 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
                       role === 'ADMIN'
                         ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-500/20 font-black'
                         : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                     }`}
                   >
-                    <ShieldCheck className="w-5 h-5" />
+                    <ShieldCheck className="w-4 h-4" />
                     <span>Pastor</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setRole('TESORERO')}
-                    className={`p-3 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
                       role === 'TESORERO'
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-500/20 font-black'
                         : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                     }`}
                   >
-                    <User className="w-5 h-5" />
+                    <User className="w-4 h-4" />
                     <span>Tesorero</span>
                   </button>
 
                   <button
                     type="button"
+                    onClick={() => setRole('COMITE')}
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                      role === 'COMITE'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20 font-black'
+                        : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    <Building2 className="w-4 h-4" />
+                    <span>Comité</span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => setRole('VISITA')}
-                    className={`p-3 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
                       role === 'VISITA'
                         ? 'bg-amber-600 text-white border-amber-600 shadow-md shadow-amber-500/20 font-black'
                         : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                     }`}
                   >
-                    <Building2 className="w-5 h-5" />
+                    <ShieldCheck className="w-4 h-4" />
                     <span>Visita</span>
                   </button>
                 </div>
               </div>
+
+              {/* Selector de Usuario / Comité cuando role === 'COMITE' */}
+              {role === 'COMITE' && (
+                <div className="space-y-1.5 p-3 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 animate-fade-in">
+                  <label className="block text-xs font-black text-blue-950 dark:text-blue-200 uppercase">
+                    🏛️ Seleccionar Usuario del Comité
+                  </label>
+                  {committeeUsers.length === 0 ? (
+                    <p className="text-xs text-amber-700 dark:text-amber-300 font-medium">
+                      No hay usuarios de comité creados para esta congregación. Ingrese como Pastor o SuperAdmin para crear uno.
+                    </p>
+                  ) : (
+                    <select
+                      value={selectedUserId}
+                      onChange={(e) => setSelectedUserId(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-blue-500 outline-none"
+                    >
+                      {committeeUsers.map(u => {
+                        const comm = committees.find(c => c.id === u.committeeId);
+                        return (
+                          <option key={u.id} value={u.id}>
+                            {u.name} — {comm ? comm.name : 'Comité Asignado'}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  )}
+                </div>
+              )}
 
               {/* 3. PIN de Seguridad */}
               <div>

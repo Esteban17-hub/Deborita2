@@ -577,3 +577,144 @@ export function shareOfferingsReportWhatsApp(params) {
   window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
 }
 
+/**
+ * Descarga una imagen PNG de alta calidad a partir de una referencia de Chart.js o elemento canvas
+ */
+export function downloadChartImage(chartRef, fileName = 'grafico_financiero') {
+  try {
+    let base64Image = null;
+
+    if (chartRef?.current) {
+      if (typeof chartRef.current.toBase64Image === 'function') {
+        base64Image = chartRef.current.toBase64Image();
+      } else if (chartRef.current.canvas && typeof chartRef.current.canvas.toDataURL === 'function') {
+        base64Image = chartRef.current.canvas.toDataURL('image/png');
+      } else if (typeof chartRef.current.toDataURL === 'function') {
+        base64Image = chartRef.current.toDataURL('image/png');
+      }
+    }
+
+    if (!base64Image) {
+      const canvasEl = chartRef?.current?.querySelector?.('canvas') || (chartRef instanceof HTMLCanvasElement ? chartRef : null);
+      if (canvasEl && typeof canvasEl.toDataURL === 'function') {
+        base64Image = canvasEl.toDataURL('image/png');
+      }
+    }
+
+    if (!base64Image) {
+      toast.error('No se pudo generar la imagen del gráfico');
+      return;
+    }
+
+    const link = document.createElement('a');
+    link.download = `${fileName}_${new Date().toISOString().slice(0, 10)}.png`;
+    link.href = base64Image;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success('🖼️ ¡Gráfico descargado en formato PNG!');
+  } catch (err) {
+    console.error('Error al exportar imagen del gráfico:', err);
+    toast.error('Error al exportar la imagen del gráfico');
+  }
+}
+
+/**
+ * Abre una ventana imprimible / PDF con el gráfico incrustado y resumen estadístico
+ */
+export function printChartReport({ title = 'Informe Gráfico', subtitle = '', congregationName = 'Deborita Gestión Local', chartRef, stats = [], period = '' }) {
+  let base64Image = null;
+
+  if (chartRef?.current) {
+    if (typeof chartRef.current.toBase64Image === 'function') {
+      base64Image = chartRef.current.toBase64Image();
+    } else if (chartRef.current.canvas && typeof chartRef.current.canvas.toDataURL === 'function') {
+      base64Image = chartRef.current.canvas.toDataURL('image/png');
+    }
+  }
+
+  if (!base64Image) {
+    const canvasEl = chartRef?.current?.querySelector?.('canvas');
+    if (canvasEl && typeof canvasEl.toDataURL === 'function') {
+      base64Image = canvasEl.toDataURL('image/png');
+    }
+  }
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    toast.error('Por favor permite las ventanas emergentes para imprimir');
+    return;
+  }
+
+  const statsHtml = stats && stats.length > 0 ? `
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 20px 0;">
+      ${stats.map(s => `
+        <div style="padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; text-align: center;">
+          <span style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">${s.label}</span>
+          <div style="font-size: 16px; font-weight: 900; color: ${s.color || '#0f172a'}; margin-top: 4px;">${s.value}</div>
+        </div>
+      `).join('')}
+    </div>
+  ` : '';
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>${title} - ${period || 'Reporte'}</title>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 30px; color: #0f172a; max-width: 850px; margin: 0 auto; }
+          .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 14px; margin-bottom: 20px; }
+          .title { font-size: 20px; font-weight: 900; margin: 0; text-transform: uppercase; color: #1e3a8a; }
+          .sub { font-size: 13px; color: #64748b; margin-top: 4px; font-weight: 600; }
+          .chart-box { text-align: center; margin: 20px 0; padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; }
+          .chart-img { max-width: 100%; height: auto; max-height: 380px; object-fit: contain; }
+          .signatures { display: flex; justify-content: space-between; margin-top: 50px; }
+          .footer { text-align: center; font-size: 10px; color: #94a3b8; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+          @media print { body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1 class="title">${title}</h1>
+          <p class="sub">${congregationName} | ${subtitle || 'Análisis Gráfico y Estadístico'} | Período: ${period || 'Actual'}</p>
+        </div>
+
+        ${base64Image ? `
+          <div class="chart-box">
+            <img src="${base64Image}" class="chart-img" alt="Gráfico Estadístico" />
+          </div>
+        ` : ''}
+
+        ${statsHtml}
+
+        <div class="signatures">
+          <div style="text-align: center; width: 40%;">
+            <div style="border-bottom: 1.5px solid #0f172a; height: 45px; margin-bottom: 6px;"></div>
+            <p style="font-weight: 800; margin: 0; font-size: 12px;">Tesorería Local</p>
+            <p style="margin: 0; font-size: 10px; color: #64748b;">Elaborado y Verificado</p>
+          </div>
+          <div style="text-align: center; width: 40%;">
+            <div style="border-bottom: 1.5px solid #0f172a; height: 45px; margin-bottom: 6px;"></div>
+            <p style="font-weight: 800; margin: 0; font-size: 12px;">Pastor Titular</p>
+            <p style="margin: 0; font-size: 10px; color: #64748b;">Visto Bueno y Aprobación</p>
+          </div>
+        </div>
+
+        <div class="footer">
+          Documento generado electrónicamente por Sistema de Gestión Financiera Deborita. Válido para informes y control financiero.
+        </div>
+
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+    </html>
+  `;
+
+  printWindow.document.write(html);
+  printWindow.document.close();
+}
+

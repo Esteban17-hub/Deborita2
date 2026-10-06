@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { Calculator, History, TrendingUp, Lock, Pencil, Trash2, Search, Calendar, X, AlertCircle, Coins, Building2, UserCheck, BarChart3, Filter, Share2, Printer, FileSpreadsheet } from 'lucide-react';
+import React, { useState, useMemo, useRef } from 'react';
+import { Calculator, History, TrendingUp, Lock, Pencil, Trash2, Search, Calendar, X, AlertCircle, Coins, Building2, UserCheck, BarChart3, Filter, Share2, Printer, FileSpreadsheet, Image as ImageIcon } from 'lucide-react';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import { exportToExcel, shareTitheWhatsApp, printOfficialReceipt } from '../utils/exportHelpers';
+import { exportToExcel, shareTitheWhatsApp, printOfficialReceipt, downloadChartImage, printChartReport } from '../utils/exportHelpers';
 import MoneyInput from './MoneyInput';
 import {
   Chart as ChartJS,
@@ -59,6 +59,7 @@ export default function TithesView({
 
   // Año seleccionado para el gráfico de evolución
   const [chartYear, setChartYear] = useState(String(new Date().getFullYear()));
+  const chartRef = useRef(null);
 
   // Años disponibles en el historial
   const availableYears = useMemo(() => {
@@ -1068,30 +1069,69 @@ export default function TithesView({
       {activeTab === 'chart' && (
         <div className="space-y-6">
           
-          {/* Selector de Año del Gráfico */}
+          {/* Selector de Año del Gráfico y Botones de Exportación */}
           <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
             <div>
               <h3 className="text-base font-black text-slate-900 dark:text-white">Evolución Anual del Diezmo Bruto</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">Comportamiento financiero mes a mes</p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Año de Consulta:</span>
-              <select
-                value={chartYear}
-                onChange={(e) => setChartYear(e.target.value)}
-                className="px-3.5 py-1.5 rounded-xl border border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-950 dark:text-indigo-200 font-black text-xs shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+            
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Año:</span>
+                <select
+                  value={chartYear}
+                  onChange={(e) => setChartYear(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl border border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-950 dark:text-indigo-200 font-black text-xs shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                >
+                  {availableYears.map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Botón Descargar PNG */}
+              <button
+                type="button"
+                onClick={() => downloadChartImage(chartRef, `Grafico_Diezmo_Evolucion_${chartYear}.png`)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-300 dark:border-slate-700 shadow-xs transition-all cursor-pointer"
+                title="Descargar gráfico como imagen PNG"
               >
-                {availableYears.map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
+                <ImageIcon className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                <span>Imagen PNG</span>
+              </button>
+
+              {/* Botón Imprimir / PDF */}
+              <button
+                type="button"
+                onClick={() => {
+                  printChartReport({
+                    title: 'Reporte de Evolución Anual de Diezmos',
+                    subtitle: `Evolución financiera y análisis estadístico comparativo`,
+                    congregationName: 'Gestión Local',
+                    period: chartYear,
+                    chartRef,
+                    stats: [
+                      { label: 'Ingreso Bruto Promedio', value: formatCurrency(avgGrossIncome) },
+                      { label: 'Asignación Pastoral Promedio', value: formatCurrency(avgPastorAllocation) },
+                      { label: 'Mes con Mayor Recaudo', value: maxGrossMonth ? `${getMonthName(maxGrossMonth.month)} (${formatCurrency(maxGrossAmount)})` : '-' },
+                      { label: 'Mes con Menor Recaudo', value: minGrossMonth ? `${getMonthName(minGrossMonth.month)} (${formatCurrency(minGrossAmount)})` : '-' }
+                    ]
+                  });
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
+                title="Imprimir reporte del gráfico o guardar como PDF"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Imprimir / PDF</span>
+              </button>
             </div>
           </div>
 
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
             <h2 className="text-base font-bold text-slate-900 dark:text-white mb-4">Curva de Evolución ({chartYear})</h2>
             <div className="h-72">
-              <Line data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
+              <Line ref={chartRef} data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
             </div>
           </div>
           

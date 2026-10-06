@@ -158,6 +158,7 @@ export default function CommitteesView({
   const [movementDate, setMovementDate] = useState(new Date().toISOString().slice(0, 10));
 
   const isReadOnly = userRole === 'VISITA';
+  const canManageCommittees = userRole === 'ADMIN' || userRole === 'SUPERADMIN' || userRole === 'TESORERO';
   const activeCommittee = committees.find(c => c.id === selectedCommitteeId);
   const committeeMovements = selectedCommitteeId ? movements.filter(m => m.committeeId === selectedCommitteeId) : [];
 
@@ -335,7 +336,7 @@ export default function CommitteesView({
               <p className="text-xs sm:text-sm text-blue-100 font-medium opacity-90">Gestión de tesorerías, balances en vivo, asignación de responsables y personalización</p>
             </div>
 
-            {!isReadOnly && (
+            {!isReadOnly && canManageCommittees && (
               <div className="flex items-center gap-2.5 relative z-10 flex-wrap">
                 <button
                   onClick={handleOpenCreateCommittee}
@@ -366,7 +367,7 @@ export default function CommitteesView({
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      {!isReadOnly && (
+                      {!isReadOnly && canManageCommittees && (
                         <button
                           onClick={(e) => handleOpenEditCommittee(c, e)}
                           className="p-2 rounded-xl bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 hover:scale-110 shadow-sm transition-all"
@@ -436,14 +437,16 @@ export default function CommitteesView({
                   </h2>
                   {!isReadOnly && (
                     <div className="flex items-center gap-1.5 ml-2">
-                      <button
-                        onClick={(e) => handleOpenEditCommittee(activeCommittee, e)}
-                        className="p-2 rounded-xl bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-700 hover:scale-105 transition-all shadow-sm"
-                        title="Editar nombre, tesorero y color del comité"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      {onDeleteCommittee && (
+                      {canManageCommittees && (
+                        <button
+                          onClick={(e) => handleOpenEditCommittee(activeCommittee, e)}
+                          className="p-2 rounded-xl bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-700 hover:scale-105 transition-all shadow-sm"
+                          title="Editar nombre, tesorero y color del comité"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      )}
+                      {canManageCommittees && onDeleteCommittee && (
                         <button
                           onClick={(e) => handleDeleteCommitteeAction(activeCommittee, e)}
                           className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 hover:scale-105 transition-all shadow-sm"

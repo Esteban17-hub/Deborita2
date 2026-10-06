@@ -39,6 +39,7 @@ export default function App() {
   const [congregationName, setCongregationName] = useState('Zuluaga-Central D21');
   const [userName, setUserName] = useState('Tesorero');
   const [userRole, setUserRole] = useState('TESORERO');
+  const [userCommitteeId, setUserCommitteeId] = useState(null);
   const [isLoginOpen, setIsLoginOpen] = useState(true);
   const [isResetOpen, setIsResetOpen] = useState(false);
   const [isCashCountOpen, setIsCashCountOpen] = useState(false);
@@ -177,6 +178,7 @@ export default function App() {
             setCongregationName(parsed.congregation || 'Panel General');
             setUserName(parsed.username);
             setUserRole(parsed.role);
+            setUserCommitteeId(validUser.committeeId || parsed.committeeId || null);
             if (parsed.role === 'SUPERADMIN') {
               setActiveTab('admin');
             }
@@ -225,9 +227,11 @@ export default function App() {
     };
   }, [isOnline]);
 
-  // --- FILTROS Y CÁLCULOS DINÁMICOS POR CONGREGACIÓN ---
+  // --- FILTROS Y CÁLCULOS DINÁMICOS POR CONGREGACIÓN Y ROL ---
+  const isCommitteeRole = userRole === 'COMITE' && userCommitteeId;
+
   const activeCommittees = committees
-    .filter(c => c.congregationId === congregationId)
+    .filter(c => c.congregationId === congregationId && (!isCommitteeRole || c.id === userCommitteeId))
     .map(c => {
       const commMovs = movements.filter(m => m.committeeId === c.id && m.congregationId === congregationId && !m.annulled);
       const movsIncome = commMovs.filter(m => m.type === 'INGRESO').reduce((acc, m) => acc + (m.amount || 0), 0);
@@ -241,7 +245,7 @@ export default function App() {
       };
     });
 
-  const activeMovements = movements.filter(m => m.congregationId === congregationId);
+  const activeMovements = movements.filter(m => m.congregationId === congregationId && (!isCommitteeRole || m.committeeId === userCommitteeId));
   const activeTithes = tithes.filter(t => t.congregationId === congregationId);
   const activeOfferings = offerings.filter(o => o.congregationId === congregationId);
   const activeProjects = projects.filter(p => p.congregationId === congregationId);
@@ -879,6 +883,7 @@ export default function App() {
     }
   };
 
+  const isCommitteeUser = userRole === 'COMITE';
   const navItems = [
     ...(userRole === 'SUPERADMIN' ? [{
       id: 'admin',
@@ -910,7 +915,7 @@ export default function App() {
       iconBg: 'bg-emerald-100 dark:bg-emerald-950/70',
       hoverBorder: 'hover:border-emerald-300 dark:hover:border-emerald-800'
     },
-    ...(userRole !== 'VISITA' ? [{ 
+    ...(!isCommitteeUser && userRole !== 'VISITA' ? [{ 
       id: 'tithes', 
       label: 'Diezmos', 
       icon: Calculator,
@@ -930,37 +935,39 @@ export default function App() {
       iconBg: 'bg-amber-100 dark:bg-amber-950/70',
       hoverBorder: 'hover:border-amber-300 dark:hover:border-amber-800'
     },
-    { 
-      id: 'projects', 
-      label: 'Proyectos', 
-      icon: Target,
-      accent: 'purple',
-      activeGradient: 'from-purple-600 to-pink-600 text-white shadow-purple-500/30 ring-2 ring-purple-400/50',
-      iconColor: 'text-purple-600 dark:text-purple-400',
-      iconBg: 'bg-purple-100 dark:bg-purple-950/70',
-      hoverBorder: 'hover:border-purple-300 dark:hover:border-purple-800'
-    },
-    { 
-      id: 'reports', 
-      label: 'Reportes', 
-      icon: FileText,
-      accent: 'cyan',
-      activeGradient: 'from-cyan-600 to-blue-600 text-white shadow-cyan-500/30 ring-2 ring-cyan-400/50',
-      iconColor: 'text-cyan-600 dark:text-cyan-400',
-      iconBg: 'bg-cyan-100 dark:bg-cyan-950/70',
-      hoverBorder: 'hover:border-cyan-300 dark:hover:border-cyan-800'
-    },
-    { 
-      id: 'statistics', 
-      label: 'Estadísticas', 
-      icon: PieChart,
-      accent: 'rose',
-      activeGradient: 'from-rose-600 to-red-600 text-white shadow-rose-500/30 ring-2 ring-rose-400/50',
-      iconColor: 'text-rose-600 dark:text-rose-400',
-      iconBg: 'bg-rose-100 dark:bg-rose-950/70',
-      hoverBorder: 'hover:border-rose-300 dark:hover:border-rose-800'
-    },
-    ...(userRole !== 'VISITA' ? [{ 
+    ...(!isCommitteeUser ? [
+      { 
+        id: 'projects', 
+        label: 'Proyectos', 
+        icon: Target,
+        accent: 'purple',
+        activeGradient: 'from-purple-600 to-pink-600 text-white shadow-purple-500/30 ring-2 ring-purple-400/50',
+        iconColor: 'text-purple-600 dark:text-purple-400',
+        iconBg: 'bg-purple-100 dark:bg-purple-950/70',
+        hoverBorder: 'hover:border-purple-300 dark:hover:border-purple-800'
+      },
+      { 
+        id: 'reports', 
+        label: 'Reportes', 
+        icon: FileText,
+        accent: 'cyan',
+        activeGradient: 'from-cyan-600 to-blue-600 text-white shadow-cyan-500/30 ring-2 ring-cyan-400/50',
+        iconColor: 'text-cyan-600 dark:text-cyan-400',
+        iconBg: 'bg-cyan-100 dark:bg-cyan-950/70',
+        hoverBorder: 'hover:border-cyan-300 dark:hover:border-cyan-800'
+      },
+      { 
+        id: 'statistics', 
+        label: 'Estadísticas', 
+        icon: PieChart,
+        accent: 'rose',
+        activeGradient: 'from-rose-600 to-red-600 text-white shadow-rose-500/30 ring-2 ring-rose-400/50',
+        iconColor: 'text-rose-600 dark:text-rose-400',
+        iconBg: 'bg-rose-100 dark:bg-rose-950/70',
+        hoverBorder: 'hover:border-rose-300 dark:hover:border-rose-800'
+      }
+    ] : []),
+    ...(!isCommitteeUser && userRole !== 'VISITA' ? [{ 
       id: 'settings', 
       label: 'Configuración', 
       icon: Settings,
@@ -1217,20 +1224,22 @@ export default function App() {
         currentRole={userRole}
         congregations={congregations}
         users={users}
-        onLogin={({ congregation, congregationId: cId, username, role, remember }) => {
+        committees={committees}
+        onLogin={({ congregation, congregationId: cId, username, role, committeeId, remember }) => {
           setCongregationName(congregation);
           setCongregationId(cId);
           setUserName(username);
           setUserRole(role);
+          setUserCommitteeId(committeeId || null);
           
           if (role === 'SUPERADMIN') {
             setActiveTab('admin');
-          } else if (activeTab === 'admin') {
+          } else if (activeTab === 'admin' || (role === 'COMITE' && !['dashboard', 'committees', 'offerings'].includes(activeTab))) {
             setActiveTab('dashboard');
           }
 
           if (remember) {
-            localStorage.setItem('deborita_session', JSON.stringify({ congregation, congregationId: cId, username, role }));
+            localStorage.setItem('deborita_session', JSON.stringify({ congregation, congregationId: cId, username, role, committeeId }));
           }
 
           if (role === 'VISITA' && activeTab === 'tithes') {

@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { HandHeart, BarChart2, PlusCircle, Pencil, Trash2, Search, Filter, X, Calendar, Layers, ChevronLeft, ChevronRight, Sparkles, TrendingUp, Share2, Printer, FileSpreadsheet, Copy } from 'lucide-react';
+import React, { useState, useMemo, useRef } from 'react';
+import { HandHeart, BarChart2, PlusCircle, Pencil, Trash2, Search, Filter, X, Calendar, Layers, ChevronLeft, ChevronRight, Sparkles, TrendingUp, Share2, Printer, FileSpreadsheet, Copy, Image as ImageIcon } from 'lucide-react';
 import { formatCurrency, formatDate, deduceDayOfWeek, compareDatesAsc } from '../utils/formatters';
-import { exportToExcel, shareOfferingWhatsApp, printOfficialReceipt, printFilteredOfferingsReport, shareOfferingsReportWhatsApp, copyOfferingsSummaryText } from '../utils/exportHelpers';
+import { exportToExcel, shareOfferingWhatsApp, printOfficialReceipt, printFilteredOfferingsReport, shareOfferingsReportWhatsApp, copyOfferingsSummaryText, downloadChartImage, printChartReport } from '../utils/exportHelpers';
 import MoneyInput from './MoneyInput';
 import {
   Chart as ChartJS,
@@ -59,10 +59,12 @@ export default function OfferingsView({
 
   // Estado del Navegador de Mes
   const [viewingMonth, setViewingMonth] = useState(initialViewingMonth);
+  const monthlyChartRef = useRef(null);
 
   // Filtro de Año para el Consolidado Anual del final
   const currentYearStr = viewingMonth.slice(0, 4);
   const [selectedAnnualYear, setSelectedAnnualYear] = useState(currentYearStr);
+  const annualChartRef = useRef(null);
 
   // Modal Registro / Edición de Ofrenda
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -439,12 +441,54 @@ export default function OfferingsView({
                 <BarChart2 className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 Comparativo de Recaudación por Día de la Semana ({viewingMonthLabel})
               </h3>
-              <span className="text-xs font-bold text-amber-800 dark:text-amber-300 bg-amber-100/70 dark:bg-amber-950/60 px-3 py-1 rounded-full border border-amber-300 dark:border-amber-800">
-                Total Mes: {formatCurrency(monthlyTotal)}
-              </span>
+              
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold text-amber-800 dark:text-amber-300 bg-amber-100/70 dark:bg-amber-950/60 px-3 py-1 rounded-full border border-amber-300 dark:border-amber-800">
+                  Total Mes: {formatCurrency(monthlyTotal)}
+                </span>
+
+                {/* Botón Descargar PNG */}
+                <button
+                  type="button"
+                  onClick={() => downloadChartImage(monthlyChartRef, `Grafico_Ofrendas_${viewingMonth}.png`)}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold border border-amber-300 dark:border-amber-800 shadow-xs hover:bg-amber-50 dark:hover:bg-slate-700 transition-all cursor-pointer"
+                  title="Descargar gráfico del mes como imagen PNG"
+                >
+                  <ImageIcon className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  <span>PNG</span>
+                </button>
+
+                {/* Botón Imprimir / PDF */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    printChartReport({
+                      title: 'Reporte de Recaudación de Ofrendas por Día',
+                      subtitle: `Distribución de recaudo por días de culto en ${viewingMonthLabel}`,
+                      congregationName,
+                      period: viewingMonthLabel,
+                      chartRef: monthlyChartRef,
+                      stats: [
+                        { label: 'Total Recaudado en el Mes', value: formatCurrency(monthlyTotal) },
+                        { label: 'Total Cultos Realizados', value: `${monthlyOfferings.length} cultos` },
+                        { label: 'Cultos Domingo', value: `${formatCurrency(monthlyDayStats.stats['Domingo'] || 0)} (${monthlyDayStats.counts['Domingo'] || 0} cultos)` },
+                        { label: 'Cultos Martes', value: `${formatCurrency(monthlyDayStats.stats['Martes'] || 0)} (${monthlyDayStats.counts['Martes'] || 0} cultos)` },
+                        { label: 'Cultos Jueves', value: `${formatCurrency(monthlyDayStats.stats['Jueves'] || 0)} (${monthlyDayStats.counts['Jueves'] || 0} cultos)` },
+                        { label: 'Cultos Sábado', value: `${formatCurrency(monthlyDayStats.stats['Sábado'] || 0)} (${monthlyDayStats.counts['Sábado'] || 0} cultos)` }
+                      ]
+                    });
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+                  title="Imprimir reporte o guardar como PDF"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Imprimir / PDF</span>
+                </button>
+              </div>
             </div>
             <div className="h-56">
               <Bar 
+                ref={monthlyChartRef}
                 data={monthlyChartData} 
                 options={{ 
                   responsive: true, 
@@ -1075,12 +1119,54 @@ export default function OfferingsView({
                   <BarChart2 className="w-4 h-4 text-orange-600 dark:text-orange-400" />
                   Comparativo de Recaudación Total por Día de la Semana ({selectedAnnualYear === 'ALL' ? 'Histórico' : `Año ${selectedAnnualYear}`})
                 </h4>
-                <span className="text-xs font-black text-white bg-amber-600 dark:bg-amber-700 px-3.5 py-1 rounded-full shadow-sm">
-                  Total Acumulado: {formatCurrency(annualTotal)}
-                </span>
+                
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-black text-white bg-amber-600 dark:bg-amber-700 px-3.5 py-1 rounded-full shadow-sm">
+                    Total Acumulado: {formatCurrency(annualTotal)}
+                  </span>
+
+                  {/* Botón Descargar PNG */}
+                  <button
+                    type="button"
+                    onClick={() => downloadChartImage(annualChartRef, `Grafico_Ofrendas_Consolidado_${selectedAnnualYear}.png`)}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-300 dark:border-slate-600 shadow-xs hover:bg-slate-200 dark:hover:bg-slate-600 transition-all cursor-pointer"
+                    title="Descargar gráfico consolidado como imagen PNG"
+                  >
+                    <ImageIcon className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                    <span>PNG</span>
+                  </button>
+
+                  {/* Botón Imprimir / PDF */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      printChartReport({
+                        title: 'Consolidado de Recaudación de Ofrendas',
+                        subtitle: `Totales y promedios consolidados por día de culto`,
+                        congregationName,
+                        period: selectedAnnualYear === 'ALL' ? 'Histórico Total' : `Año ${selectedAnnualYear}`,
+                        chartRef: annualChartRef,
+                        stats: [
+                          { label: 'Total Acumulado', value: formatCurrency(annualTotal) },
+                          { label: 'Total Cultos en el Período', value: `${annualOfferings.length} cultos` },
+                          { label: 'Total Domingo', value: `${formatCurrency(annualDayStats.stats['Domingo'] || 0)} (${annualDayStats.counts['Domingo'] || 0} cultos)` },
+                          { label: 'Total Martes', value: `${formatCurrency(annualDayStats.stats['Martes'] || 0)} (${annualDayStats.counts['Martes'] || 0} cultos)` },
+                          { label: 'Total Jueves', value: `${formatCurrency(annualDayStats.stats['Jueves'] || 0)} (${annualDayStats.counts['Jueves'] || 0} cultos)` },
+                          { label: 'Total Sábado', value: `${formatCurrency(annualDayStats.stats['Sábado'] || 0)} (${annualDayStats.counts['Sábado'] || 0} cultos)` }
+                        ]
+                      });
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+                    title="Imprimir reporte anual o guardar como PDF"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>Imprimir / PDF</span>
+                  </button>
+                </div>
               </div>
               <div className="h-60">
                 <Bar 
+                  ref={annualChartRef}
                   data={annualChartData} 
                   options={{ 
                     responsive: true, 
