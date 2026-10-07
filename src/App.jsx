@@ -229,10 +229,48 @@ export default function App() {
 
   // --- FILTROS Y CÁLCULOS DINÁMICOS POR CONGREGACIÓN Y ROL ---
   const isCommitteeRole = userRole === 'COMITE';
-  const effectiveCommitteeId = userCommitteeId || users.find(u => u.congregationId === congregationId && u.role === 'COMITE' && u.name === userName)?.committeeId;
+  
+  // Buscar usuario actual en la lista completa
+  const currentUserObj = users.find(
+    u => u.congregationId === congregationId && u.role === userRole && u.name === userName
+  ) || users.find(u => u.role === 'COMITE' && (u.name === userName || (userCommitteeId && u.committeeId === userCommitteeId)));
+
+  // Resolución inteligente del comité asignado (por ID, snake_case, coincidencia de nombre o primer comité)
+  let resolvedCommitteeId = userCommitteeId || currentUserObj?.committeeId || currentUserObj?.committee_id || null;
+
+  if (isCommitteeRole) {
+    const congCommittees = committees.filter(c => c.congregationId === congregationId);
+    
+    // Buscar coincidencia exacta por ID o Nombre
+    let matched = congCommittees.find(c => 
+      resolvedCommitteeId && (
+        c.id === resolvedCommitteeId || 
+        c.name.toLowerCase().trim() === String(resolvedCommitteeId).toLowerCase().trim()
+      )
+    );
+
+    // Si no hace match directo, buscar por coincidencia entre nombre de usuario y nombre del comité
+    if (!matched && userName) {
+      const uNameLower = userName.toLowerCase().trim();
+      matched = congCommittees.find(c => 
+        uNameLower.includes(c.name.toLowerCase().trim()) || 
+        c.name.toLowerCase().trim().includes(uNameLower) ||
+        (c.treasurer && c.treasurer.toLowerCase().trim() === uNameLower)
+      );
+    }
+
+    // Fallback de seguridad: si no se encontró coincidencia pero hay comités, asignar el primero
+    if (!matched && congCommittees.length > 0) {
+      matched = congCommittees[0];
+    }
+
+    if (matched) {
+      resolvedCommitteeId = matched.id;
+    }
+  }
 
   const activeCommittees = committees
-    .filter(c => c.congregationId === congregationId && (!isCommitteeRole || (effectiveCommitteeId ? (c.id === effectiveCommitteeId || c.name.toLowerCase() === effectiveCommitteeId.toLowerCase()) : false)))
+    .filter(c => c.congregationId === congregationId && (!isCommitteeRole || c.id === resolvedCommitteeId))
     .map(c => {
       const commMovs = movements.filter(m => m.committeeId === c.id && m.congregationId === congregationId && !m.annulled);
       const movsIncome = commMovs.filter(m => m.type === 'INGRESO').reduce((acc, m) => acc + (m.amount || 0), 0);
@@ -248,12 +286,12 @@ export default function App() {
 
   const activeMovements = movements.filter(m => 
     m.congregationId === congregationId && 
-    (!isCommitteeRole || (effectiveCommitteeId ? (m.committeeId === effectiveCommitteeId || activeCommittees.some(c => c.id === m.committeeId)) : false))
+    (!isCommitteeRole || m.committeeId === resolvedCommitteeId || activeCommittees.some(c => c.id === m.committeeId))
   );
   const activeTithes = tithes.filter(t => t.congregationId === congregationId);
   const activeOfferings = offerings.filter(o => 
     o.congregationId === congregationId && 
-    (!isCommitteeRole || (effectiveCommitteeId ? (o.destinationCommitteeId === effectiveCommitteeId || activeCommittees.some(c => c.id === o.destinationCommitteeId)) : false))
+    (!isCommitteeRole || o.destinationCommitteeId === resolvedCommitteeId || activeCommittees.some(c => c.id === o.destinationCommitteeId))
   );
   const activeProjects = projects.filter(p => p.congregationId === congregationId);
   const activeProjectIds = new Set(activeProjects.map(p => p.id));

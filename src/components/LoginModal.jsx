@@ -108,6 +108,19 @@ export default function LoginModal({
       return;
     }
 
+    let commId = user.committeeId || user.committee_id || null;
+    if (role === 'COMITE' && !commId && safeCommittees.length > 0) {
+      const uName = (user.name || '').toLowerCase().trim();
+      const matchedCom = safeCommittees.find(c => 
+        c.congregationId === congregationId && (
+          uName.includes(c.name.toLowerCase().trim()) || 
+          c.name.toLowerCase().trim().includes(uName) ||
+          (c.treasurer && c.treasurer.toLowerCase().trim() === uName)
+        )
+      );
+      commId = matchedCom ? matchedCom.id : safeCommittees[0].id;
+    }
+
     const selectedCongregation = safeCongregations.find(c => c.id === congregationId);
     
     onLogin({ 
@@ -115,7 +128,7 @@ export default function LoginModal({
       congregationId: congregationId, 
       username: user.name, 
       role: user.role,
-      committeeId: user.committeeId || null,
+      committeeId: commId,
       remember: remember
     });
     setPin('');
@@ -338,7 +351,13 @@ export default function LoginModal({
                       className="w-full px-3 py-2 rounded-xl border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-blue-500 outline-none"
                     >
                       {committeeUsers.map(u => {
-                        const comm = committees.find(c => c.id === u.committeeId);
+                        const commId = u.committeeId || u.committee_id;
+                        const uName = (u.name || '').toLowerCase().trim();
+                        const comm = safeCommittees.find(c => 
+                          (commId && c.id === commId) ||
+                          uName.includes(c.name.toLowerCase().trim()) ||
+                          c.name.toLowerCase().trim().includes(uName)
+                        );
                         return (
                           <option key={u.id} value={u.id}>
                             {u.name} — {comm ? comm.name : 'Comité Asignado'}
