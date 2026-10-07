@@ -1223,19 +1223,21 @@ export default function OfferingsView({
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">Comité / Destino *</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingCommitteeId(null);
-                      setCommNameInput('');
-                      setCommTreasurerInput('');
-                      setIsManageCommitteesOpen(true);
-                    }}
-                    className="text-[11px] font-bold text-amber-600 hover:text-amber-700 underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <Layers className="w-3 h-3" />
-                    <span>+ Gestionar comités</span>
-                  </button>
+                  {!isReadOnly && userRole !== 'COMITE' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingCommitteeId(null);
+                        setCommNameInput('');
+                        setCommTreasurerInput('');
+                        setIsManageCommitteesOpen(true);
+                      }}
+                      className="text-[11px] font-bold text-amber-600 hover:text-amber-700 underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <Layers className="w-3 h-3" />
+                      <span>+ Gestionar comités</span>
+                    </button>
+                  )}
                 </div>
                 <select
                   value={destinationCommitteeId}

@@ -126,14 +126,20 @@ export default function DashboardView({
           </div>
           <div className="flex items-center gap-3 relative z-10">
             <button
-              onClick={() => setIsMovementModalOpen(true)}
+              onClick={() => {
+                if (committees.length === 1) setMovementCommitteeId(committees[0].id);
+                setIsMovementModalOpen(true);
+              }}
               className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white text-blue-700 hover:bg-blue-50 font-bold text-sm shadow-lg shadow-black/10 active:scale-95 transition-all"
             >
               <ArrowRightLeft className="w-4 h-4 text-blue-600" />
               <span>Registrar Movimiento</span>
             </button>
             <button
-              onClick={() => setIsOfferingModalOpen(true)}
+              onClick={() => {
+                if (allCommittees.length === 1) setOfferingCommitteeId(allCommittees[0].id);
+                setIsOfferingModalOpen(true);
+              }}
               className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-lg shadow-amber-600/30 active:scale-95 transition-all border border-amber-400/30"
             >
               <PlusCircle className="w-4 h-4" />

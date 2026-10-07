@@ -228,10 +228,11 @@ export default function App() {
   }, [isOnline]);
 
   // --- FILTROS Y CÁLCULOS DINÁMICOS POR CONGREGACIÓN Y ROL ---
-  const isCommitteeRole = userRole === 'COMITE' && userCommitteeId;
+  const isCommitteeRole = userRole === 'COMITE';
+  const effectiveCommitteeId = userCommitteeId || users.find(u => u.congregationId === congregationId && u.role === 'COMITE' && u.name === userName)?.committeeId;
 
   const activeCommittees = committees
-    .filter(c => c.congregationId === congregationId && (!isCommitteeRole || c.id === userCommitteeId))
+    .filter(c => c.congregationId === congregationId && (!isCommitteeRole || (effectiveCommitteeId ? (c.id === effectiveCommitteeId || c.name.toLowerCase() === effectiveCommitteeId.toLowerCase()) : false)))
     .map(c => {
       const commMovs = movements.filter(m => m.committeeId === c.id && m.congregationId === congregationId && !m.annulled);
       const movsIncome = commMovs.filter(m => m.type === 'INGRESO').reduce((acc, m) => acc + (m.amount || 0), 0);
@@ -245,9 +246,15 @@ export default function App() {
       };
     });
 
-  const activeMovements = movements.filter(m => m.congregationId === congregationId && (!isCommitteeRole || m.committeeId === userCommitteeId));
+  const activeMovements = movements.filter(m => 
+    m.congregationId === congregationId && 
+    (!isCommitteeRole || (effectiveCommitteeId ? (m.committeeId === effectiveCommitteeId || activeCommittees.some(c => c.id === m.committeeId)) : false))
+  );
   const activeTithes = tithes.filter(t => t.congregationId === congregationId);
-  const activeOfferings = offerings.filter(o => o.congregationId === congregationId);
+  const activeOfferings = offerings.filter(o => 
+    o.congregationId === congregationId && 
+    (!isCommitteeRole || (effectiveCommitteeId ? (o.destinationCommitteeId === effectiveCommitteeId || activeCommittees.some(c => c.id === o.destinationCommitteeId)) : false))
+  );
   const activeProjects = projects.filter(p => p.congregationId === congregationId);
   const activeProjectIds = new Set(activeProjects.map(p => p.id));
   const activeVotes = votes.filter(v => activeProjectIds.has(v.projectId));
