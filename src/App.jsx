@@ -372,7 +372,12 @@ export default function App() {
     };
 
     const { error } = await supabase.from('movements').insert(newMovement);
-    if (error) toast.error('Error al guardar movimiento: ' + error.message);
+    if (error) {
+      toast.error('Error al guardar movimiento: ' + error.message);
+    } else {
+      toast.success('Movimiento registrado con éxito');
+      loadAllData();
+    }
   };
 
   const handleUpdateMovement = async (movData) => {
@@ -396,7 +401,12 @@ export default function App() {
   const handleAnnulMovement = async (movementId, reason) => {
     if (!isOnline) { toast.error('Sin conexión a Internet'); return; }
     const { error } = await supabase.from('movements').update({ annulled: true, annulReason: reason }).eq('id', movementId);
-    if (error) toast.error('Error al anular movimiento: ' + error.message);
+    if (error) {
+      toast.error('Error al anular movimiento: ' + error.message);
+    } else {
+      toast.success('Movimiento anulado correctamente');
+      loadAllData();
+    }
   };
 
   const handleSaveTithe = async (titheData) => {
