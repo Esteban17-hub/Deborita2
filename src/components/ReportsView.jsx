@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FileText, Download, FileSpreadsheet, Filter } from 'lucide-react';
 import { formatCurrency, formatDate, deduceDayOfWeek } from '../utils/formatters';
 import { exportToExcel, exportToPDF } from '../utils/pdfExcelExporter';
+import { exportOfferingsToExcel } from '../utils/exportHelpers';
 
 export default function ReportsView({
   movements,
@@ -142,6 +143,17 @@ export default function ReportsView({
   };
 
   const handleExportExcel = () => {
+    if (reportType === 'OFFERINGS') {
+      const periodLabel = dateFrom || dateTo ? `${dateFrom || ''} al ${dateTo || ''}` : (selectedYear !== 'ALL' ? `Año ${selectedYear}` : '');
+      exportOfferingsToExcel({
+        offerings: filteredData,
+        committees,
+        monthName: periodLabel,
+        title: 'Ingresos Ofrendas Mensual',
+        fileName: 'Ingresos_Ofrendas_Mensual'
+      });
+      return;
+    }
     const titlesMap = {
       COMMITTEES: 'Movimientos_Comites',
       TITHES: 'Liquidacion_Diezmos',

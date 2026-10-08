@@ -46,6 +46,24 @@ export function formatDate(dateStr) {
   return `${parts[2]}/${parts[1]}/${parts[0]}`;
 }
 
+export function formatLongDate(dateStr) {
+  if (!dateStr) return '';
+  const parts = String(dateStr).slice(0, 10).split('-');
+  if (parts.length !== 3) return dateStr;
+  const year = parseInt(parts[0], 10);
+  const monthIdx = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+
+  const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+  const date = new Date(year, monthIdx, day);
+  const dayName = days[date.getDay()] || '';
+  const monthName = months[monthIdx] || '';
+
+  return `${dayName}, ${day} de ${monthName} de ${year}`;
+}
+
 export function getCurrentMonthYear() {
   const now = new Date();
   const month = String(now.getMonth() + 1).padStart(2, '0');

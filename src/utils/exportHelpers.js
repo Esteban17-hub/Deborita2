@@ -1,4 +1,5 @@
-import { formatCurrency, formatDate, compareDatesAsc } from './formatters';
+import * as XLSX from 'xlsx';
+import { formatCurrency, formatDate, formatLongDate, compareDatesAsc } from './formatters';
 import { toast } from 'react-hot-toast';
 
 /**
@@ -32,7 +33,7 @@ export async function copyTextToClipboard(text) {
 }
 
 /**
- * Exporta un arreglo de objetos a un archivo Excel (.csv con BOM UTF-8)
+ * Exporta un arreglo genérico de objetos a un archivo Excel (.csv con BOM UTF-8)
  */
 export function exportToExcel(data, fileName = 'reporte_contable') {
   if (!data || data.length === 0) {
@@ -73,6 +74,101 @@ export function exportToExcel(data, fileName = 'reporte_contable') {
   URL.revokeObjectURL(url);
   
   toast.success('Archivo Excel descargado con éxito');
+}
+
+/**
+ * Exporta el reporte de ofrendas a un archivo Excel (.xlsx) con la estructura exacta:
+ * Título: Ingresos Ofrendas Mensual
+ * Columnas: Fecha | Comité | Valor
+ * Fila final: Total
+ */
+export function exportOfferingsToExcel({
+  offerings = [],
+  committees = [],
+  monthName = '',
+  title = 'Ingresos Ofrendas Mensual',
+  fileName = 'Ingresos_Ofrendas_Mensual'
+}) {
+  if (!offerings || offerings.length === 0) {
+    toast.error('No hay ofrendas registradas para exportar');
+    return;
+  }
+
+  // Ordenar cronológicamente del día 1 al 31
+  const sorted = [...offerings].sort((a, b) => compareDatesAsc(a.date, b.date));
+
+  // Mapa de nombres de comités
+  const committeeMap = {};
+  if (Array.isArray(committees)) {
+    committees.forEach(c => {
+      if (c && c.id) committeeMap[c.id] = c.name;
+    });
+  }
+
+  const wsData = [];
+
+  // Fila 1: Título superior
+  const reportHeader = monthName ? `Ingresos Ofrendas Mensual - ${monthName}` : title;
+  wsData.push([reportHeader, '', '']);
+
+  // Fila 2: Encabezados de columnas
+  wsData.push(['Fecha', 'Comité', 'Valor']);
+
+  let totalAmount = 0;
+
+  // Filas de datos
+  sorted.forEach(o => {
+    const fechaStr = formatLongDate(o.date) || formatDate(o.date);
+    const baseCommName = committeeMap[o.destinationCommitteeId] || o.committeeName || 'General';
+    
+    // Extraer notas u observaciones adicionales (sin corchetes repetidos)
+    const rawNote = (o.notes || o.description || '').replace(/^\[.*?\]\s*/, '').replace(/^\[|\]$/g, '').trim();
+    let comiteStr = baseCommName;
+    if (rawNote && rawNote.toLowerCase() !== baseCommName.toLowerCase()) {
+      comiteStr = `${baseCommName} (${rawNote})`;
+    }
+
+    const amt = typeof o.amount === 'number' ? o.amount : (parseFloat(String(o.amount).replace(/[^0-9.-]+/g, '')) || 0);
+    totalAmount += amt;
+
+    wsData.push([fechaStr, comiteStr, amt]);
+  });
+
+  // Fila final de Totales
+  wsData.push(['Total', '', totalAmount]);
+
+  // Crear la hoja de cálculo
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Unir celdas del título superior (A1:C1)
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }
+  ];
+
+  // Aplicar formato de moneda a la columna 'Valor' (columna C, índice 2)
+  for (let r = 2; r < wsData.length; r++) {
+    const cellRef = XLSX.utils.encode_cell({ r: r, c: 2 });
+    if (ws[cellRef]) {
+      ws[cellRef].t = 'n';
+      ws[cellRef].z = '"$"#,##0';
+    }
+  }
+
+  // Anchos automáticos de columnas ajustados profesionalmente
+  ws['!cols'] = [
+    { wch: 34 }, // Fecha (sábado, 1 de agosto de 2026)
+    { wch: 48 }, // Comité (Junta Local (Ofrenda ayuda a damnificados))
+    { wch: 20 }  // Valor ($ 1.847.800)
+  ];
+
+  // Crear el libro de trabajo y descargar
+  const wb = XLSX.utils.book_new();
+  const safeSheetName = (monthName || 'Ofrendas').slice(0, 30);
+  XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
+
+  const cleanFileName = `${fileName.replace(/[^a-zA-Z0-9_-]/g, '_')}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  XLSX.writeFile(wb, cleanFileName);
+  toast.success('📊 ¡Archivo Excel generado con éxito!');
 }
 
 /**

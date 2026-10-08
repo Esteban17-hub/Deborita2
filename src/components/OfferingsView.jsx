@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { HandHeart, BarChart2, PlusCircle, Pencil, Trash2, Search, Filter, X, Calendar, Layers, ChevronLeft, ChevronRight, Sparkles, TrendingUp, Share2, Printer, FileSpreadsheet, Copy, Image as ImageIcon } from 'lucide-react';
 import { formatCurrency, formatDate, deduceDayOfWeek, compareDatesAsc } from '../utils/formatters';
-import { exportToExcel, shareOfferingWhatsApp, printOfficialReceipt, printFilteredOfferingsReport, shareOfferingsReportWhatsApp, copyOfferingsSummaryText, downloadChartImage, printChartReport } from '../utils/exportHelpers';
+import { exportToExcel, exportOfferingsToExcel, shareOfferingWhatsApp, printOfficialReceipt, printFilteredOfferingsReport, shareOfferingsReportWhatsApp, copyOfferingsSummaryText, downloadChartImage, printChartReport } from '../utils/exportHelpers';
 import MoneyInput from './MoneyInput';
 import {
   Chart as ChartJS,
@@ -609,21 +609,18 @@ export default function OfferingsView({
                     <button
                       type="button"
                       onClick={() => {
-                        const exportData = sortedFilteredOfferings.map(o => {
-                          const com = safeCommittees.find(c => c.id === o.destinationCommitteeId);
-                          return {
-                            'Fecha': formatDate(o.date),
-                            'Día': o.dayOfWeek || deduceDayOfWeek(o.date),
-                            'Comité Destino': com ? com.name : 'General',
-                            'Monto': o.amount || 0,
-                            'Responsable': o.responsible || 'Tesorero',
-                            'Observaciones': (o.notes || o.description || '').replace(/^\[|\]$/g, '')
-                          };
+                        const monthObj = monthsList.find(m => m.code === tableMonthFilter);
+                        const displayMonth = monthObj ? monthObj.name : viewingMonthLabel;
+                        exportOfferingsToExcel({
+                          offerings: sortedFilteredOfferings,
+                          committees: safeCommittees,
+                          monthName: displayMonth,
+                          title: `Ingresos Ofrendas Mensual - ${displayMonth}`,
+                          fileName: `Ingresos_Ofrendas_${displayMonth.replace(/\s+/g, '_')}`
                         });
-                        exportToExcel(exportData, 'Historial_Ofrendas');
                       }}
                       className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm hover:scale-105 transition-all cursor-pointer"
-                      title="Descargar reporte en Excel (.csv)"
+                      title="Descargar reporte en Excel (.xlsx)"
                     >
                       <FileSpreadsheet className="w-3.5 h-3.5" />
                       <span>Excel</span>
