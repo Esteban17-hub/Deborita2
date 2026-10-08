@@ -1189,6 +1189,7 @@ export default function App() {
             tithes={activeTithes}
             userRole={userRole}
             isMobile={isMobile}
+            congregationName={congregationName}
             pastorName={users.find(u => u.congregationId === congregationId && u.role === 'ADMIN')?.name || 'Pastor'}
             onSaveTithe={handleSaveTithe}
             onUpdateTithe={handleUpdateTithe}

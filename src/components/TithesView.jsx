@@ -1,7 +1,17 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Calculator, History, TrendingUp, Lock, Pencil, Trash2, Search, Calendar, X, AlertCircle, Coins, Building2, UserCheck, BarChart3, Filter, Share2, Printer, FileSpreadsheet, Image as ImageIcon } from 'lucide-react';
+import { Calculator, History, TrendingUp, Lock, Pencil, Trash2, Search, Calendar, X, AlertCircle, Coins, Building2, UserCheck, BarChart3, Filter, Share2, Printer, FileSpreadsheet, Download, Copy, Image as ImageIcon } from 'lucide-react';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import { exportToExcel, shareTitheWhatsApp, printOfficialReceipt, downloadChartImage, printChartReport } from '../utils/exportHelpers';
+import { 
+  exportToExcel, 
+  exportTithesToExcel, 
+  printFilteredTithesReport, 
+  shareTithesHistoryWhatsApp, 
+  copyTithesHistoryText, 
+  shareTitheWhatsApp, 
+  printOfficialReceipt, 
+  downloadChartImage, 
+  printChartReport 
+} from '../utils/exportHelpers';
 import MoneyInput from './MoneyInput';
 import {
   Chart as ChartJS,
@@ -33,6 +43,7 @@ export default function TithesView({
   userRole = 'ADMIN', 
   isMobile = false, 
   pastorName: initialPastorName = 'Pastor', 
+  congregationName = 'Deborita Gestión Local',
   onSaveTithe, 
   onUpdateTithe, 
   onDeleteTithe 
@@ -829,96 +840,216 @@ export default function TithesView({
               </div>
             </div>
 
-            {/* Barra de Filtros de Historial: Año, Mes y Búsqueda */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-900/40">
+            {/* Barra de Filtros de Historial: Año, Mes, Búsqueda y Exportaciones */}
+            <div className="space-y-3 p-4 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-900/40">
               
-              {/* 1. Buscar */}
-              <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder="Buscar por pastor o valor..."
-                  value={historySearchQuery}
-                  onChange={(e) => setHistorySearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                {/* 1. Buscar */}
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Buscar por pastor o valor..."
+                    value={historySearchQuery}
+                    onChange={(e) => setHistorySearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+
+                {/* 2. Filtro por Año */}
+                <div className="relative">
+                  <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <select
+                    value={historySelectedYear}
+                    onChange={(e) => setHistorySelectedYear(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                  >
+                    <option value="ALL">📅 Todos los Años</option>
+                    {availableYears.map(y => (
+                      <option key={y} value={y}>Año {y}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 3. Filtro por Mes */}
+                <div className="relative">
+                  <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <select
+                    value={historySelectedMonth}
+                    onChange={(e) => setHistorySelectedMonth(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                  >
+                    <option value="ALL">🗓️ Todos los Meses</option>
+                    <option value="01">01 - Enero</option>
+                    <option value="02">02 - Febrero</option>
+                    <option value="03">03 - Marzo</option>
+                    <option value="04">04 - Abril</option>
+                    <option value="05">05 - Mayo</option>
+                    <option value="06">06 - Junio</option>
+                    <option value="07">07 - Julio</option>
+                    <option value="08">08 - Agosto</option>
+                    <option value="09">09 - Septiembre</option>
+                    <option value="10">10 - Octubre</option>
+                    <option value="11">11 - Noviembre</option>
+                    <option value="12">12 - Diciembre</option>
+                  </select>
+                </div>
+
+                {/* 4. Botón Limpiar */}
+                {hasActiveFilters ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHistorySearchQuery('');
+                      setHistorySelectedYear('ALL');
+                      setHistorySelectedMonth('ALL');
+                    }}
+                    className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-xs transition-colors cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Limpiar Filtros</span>
+                  </button>
+                ) : (
+                  <div className="hidden md:flex items-center text-[11px] font-bold text-slate-400 dark:text-slate-500 px-3">
+                    Filtros sin aplicar
+                  </div>
+                )}
               </div>
 
-              {/* 2. Filtro por Año */}
-              <div className="relative">
-                <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <select
-                  value={historySelectedYear}
-                  onChange={(e) => setHistorySelectedYear(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
-                >
-                  <option value="ALL">📅 Todos los Años</option>
-                  {availableYears.map(y => (
-                    <option key={y} value={y}>Año {y}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 3. Filtro por Mes */}
-              <div className="relative">
-                <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <select
-                  value={historySelectedMonth}
-                  onChange={(e) => setHistorySelectedMonth(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
-                >
-                  <option value="ALL">🗓️ Todos los Meses</option>
-                  <option value="01">01 - Enero</option>
-                  <option value="02">02 - Febrero</option>
-                  <option value="03">03 - Marzo</option>
-                  <option value="04">04 - Abril</option>
-                  <option value="05">05 - Mayo</option>
-                  <option value="06">06 - Junio</option>
-                  <option value="07">07 - Julio</option>
-                  <option value="08">08 - Agosto</option>
-                  <option value="09">09 - Septiembre</option>
-                  <option value="10">10 - Octubre</option>
-                  <option value="11">11 - Noviembre</option>
-                  <option value="12">12 - Diciembre</option>
-                </select>
-              </div>
-
-              {/* 4. Botón Limpiar */}
-              {hasActiveFilters && (
+              {/* Barra de Acciones de Exportación */}
+              <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/40">
+                {/* 1. Botón Exportar PDF (Elegante y sin firmas) */}
                 <button
+                  type="button"
                   onClick={() => {
-                    setHistorySearchQuery('');
-                    setHistorySelectedYear('ALL');
-                    setHistorySelectedMonth('ALL');
+                    const periodLabel = historySelectedYear !== 'ALL' 
+                      ? (historySelectedMonth !== 'ALL' ? `${historySelectedMonth}/${historySelectedYear}` : `Año ${historySelectedYear}`)
+                      : (historySelectedMonth !== 'ALL' ? `Mes ${historySelectedMonth}` : 'Historial Consolidado');
+                    
+                    printFilteredTithesReport({
+                      congregationName,
+                      pastorName,
+                      period: periodLabel,
+                      tithes: filteredTithes,
+                      totals: {
+                        grossIncome: totalFilteredGross,
+                        nationalShare: totalFilteredNational,
+                        netIncome: totalFilteredNet,
+                        localFundAport: totalFilteredLocalFund,
+                        pastorAllocation: totalFilteredPastor
+                      },
+                      averages: {
+                        avgGross: avgFilteredGross,
+                        avgNational: avgFilteredNational,
+                        avgNet: avgFilteredNet,
+                        avgLocal: avgFilteredLocalFund,
+                        avgPastor: avgFilteredPastor
+                      }
+                    });
                   }}
-                  className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs hover:bg-slate-300 transition-colors cursor-pointer"
+                  className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow-md shadow-indigo-600/20 transition-all active:scale-95 cursor-pointer"
+                  title="Exportar Reporte a PDF con Totales y Promedios (Sin firmas)"
                 >
-                  <X className="w-3.5 h-3.5" />
-                  <span>Limpiar Filtros</span>
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Exportar PDF</span>
                 </button>
-              )}
 
-              {/* 5. Botón Exportar a Excel */}
-              <button
-                type="button"
-                onClick={() => {
-                  const exportData = filteredTithes.map(t => ({
-                    'Período': `${String(t.month).padStart(2, '0')}/${t.year}`,
-                    'Pastor': t.pastorName || pastorName || 'Pastor',
-                    'Diezmo Bruto': t.grossTithe ?? t.grossIncome ?? 0,
-                    'Tesorería Nacional': t.nationalTreasury ?? t.nationalShare ?? 0,
-                    'Ingreso Neto': t.netIncome || 0,
-                    'Puntos Asignación': t.correctedPoint ?? t.pastorAllocationPercentage ?? 0,
-                    'Fondo Local': t.localFundAport || 0,
-                    'Asignación Pastor': t.pastorAllocation || 0
-                  }));
-                  exportToExcel(exportData, 'Historial_Liquidacion_Diezmos');
-                }}
-                className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5" />
-                <span>Exportar Excel</span>
-              </button>
+                {/* 2. Botón Exportar Excel (.xlsx con totales y promedios) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const periodLabel = historySelectedYear !== 'ALL' 
+                      ? (historySelectedMonth !== 'ALL' ? `${historySelectedMonth}/${historySelectedYear}` : `Año ${historySelectedYear}`)
+                      : (historySelectedMonth !== 'ALL' ? `Mes ${historySelectedMonth}` : 'Historial Consolidado');
+
+                    exportTithesToExcel({
+                      tithes: filteredTithes,
+                      pastorName,
+                      period: periodLabel,
+                      congregationName,
+                      fileName: `Liquidacion_Diezmos_${historySelectedYear !== 'ALL' ? historySelectedYear : 'Consolidado'}`
+                    });
+                  }}
+                  className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all active:scale-95 cursor-pointer"
+                  title="Exportar a Libro de Excel (.xlsx)"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  <span>Exportar Excel</span>
+                </button>
+
+                {/* 3. Compartir por WhatsApp */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const periodLabel = historySelectedYear !== 'ALL' 
+                      ? (historySelectedMonth !== 'ALL' ? `${historySelectedMonth}/${historySelectedYear}` : `Año ${historySelectedYear}`)
+                      : (historySelectedMonth !== 'ALL' ? `Mes ${historySelectedMonth}` : 'Historial Consolidado');
+
+                    shareTithesHistoryWhatsApp({
+                      congregationName,
+                      pastorName,
+                      period: periodLabel,
+                      tithes: filteredTithes,
+                      totals: {
+                        grossIncome: totalFilteredGross,
+                        nationalShare: totalFilteredNational,
+                        netIncome: totalFilteredNet,
+                        localFundAport: totalFilteredLocalFund,
+                        pastorAllocation: totalFilteredPastor
+                      },
+                      averages: {
+                        avgGross: avgFilteredGross,
+                        avgNational: avgFilteredNational,
+                        avgNet: avgFilteredNet,
+                        avgLocal: avgFilteredLocalFund,
+                        avgPastor: avgFilteredPastor
+                      }
+                    });
+                  }}
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-bold text-xs border border-emerald-300 dark:border-emerald-800 transition-all cursor-pointer"
+                  title="Compartir resumen por WhatsApp"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">WhatsApp</span>
+                </button>
+
+                {/* 4. Copiar Texto del Resumen */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const periodLabel = historySelectedYear !== 'ALL' 
+                      ? (historySelectedMonth !== 'ALL' ? `${historySelectedMonth}/${historySelectedYear}` : `Año ${historySelectedYear}`)
+                      : (historySelectedMonth !== 'ALL' ? `Mes ${historySelectedMonth}` : 'Historial Consolidado');
+
+                    copyTithesHistoryText({
+                      congregationName,
+                      pastorName,
+                      period: periodLabel,
+                      tithes: filteredTithes,
+                      totals: {
+                        grossIncome: totalFilteredGross,
+                        nationalShare: totalFilteredNational,
+                        netIncome: totalFilteredNet,
+                        localFundAport: totalFilteredLocalFund,
+                        pastorAllocation: totalFilteredPastor
+                      },
+                      averages: {
+                        avgGross: avgFilteredGross,
+                        avgNational: avgFilteredNational,
+                        avgNet: avgFilteredNet,
+                        avgLocal: avgFilteredLocalFund,
+                        avgPastor: avgFilteredPastor
+                      }
+                    });
+                  }}
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-300 dark:border-slate-700 transition-all cursor-pointer"
+                  title="Copiar texto resumen al portapapeles"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Copiar</span>
+                </button>
+              </div>
+
             </div>
 
             {filteredTithes.length === 0 ? (

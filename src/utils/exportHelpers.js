@@ -216,6 +216,481 @@ export function shareOfferingWhatsApp(offering, committeeName = 'Comité', congN
 }
 
 /**
+ * Abre una ventana imprimible / PDF con el reporte completo de diezmos filtrados, promedios y diseño elegante sin firmas
+ */
+export function printFilteredTithesReport({
+  congregationName = 'Deborita Gestión Local',
+  pastorName = 'Pastor',
+  period = 'Historial Consolidado',
+  tithes = [],
+  totals = {},
+  averages = {}
+}) {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    toast.error('Por favor permite las ventanas emergentes para imprimir');
+    return;
+  }
+
+  // Ordenar diezmos cronológicamente por año y mes
+  const sorted = [...tithes].sort((a, b) => {
+    const yDiff = Number(a.year || 0) - Number(b.year || 0);
+    if (yDiff !== 0) return yDiff;
+    return Number(a.month || 0) - Number(b.month || 0);
+  });
+
+  const count = sorted.length;
+  const totGross = totals.grossIncome ?? sorted.reduce((sum, t) => sum + (Number(t.grossTithe ?? t.grossIncome ?? 0)), 0);
+  const totNational = totals.nationalShare ?? sorted.reduce((sum, t) => sum + (Number(t.nationalTreasury ?? t.nationalShare ?? 0)), 0);
+  const totNet = totals.netIncome ?? sorted.reduce((sum, t) => sum + (Number(t.netIncome ?? 0)), 0);
+  const totLocal = totals.localFundAport ?? sorted.reduce((sum, t) => sum + (Number(t.localFundAport ?? 0)), 0);
+  const totPastor = totals.pastorAllocation ?? sorted.reduce((sum, t) => sum + (Number(t.pastorAllocation ?? 0)), 0);
+
+  const avgGross = averages.avgGross ?? (count > 0 ? Math.round(totGross / count) : 0);
+  const avgNational = averages.avgNational ?? (count > 0 ? Math.round(totNational / count) : 0);
+  const avgNet = averages.avgNet ?? (count > 0 ? Math.round(totNet / count) : 0);
+  const avgLocal = averages.avgLocal ?? (count > 0 ? Math.round(totLocal / count) : 0);
+  const avgPastor = averages.avgPastor ?? (count > 0 ? Math.round(totPastor / count) : 0);
+
+  const rowsHtml = sorted.map((t, idx) => {
+    const gross = Number(t.grossTithe ?? t.grossIncome ?? 0);
+    const nat = Number(t.nationalTreasury ?? t.nationalShare ?? 0);
+    const net = Number(t.netIncome ?? (gross - nat));
+    const pts = t.correctedPoint ?? t.pastorAllocationPercentage ?? 0;
+    const local = Number(t.localFundAport ?? 0);
+    const pastor = Number(t.pastorAllocation ?? 0);
+    const pName = t.pastorName || t.balanceGroup || pastorName || 'Pastor';
+    const rowBg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+
+    return `
+      <tr style="border-bottom: 1px solid #e2e8f0; background: ${rowBg};">
+        <td style="padding: 9px 12px; font-weight: 800; color: #4338ca;">${String(t.month).padStart(2, '0')}/${t.year}</td>
+        <td style="padding: 9px 12px; font-weight: 600; color: #334155;">${pName}</td>
+        <td style="padding: 9px 12px; text-align: right; font-weight: 800; color: #6b21a8;">${formatCurrency(gross)}</td>
+        <td style="padding: 9px 12px; text-align: right; font-weight: 700; color: #b91c1c;">-${formatCurrency(nat)}</td>
+        <td style="padding: 9px 12px; text-align: right; font-weight: 800; color: #1e40af;">${formatCurrency(net)}</td>
+        <td style="padding: 9px 12px; text-align: center; font-weight: 700; color: #92400e;">${typeof pts === 'number' ? pts.toFixed(2) : pts}%</td>
+        <td style="padding: 9px 12px; text-align: right; font-weight: 700; color: #0f172a;">${formatCurrency(local)}</td>
+        <td style="padding: 9px 12px; text-align: right; font-weight: 900; color: #15803d;">${formatCurrency(pastor)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Informe de Diezmos - ${congregationName}</title>
+        <meta charset="utf-8">
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 35px;
+            color: #0f172a;
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 3px solid #6366f1;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+          }
+          .title {
+            font-size: 22px;
+            font-weight: 900;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #312e81;
+          }
+          .sub {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 5px;
+            font-weight: 600;
+          }
+          .meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 12px;
+            color: #475569;
+            background: #f8fafc;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+          }
+          .kpi-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+          }
+          .kpi {
+            padding: 12px;
+            border-radius: 12px;
+            border: 1.5px solid #e2e8f0;
+            background: #f8fafc;
+            text-align: center;
+          }
+          .kpi-label {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            display: block;
+          }
+          .kpi-val {
+            font-size: 16px;
+            font-weight: 900;
+            margin-top: 4px;
+          }
+          .kpi-sub {
+            font-size: 10px;
+            font-weight: 700;
+            margin-top: 4px;
+            padding-top: 4px;
+            border-top: 1px dashed #cbd5e1;
+            color: #475569;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 12px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+          }
+          th {
+            background: #eef2ff;
+            color: #312e81;
+            padding: 10px 12px;
+            text-transform: uppercase;
+            font-size: 10.5px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #c7d2fe;
+          }
+          .total-row td {
+            background: #e0e7ff !important;
+            color: #1e1b4b !important;
+            font-weight: 900 !important;
+            border-top: 2px solid #6366f1 !important;
+            padding: 10px 12px;
+          }
+          .avg-row td {
+            background: #f1f5f9 !important;
+            color: #334155 !important;
+            font-weight: 800 !important;
+            border-bottom: 2px solid #cbd5e1 !important;
+            padding: 8px 12px;
+            font-size: 11px;
+          }
+          .footer {
+            text-align: center;
+            font-size: 10.5px;
+            color: #94a3b8;
+            margin-top: 35px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 12px;
+          }
+          @media print {
+            body { padding: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1 class="title">INFORME DE LIQUIDACIÓN DE DIEZMOS</h1>
+          <p class="sub">${congregationName} | Período: ${period} | Pastor Titular: ${pastorName}</p>
+        </div>
+
+        <div class="meta">
+          <span><strong>Registros Liquidados:</strong> ${count} ${count === 1 ? 'mes' : 'meses'}</span>
+          <span><strong>Fecha de Generación:</strong> ${new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+          <span><strong>Sistema:</strong> Deborita Cloud</span>
+        </div>
+
+        <div class="kpi-container">
+          <div class="kpi" style="border-color: #d8b4fe; background: #faf5ff;">
+            <span class="kpi-label" style="color: #7e22ce;">Diezmo Bruto Total</span>
+            <div class="kpi-val" style="color: #6b21a8;">${formatCurrency(totGross)}</div>
+            <div class="kpi-sub" style="color: #7e22ce;">Promedio: ${formatCurrency(avgGross)}/mes</div>
+          </div>
+
+          <div class="kpi" style="border-color: #fecdd3; background: #fff1f2;">
+            <span class="kpi-label" style="color: #be123c;">Tesorería Nacional</span>
+            <div class="kpi-val" style="color: #b91c1c;">-${formatCurrency(totNational)}</div>
+            <div class="kpi-sub" style="color: #be123c;">Promedio: -${formatCurrency(avgNational)}/mes</div>
+          </div>
+
+          <div class="kpi" style="border-color: #bfdbfe; background: #eff6ff;">
+            <span class="kpi-label" style="color: #1d4ed8;">Ingreso Neto Total</span>
+            <div class="kpi-val" style="color: #1e40af;">${formatCurrency(totNet)}</div>
+            <div class="kpi-sub" style="color: #1d4ed8;">Promedio: ${formatCurrency(avgNet)}/mes</div>
+          </div>
+
+          <div class="kpi" style="border-color: #bbf7d0; background: #f0fdf4;">
+            <span class="kpi-label" style="color: #15803d;">Asignación Pastoral</span>
+            <div class="kpi-val" style="color: #166534;">${formatCurrency(totPastor)}</div>
+            <div class="kpi-sub" style="color: #15803d;">Promedio: ${formatCurrency(avgPastor)}/mes</div>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align: left;">Mes/Año</th>
+              <th style="text-align: left;">Pastor</th>
+              <th style="text-align: right;">Diezmo Bruto</th>
+              <th style="text-align: right;">Tesorería Nac.</th>
+              <th style="text-align: right;">Ingreso Neto</th>
+              <th style="text-align: center;">Puntos</th>
+              <th style="text-align: right;">Fondo Local</th>
+              <th style="text-align: right;">Asign. Pastor</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+            <tr class="total-row">
+              <td colspan="2">TOTALES CONSOLIDADOS (${count} MESES)</td>
+              <td style="text-align: right;">${formatCurrency(totGross)}</td>
+              <td style="text-align: right;">-${formatCurrency(totNational)}</td>
+              <td style="text-align: right;">${formatCurrency(totNet)}</td>
+              <td style="text-align: center;">-</td>
+              <td style="text-align: right;">${formatCurrency(totLocal)}</td>
+              <td style="text-align: right;">${formatCurrency(totPastor)}</td>
+            </tr>
+            <tr class="avg-row">
+              <td colspan="2">PROMEDIOS MENSUALES</td>
+              <td style="text-align: right; color: #7e22ce;">${formatCurrency(avgGross)}</td>
+              <td style="text-align: right; color: #be123c;">-${formatCurrency(avgNational)}</td>
+              <td style="text-align: right; color: #1d4ed8;">${formatCurrency(avgNet)}</td>
+              <td style="text-align: center;">-</td>
+              <td style="text-align: right;">${formatCurrency(avgLocal)}</td>
+              <td style="text-align: right; color: #15803d;">${formatCurrency(avgPastor)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="footer">
+          Documento generado electrónicamente por Sistema de Contabilidad Deborita. Válido para control interno, auditoría contable y reporte congregacional.
+        </div>
+
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+    </html>
+  `;
+
+  printWindow.document.write(html);
+  printWindow.document.close();
+}
+
+/**
+ * Exporta el reporte de diezmos a un archivo Excel (.xlsx) nativo con formato, totales y promedios
+ */
+export function exportTithesToExcel({
+  tithes = [],
+  pastorName = 'Pastor',
+  period = '',
+  congregationName = 'Deborita Gestión Local',
+  fileName = 'Liquidacion_Diezmos'
+}) {
+  if (!tithes || tithes.length === 0) {
+    toast.error('No hay diezmos liquidados para exportar');
+    return;
+  }
+
+  const sorted = [...tithes].sort((a, b) => {
+    const yDiff = Number(a.year || 0) - Number(b.year || 0);
+    if (yDiff !== 0) return yDiff;
+    return Number(a.month || 0) - Number(b.month || 0);
+  });
+
+  const count = sorted.length;
+  let totGross = 0;
+  let totNational = 0;
+  let totNet = 0;
+  let totLocal = 0;
+  let totPastor = 0;
+
+  const wsData = [];
+  const headerTitle = `INFORME DE LIQUIDACIÓN DE DIEZMOS - ${period || 'Historial'}`;
+  wsData.push([headerTitle, '', '', '', '', '', '', '']);
+  wsData.push([`Congregación: ${congregationName}`, '', '', '', '', '', '', '']);
+  wsData.push([]); // blank
+
+  wsData.push(['Mes/Año', 'Pastor', 'Diezmo Bruto', 'Tesorería Nacional', 'Ingreso Neto', 'Puntos (%)', 'Fondo Local', 'Asignación Pastor']);
+
+  sorted.forEach(t => {
+    const gross = Number(t.grossTithe ?? t.grossIncome ?? 0);
+    const nat = Number(t.nationalTreasury ?? t.nationalShare ?? 0);
+    const net = Number(t.netIncome ?? (gross - nat));
+    const pts = t.correctedPoint ?? t.pastorAllocationPercentage ?? 0;
+    const local = Number(t.localFundAport ?? 0);
+    const pastor = Number(t.pastorAllocation ?? 0);
+    const pName = t.pastorName || t.balanceGroup || pastorName || 'Pastor';
+
+    totGross += gross;
+    totNational += nat;
+    totNet += net;
+    totLocal += local;
+    totPastor += pastor;
+
+    wsData.push([
+      `${String(t.month).padStart(2, '0')}/${t.year}`,
+      pName,
+      gross,
+      nat,
+      net,
+      typeof pts === 'number' ? `${pts.toFixed(2)}%` : `${pts}%`,
+      local,
+      pastor
+    ]);
+  });
+
+  // Totales
+  wsData.push([
+    `TOTALES (${count} MESES)`,
+    '',
+    totGross,
+    totNational,
+    totNet,
+    '',
+    totLocal,
+    totPastor
+  ]);
+
+  // Promedios
+  wsData.push([
+    'PROMEDIOS MENSUALES',
+    '',
+    count > 0 ? Math.round(totGross / count) : 0,
+    count > 0 ? Math.round(totNational / count) : 0,
+    count > 0 ? Math.round(totNet / count) : 0,
+    '',
+    count > 0 ? Math.round(totLocal / count) : 0,
+    count > 0 ? Math.round(totPastor / count) : 0
+  ]);
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } }
+  ];
+
+  // Formato de moneda para columnas C, D, E, G, H (índices 2, 3, 4, 6, 7)
+  const currencyCols = [2, 3, 4, 6, 7];
+  for (let r = 4; r < wsData.length; r++) {
+    currencyCols.forEach(c => {
+      const cellRef = XLSX.utils.encode_cell({ r: r, c: c });
+      if (ws[cellRef] && typeof ws[cellRef].v === 'number') {
+        ws[cellRef].t = 'n';
+        ws[cellRef].z = '"$"#,##0';
+      }
+    });
+  }
+
+  ws['!cols'] = [
+    { wch: 14 },
+    { wch: 22 },
+    { wch: 18 },
+    { wch: 18 },
+    { wch: 18 },
+    { wch: 14 },
+    { wch: 18 },
+    { wch: 20 }
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Diezmos');
+  const cleanFileName = `${fileName.replace(/[^a-zA-Z0-9_-]/g, '_')}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  XLSX.writeFile(wb, cleanFileName);
+  toast.success('📊 ¡Archivo Excel generado con éxito!');
+}
+
+/**
+ * Genera el texto estructurado del resumen histórico de diezmos
+ */
+export function buildTithesHistorySummaryText({ congregationName = '', pastorName = '', period = '', tithes = [], totals = {}, averages = {} }) {
+  const sorted = [...tithes].sort((a, b) => {
+    const yDiff = Number(a.year || 0) - Number(b.year || 0);
+    if (yDiff !== 0) return yDiff;
+    return Number(a.month || 0) - Number(b.month || 0);
+  });
+
+  const count = sorted.length;
+  const totGross = totals.grossIncome ?? sorted.reduce((sum, t) => sum + (Number(t.grossTithe ?? t.grossIncome ?? 0)), 0);
+  const totNational = totals.nationalShare ?? sorted.reduce((sum, t) => sum + (Number(t.nationalTreasury ?? t.nationalShare ?? 0)), 0);
+  const totNet = totals.netIncome ?? sorted.reduce((sum, t) => sum + (Number(t.netIncome ?? 0)), 0);
+  const totPastor = totals.pastorAllocation ?? sorted.reduce((sum, t) => sum + (Number(t.pastorAllocation ?? 0)), 0);
+
+  const avgGross = averages.avgGross ?? (count > 0 ? Math.round(totGross / count) : 0);
+  const avgPastor = averages.avgPastor ?? (count > 0 ? Math.round(totPastor / count) : 0);
+
+  let text = `📜 *INFORME CONSOLIDADO DE DIEZMOS*\n`;
+  if (congregationName) text += `🏛️ *Congregación:* ${congregationName}\n`;
+  if (period) text += `🗓️ *Período:* ${period}\n`;
+  if (pastorName) text += `👤 *Pastor Titular:* ${pastorName}\n`;
+  text += `------------------------------------\n`;
+  text += `💰 *Total Diezmo Bruto (${count} meses):* ${formatCurrency(totGross)}\n`;
+  text += `🔴 *Total Fondo Nacional:* -${formatCurrency(totNational)}\n`;
+  text += `💵 *Total Ingreso Neto:* ${formatCurrency(totNet)}\n`;
+  text += `⭐ *TOTAL ASIGNACIÓN PASTORAL:* ${formatCurrency(totPastor)}\n`;
+  text += `------------------------------------\n`;
+  text += `📊 *PROMEDIOS MENSUALES:*\n`;
+  text += `• Diezmo Bruto Promedio: ${formatCurrency(avgGross)}/mes\n`;
+  text += `• Asignación Pastoral Promedio: ${formatCurrency(avgPastor)}/mes\n`;
+  text += `------------------------------------\n`;
+  text += `📋 *DESGLOSE MES A MES:*\n`;
+
+  if (sorted.length === 0) {
+    text += `_Sin liquidaciones registradas en este período._\n`;
+  } else {
+    sorted.forEach(t => {
+      const p = `${String(t.month).padStart(2, '0')}/${t.year}`;
+      const g = formatCurrency(Number(t.grossTithe ?? t.grossIncome ?? 0));
+      const a = formatCurrency(Number(t.pastorAllocation ?? 0));
+      text += `• *${p}:* Bruto: ${g} | Neto Pastoral: *${a}*\n`;
+    });
+  }
+
+  text += `====================================\n`;
+  text += `_Generado por Sistema Deborita Gestión Local_`;
+  return text;
+}
+
+export async function copyTithesHistoryText(params) {
+  const text = buildTithesHistorySummaryText(params);
+  await copyTextToClipboard(text);
+
+  if (navigator.share && /mobile|android|iphone|ipad/i.test(navigator.userAgent)) {
+    try {
+      await navigator.share({
+        title: `Informe de Diezmos`,
+        text: text
+      });
+      return;
+    } catch (e) {}
+  }
+  toast.success('📋 ¡Resumen de diezmos copiado al portapapeles!');
+}
+
+export function shareTithesHistoryWhatsApp(params) {
+  const text = buildTithesHistorySummaryText(params);
+  const encoded = encodeURI(text);
+  copyTextToClipboard(text);
+  toast.success('Reporte copiado. Abriendo WhatsApp...');
+  window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
+}
+
+/**
  * Abre una ventana imprimible / PDF con el comprobante oficial membretado
  */
 export function printOfficialReceipt({ title, subtitle, congregationName, date, details = [], total, notes, signatures = [] }) {
