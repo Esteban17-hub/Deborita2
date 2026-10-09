@@ -67,9 +67,13 @@ export default function TithesView({
   const [historySearchQuery, setHistorySearchQuery] = useState('');
   const [historySelectedYear, setHistorySelectedYear] = useState('ALL');
   const [historySelectedMonth, setHistorySelectedMonth] = useState('ALL');
+  const [historyRangeFrom, setHistoryRangeFrom] = useState(''); // ej. "2025-09"
+  const [historyRangeTo, setHistoryRangeTo] = useState('');     // ej. "2026-09"
 
-  // Año seleccionado para el gráfico de evolución
+  // Filtros para el gráfico de evolución
   const [chartYear, setChartYear] = useState(String(new Date().getFullYear()));
+  const [chartRangeFrom, setChartRangeFrom] = useState(''); // ej. "2025-09"
+  const [chartRangeTo, setChartRangeTo] = useState('');     // ej. "2026-09"
   const chartRef = useRef(null);
 
   // Años disponibles en el historial
@@ -170,52 +174,72 @@ export default function TithesView({
 
   // Nombres de los meses
   const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const fullMonthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
   
-  // Datos para gráfico de evolución del Diezmo Bruto
-  const chartDataValues = monthNames.map((_, index) => {
-    const monthIndex = (index + 1).toString().padStart(2, '0');
-    const found = tithes.find(t => String(t.month).padStart(2, '0') === monthIndex && String(t.year) === String(chartYear));
-    return found ? (found.grossTithe ?? found.grossIncome ?? 0) : 0;
-  });
+  const getMonthName = (m) => monthNames[parseInt(m, 10) - 1] || '-';
+  const getFullMonthName = (m) => fullMonthNames[parseInt(m, 10) - 1] || '-';
 
-  const chartData = {
-    labels: monthNames,
-    datasets: [
-      {
-        label: `Diezmo Bruto ${chartYear} ($)`,
-        data: chartDataValues,
-        borderColor: '#4f46e5',
-        backgroundColor: 'rgba(79, 70, 229, 0.12)',
-        fill: true,
-        tension: 0.35,
-        pointRadius: 6,
-        pointBackgroundColor: '#4338ca',
-        pointBorderColor: '#ffffff',
-        pointBorderWidth: 2
+  const formatMonthYearLabel = (myStr) => {
+    if (!myStr) return '';
+    const parts = myStr.split('-');
+    if (parts.length < 2) return myStr;
+    const y = parts[0];
+    const mIdx = parseInt(parts[1], 10) - 1;
+    return `${fullMonthNames[mIdx] || parts[1]} de ${y}`;
+  };
+
+  const getMonthRangeList = (fromKey, toKey) => {
+    if (!fromKey || !toKey) return [];
+    let [startY, startM] = fromKey.split('-').map(Number);
+    const [endY, endM] = toKey.split('-').map(Number);
+    if (startY > endY || (startY === endY && startM > endM)) {
+      return [];
+    }
+    const result = [];
+    while (startY < endY || (startY === endY && startM <= endM)) {
+      result.push({
+        key: `${startY}-${String(startM).padStart(2, '0')}`,
+        year: String(startY),
+        month: String(startM).padStart(2, '0'),
+        shortLabel: `${monthNames[startM - 1]} ${startY}`,
+        fullLabel: `${fullMonthNames[startM - 1]} ${startY}`
+      });
+      startM++;
+      if (startM > 12) {
+        startM = 1;
+        startY++;
       }
-    ]
+    }
+    return result;
   };
 
   // Filtro y ordenamiento del historial (del más reciente al más antiguo)
   const filteredTithes = useMemo(() => {
     return tithes.filter(t => {
-      // Filtro por Año
-      if (historySelectedYear !== 'ALL' && String(t.year) !== historySelectedYear) {
+      const tYear = String(t.year || (t.date ? t.date.slice(0, 4) : ''));
+      const tMonth = String(t.month || (t.date ? t.date.slice(5, 7) : '')).padStart(2, '0');
+      const tMonthKey = `${tYear}-${tMonth}`;
+
+      // 1. Filtro por Rango de Meses (Desde / Hasta)
+      if (historyRangeFrom && tMonthKey < historyRangeFrom) return false;
+      if (historyRangeTo && tMonthKey > historyRangeTo) return false;
+
+      // 2. Filtro por Año
+      if (historySelectedYear !== 'ALL' && tYear !== historySelectedYear) {
         return false;
       }
-      // Filtro por Mes
-      if (historySelectedMonth !== 'ALL') {
-        const tMonth = String(t.month).padStart(2, '0');
-        if (tMonth !== historySelectedMonth) return false;
+      // 3. Filtro por Mes
+      if (historySelectedMonth !== 'ALL' && tMonth !== historySelectedMonth) {
+        return false;
       }
-      // Filtro por Búsqueda
+      // 4. Filtro por Búsqueda
       if (historySearchQuery.trim()) {
         const q = historySearchQuery.toLowerCase().trim();
         const matchPastor = (t.pastorName || t.balanceGroup || '').toLowerCase().includes(q);
         const matchGross = String(t.grossTithe ?? t.grossIncome ?? '').includes(q);
         const matchNet = String(t.netIncome || '').includes(q);
         const matchAlloc = String(t.pastorAllocation || '').includes(q);
-        const matchDate = `${String(t.month).padStart(2, '0')}/${t.year}`.includes(q);
+        const matchDate = `${tMonth}/${tYear}`.includes(q);
         if (!matchPastor && !matchGross && !matchNet && !matchAlloc && !matchDate) return false;
       }
       return true;
@@ -224,7 +248,7 @@ export default function TithesView({
       if (yrDiff !== 0) return yrDiff;
       return Number(b.month) - Number(a.month);
     });
-  }, [tithes, historySelectedYear, historySelectedMonth, historySearchQuery]);
+  }, [tithes, historySelectedYear, historySelectedMonth, historySearchQuery, historyRangeFrom, historyRangeTo]);
 
   // Totales sumados de cada ítem en el historial
   const count = filteredTithes.length;
@@ -234,36 +258,144 @@ export default function TithesView({
   const totalFilteredLocalFund = filteredTithes.reduce((acc, t) => acc + (t.localFundAport || 0), 0);
   const totalFilteredPastor = filteredTithes.reduce((acc, t) => acc + (t.pastorAllocation || 0), 0);
 
-  // Promedios matemáticos de los datos mostrados (bien calculados)
+  // Promedios matemáticos de los datos mostrados
   const avgFilteredGross = count > 0 ? Math.round(totalFilteredGross / count) : 0;
   const avgFilteredNational = count > 0 ? Math.round(totalFilteredNational / count) : 0;
   const avgFilteredNet = count > 0 ? Math.round(totalFilteredNet / count) : 0;
   const avgFilteredLocalFund = count > 0 ? Math.round(totalFilteredLocalFund / count) : 0;
   const avgFilteredPastor = count > 0 ? Math.round(totalFilteredPastor / count) : 0;
 
-  // Cálculos de Resumen Anual para la pestaña de Gráfico
-  const currentChartYearTithes = tithes.filter(t => String(t.year) === String(chartYear));
-  
-  const avgGrossIncome = currentChartYearTithes.length > 0
-    ? currentChartYearTithes.reduce((acc, t) => acc + (t.grossTithe ?? t.grossIncome ?? 0), 0) / currentChartYearTithes.length
-    : 0;
-    
-  const avgPastorAllocation = currentChartYearTithes.length > 0
-    ? currentChartYearTithes.reduce((acc, t) => acc + (t.pastorAllocation || 0), 0) / currentChartYearTithes.length
-    : 0;
+  const getHistoryPeriodLabel = () => {
+    if (historyRangeFrom || historyRangeTo) {
+      if (historyRangeFrom && historyRangeTo) {
+        return `${formatMonthYearLabel(historyRangeFrom)} a ${formatMonthYearLabel(historyRangeTo)}`;
+      }
+      if (historyRangeFrom) return `Desde ${formatMonthYearLabel(historyRangeFrom)}`;
+      return `Hasta ${formatMonthYearLabel(historyRangeTo)}`;
+    }
+    if (historySelectedYear !== 'ALL') {
+      return historySelectedMonth !== 'ALL' ? `${historySelectedMonth}/${historySelectedYear}` : `Año ${historySelectedYear}`;
+    }
+    if (historySelectedMonth !== 'ALL') {
+      return `Mes ${historySelectedMonth}`;
+    }
+    return 'Historial Consolidado';
+  };
 
-  const maxGrossMonth = currentChartYearTithes.length > 0
-    ? currentChartYearTithes.reduce((max, t) => (((t.grossTithe ?? t.grossIncome ?? 0)) > ((max.grossTithe ?? max.grossIncome ?? 0)) ? t : max), currentChartYearTithes[0])
+  // Gráfico de Evolución: Configuración Dinámica por Año o por Rango de Meses
+  const isChartRangeActive = Boolean(chartRangeFrom && chartRangeTo);
+
+  const chartTimeline = useMemo(() => {
+    if (isChartRangeActive) {
+      const list = getMonthRangeList(chartRangeFrom, chartRangeTo);
+      return list.length > 0 ? list : [];
+    }
+    // Por defecto, los 12 meses del año seleccionado
+    return monthNames.map((name, index) => {
+      const mStr = String(index + 1).padStart(2, '0');
+      return {
+        key: `${chartYear}-${mStr}`,
+        year: String(chartYear),
+        month: mStr,
+        shortLabel: name,
+        fullLabel: `${fullMonthNames[index]} ${chartYear}`
+      };
+    });
+  }, [isChartRangeActive, chartRangeFrom, chartRangeTo, chartYear]);
+
+  const chartGrossDataValues = chartTimeline.map(item => {
+    const found = tithes.find(t => {
+      const tYear = String(t.year || (t.date ? t.date.slice(0, 4) : ''));
+      const tMonth = String(t.month || (t.date ? t.date.slice(5, 7) : '')).padStart(2, '0');
+      return tYear === item.year && tMonth === item.month;
+    });
+    return found ? (found.grossTithe ?? found.grossIncome ?? 0) : 0;
+  });
+
+  const chartPastorDataValues = chartTimeline.map(item => {
+    const found = tithes.find(t => {
+      const tYear = String(t.year || (t.date ? t.date.slice(0, 4) : ''));
+      const tMonth = String(t.month || (t.date ? t.date.slice(5, 7) : '')).padStart(2, '0');
+      return tYear === item.year && tMonth === item.month;
+    });
+    return found ? (found.pastorAllocation || 0) : 0;
+  });
+
+  const chartData = {
+    labels: chartTimeline.map(item => isChartRangeActive ? item.shortLabel : item.shortLabel),
+    datasets: [
+      {
+        label: `Diezmo Bruto Recaudado ($)`,
+        data: chartGrossDataValues,
+        borderColor: '#4f46e5',
+        backgroundColor: 'rgba(79, 70, 229, 0.15)',
+        fill: true,
+        tension: 0.35,
+        pointRadius: isChartRangeActive ? 4 : 6,
+        pointBackgroundColor: '#4338ca',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2
+      },
+      {
+        label: `Asignación Pastoral ($)`,
+        data: chartPastorDataValues,
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16, 185, 129, 0.08)',
+        fill: false,
+        borderDash: [5, 5],
+        tension: 0.35,
+        pointRadius: isChartRangeActive ? 4 : 5,
+        pointBackgroundColor: '#059669',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2
+      }
+    ]
+  };
+
+  // Liquidaciones activas para el cálculo de estadísticas del Gráfico
+  const currentChartTithes = useMemo(() => {
+    return tithes.filter(t => {
+      const tYear = String(t.year || (t.date ? t.date.slice(0, 4) : ''));
+      const tMonth = String(t.month || (t.date ? t.date.slice(5, 7) : '')).padStart(2, '0');
+      const tKey = `${tYear}-${tMonth}`;
+
+      if (chartRangeFrom && tKey < chartRangeFrom) return false;
+      if (chartRangeTo && tKey > chartRangeTo) return false;
+      if (!chartRangeFrom && !chartRangeTo && tYear !== String(chartYear)) return false;
+      return true;
+    });
+  }, [tithes, chartRangeFrom, chartRangeTo, chartYear]);
+
+  const chartCount = currentChartTithes.length;
+  const chartTotGross = currentChartTithes.reduce((acc, t) => acc + (t.grossTithe ?? t.grossIncome ?? 0), 0);
+  const chartTotPastor = currentChartTithes.reduce((acc, t) => acc + (t.pastorAllocation || 0), 0);
+  const chartTotNational = currentChartTithes.reduce((acc, t) => acc + (t.nationalTreasury ?? t.nationalShare ?? 0), 0);
+  const chartTotLocal = currentChartTithes.reduce((acc, t) => acc + (t.localFundAport || 0), 0);
+
+  const avgGrossIncome = chartCount > 0 ? Math.round(chartTotGross / chartCount) : 0;
+  const avgPastorAllocation = chartCount > 0 ? Math.round(chartTotPastor / chartCount) : 0;
+  const avgNationalAllocation = chartCount > 0 ? Math.round(chartTotNational / chartCount) : 0;
+  const avgLocalAllocation = chartCount > 0 ? Math.round(chartTotLocal / chartCount) : 0;
+
+  const maxGrossMonth = chartCount > 0
+    ? currentChartTithes.reduce((max, t) => (((t.grossTithe ?? t.grossIncome ?? 0)) > ((max.grossTithe ?? max.grossIncome ?? 0)) ? t : max), currentChartTithes[0])
     : null;
 
-  const minGrossMonth = currentChartYearTithes.length > 0
-    ? currentChartYearTithes.reduce((min, t) => (((t.grossTithe ?? t.grossIncome ?? 0)) < ((min.grossTithe ?? min.grossIncome ?? 0)) ? t : min), currentChartYearTithes[0])
+  const minGrossMonth = chartCount > 0
+    ? currentChartTithes.reduce((min, t) => (((t.grossTithe ?? t.grossIncome ?? 0)) < ((min.grossTithe ?? min.grossIncome ?? 0)) ? t : min), currentChartTithes[0])
     : null;
 
   const maxGrossAmount = maxGrossMonth ? (maxGrossMonth.grossTithe ?? maxGrossMonth.grossIncome ?? 0) : 0;
   const minGrossAmount = minGrossMonth ? (minGrossMonth.grossTithe ?? minGrossMonth.grossIncome ?? 0) : 0;
 
-  const getMonthName = (m) => monthNames[parseInt(m) - 1] || '-';
+  const getChartPeriodLabel = () => {
+    if (chartRangeFrom && chartRangeTo) {
+      return `${formatMonthYearLabel(chartRangeFrom)} a ${formatMonthYearLabel(chartRangeTo)}`;
+    }
+    if (chartRangeFrom) return `Desde ${formatMonthYearLabel(chartRangeFrom)}`;
+    if (chartRangeTo) return `Hasta ${formatMonthYearLabel(chartRangeTo)}`;
+    return `Año ${chartYear}`;
+  };
 
   // Ocultar módulo si es rol VISITA
   if (userRole === 'VISITA') {
@@ -278,7 +410,7 @@ export default function TithesView({
     );
   }
 
-  const hasActiveFilters = historySearchQuery.trim() !== '' || historySelectedYear !== 'ALL' || historySelectedMonth !== 'ALL';
+  const hasActiveFilters = historySearchQuery.trim() !== '' || historySelectedYear !== 'ALL' || historySelectedMonth !== 'ALL' || historyRangeFrom !== '' || historyRangeTo !== '';
 
   return (
     <div className="space-y-6">
@@ -772,60 +904,67 @@ export default function TithesView({
 
       {/* Pestaña 2: Historial */}
       {activeTab === 'history' && (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-fade-in">
           
-          {/* Tarjetas KPI de Resumen de Totales y Promedios */}
+          {/* Tarjetas KPI de Resumen de Totales y Promedios (Ultra Notables) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             
-            <div className="p-5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/60 shadow-sm flex flex-col justify-between">
+            {/* 1. Diezmo Bruto Total */}
+            <div className="p-5 rounded-3xl bg-gradient-to-br from-indigo-50 via-indigo-50/70 to-indigo-100/50 dark:from-indigo-950/60 dark:via-indigo-950/40 dark:to-indigo-900/30 border-2 border-indigo-200 dark:border-indigo-800 shadow-sm flex flex-col justify-between">
               <span className="text-[11px] font-black text-indigo-900 dark:text-indigo-200 uppercase tracking-wider flex items-center gap-1.5">
-                <Coins className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Total Diezmo Bruto
+                <Coins className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                Total Diezmo Bruto
               </span>
-              <p className="text-2xl font-black text-indigo-950 dark:text-white mt-2">
+              <p className="text-2xl sm:text-3xl font-black text-indigo-950 dark:text-white mt-2">
                 {formatCurrency(totalFilteredGross)}
               </p>
-              <div className="pt-2 mt-2 border-t border-indigo-100 dark:border-indigo-900/60 flex justify-between items-center text-[10px] font-bold text-indigo-700 dark:text-indigo-300">
-                <span>Promedio: {formatCurrency(avgFilteredGross)}</span>
-                <span>{count} regs.</span>
+              <div className="pt-2.5 mt-2.5 border-t border-indigo-200/80 dark:border-indigo-800/80 flex justify-between items-center text-xs font-black text-indigo-800 dark:text-indigo-300">
+                <span>Promedio Mensual:</span>
+                <span className="px-2.5 py-0.5 rounded-lg bg-indigo-200/80 dark:bg-indigo-900/80 text-indigo-950 dark:text-indigo-100">{formatCurrency(avgFilteredGross)}</span>
               </div>
             </div>
 
-            <div className="p-5 rounded-2xl bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/60 shadow-sm flex flex-col justify-between">
+            {/* 2. Tesorería Nacional */}
+            <div className="p-5 rounded-3xl bg-gradient-to-br from-rose-50 via-rose-50/70 to-rose-100/50 dark:from-rose-950/60 dark:via-rose-950/40 dark:to-rose-900/30 border-2 border-rose-200 dark:border-rose-800 shadow-sm flex flex-col justify-between">
               <span className="text-[11px] font-black text-rose-900 dark:text-rose-200 uppercase tracking-wider flex items-center gap-1.5">
-                <Building2 className="w-4 h-4 text-rose-600 dark:text-rose-400" /> Total Tesorería Nac.
+                <Building2 className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                Total Tesorería Nac. (21%)
               </span>
-              <p className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-2">
-                {formatCurrency(totalFilteredNational)}
+              <p className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400 mt-2">
+                -{formatCurrency(totalFilteredNational)}
               </p>
-              <div className="pt-2 mt-2 border-t border-rose-100 dark:border-rose-900/60 flex justify-between items-center text-[10px] font-bold text-rose-700 dark:text-rose-300">
-                <span>Promedio: {formatCurrency(avgFilteredNational)}</span>
-                <span>Aporte Nacional</span>
+              <div className="pt-2.5 mt-2.5 border-t border-rose-200/80 dark:border-rose-800/80 flex justify-between items-center text-xs font-black text-rose-800 dark:text-rose-300">
+                <span>Promedio Mensual:</span>
+                <span className="px-2.5 py-0.5 rounded-lg bg-rose-200/80 dark:bg-rose-900/80 text-rose-950 dark:text-rose-100">-{formatCurrency(avgFilteredNational)}</span>
               </div>
             </div>
 
-            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
+            {/* 3. Fondo Local */}
+            <div className="p-5 rounded-3xl bg-gradient-to-br from-slate-50 via-slate-50/70 to-slate-100/50 dark:from-slate-900/80 dark:via-slate-800/60 dark:to-slate-900/40 border-2 border-slate-300 dark:border-slate-700 shadow-sm flex flex-col justify-between">
               <span className="text-[11px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
                 🏛️ Total Fondo Local
               </span>
-              <p className="text-2xl font-black text-slate-900 dark:text-white mt-2">
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-2">
                 {formatCurrency(totalFilteredLocalFund)}
               </p>
-              <div className="pt-2 mt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center text-[10px] font-bold text-slate-600 dark:text-slate-400">
-                <span>Promedio: {formatCurrency(avgFilteredLocalFund)}</span>
-                <span>Fondo Local</span>
+              <div className="pt-2.5 mt-2.5 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center text-xs font-black text-slate-700 dark:text-slate-300">
+                <span>Promedio Mensual:</span>
+                <span className="px-2.5 py-0.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100">{formatCurrency(avgFilteredLocalFund)}</span>
               </div>
             </div>
 
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-100/90 via-indigo-50 to-blue-50 dark:from-indigo-950/60 dark:via-indigo-900/40 dark:to-slate-900 border-2 border-indigo-300 dark:border-indigo-700 shadow-md flex flex-col justify-between">
-              <span className="text-[11px] font-black text-indigo-900 dark:text-indigo-200 uppercase tracking-wider flex items-center gap-1.5">
-                <UserCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Total Asign. Pastoral
+            {/* 4. Asignación Pastoral */}
+            <div className="p-5 rounded-3xl bg-gradient-to-br from-emerald-50 via-emerald-50/70 to-emerald-100/50 dark:from-emerald-950/60 dark:via-emerald-950/40 dark:to-emerald-900/30 border-2 border-emerald-300 dark:border-emerald-700 shadow-md flex flex-col justify-between">
+              <span className="text-[11px] font-black text-emerald-900 dark:text-emerald-200 uppercase tracking-wider flex items-center gap-1.5">
+                <UserCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                Total Asign. Pastoral
               </span>
-              <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-2">
+              <p className="text-2xl sm:text-3xl font-black text-emerald-700 dark:text-emerald-300 mt-2">
                 {formatCurrency(totalFilteredPastor)}
               </p>
-              <div className="pt-2 mt-2 border-t border-indigo-200 dark:border-indigo-800 flex justify-between items-center text-[10px] font-bold text-indigo-800 dark:text-indigo-300">
-                <span>Promedio: {formatCurrency(avgFilteredPastor)}</span>
-                <span>Neto Pastoral</span>
+              <div className="pt-2.5 mt-2.5 border-t border-emerald-200 dark:border-emerald-800 flex justify-between items-center text-xs font-black text-emerald-800 dark:text-emerald-300">
+                <span>Promedio Mensual:</span>
+                <span className="px-2.5 py-0.5 rounded-lg bg-emerald-200/80 dark:bg-emerald-900/80 text-emerald-950 dark:text-emerald-100">{formatCurrency(avgFilteredPastor)}</span>
               </div>
             </div>
 
@@ -835,85 +974,152 @@ export default function TithesView({
             
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-black text-slate-900 dark:text-white">Historial de Diezmos Liquidados</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Consulta, audita y edita las liquidaciones mensuales con cálculo de totales y promedios en vivo</p>
+                <h2 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <History className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                  Historial de Diezmos Liquidados ({getHistoryPeriodLabel()})
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Consulta, audita y edita las liquidaciones mensuales con cálculo automático de totales y promedios en vivo
+                </p>
               </div>
             </div>
 
-            {/* Barra de Filtros de Historial: Año, Mes, Búsqueda y Exportaciones */}
-            <div className="space-y-3 p-4 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-900/40">
+            {/* Barra de Filtros de Historial: Búsqueda, Año, Mes, Rango de Meses y Exportaciones */}
+            <div className="space-y-3.5 p-4.5 rounded-3xl bg-indigo-50/50 dark:bg-indigo-950/30 border-2 border-indigo-200/80 dark:border-indigo-900/60 shadow-sm">
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                {/* 1. Buscar */}
-                <div className="relative">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="text"
-                    placeholder="Buscar por pastor o valor..."
-                    value={historySearchQuery}
-                    onChange={(e) => setHistorySearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
-                  />
-                </div>
-
-                {/* 2. Filtro por Año */}
-                <div className="relative">
-                  <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <select
-                    value={historySelectedYear}
-                    onChange={(e) => setHistorySelectedYear(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
-                  >
-                    <option value="ALL">📅 Todos los Años</option>
-                    {availableYears.map(y => (
-                      <option key={y} value={y}>Año {y}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* 3. Filtro por Mes */}
-                <div className="relative">
-                  <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <select
-                    value={historySelectedMonth}
-                    onChange={(e) => setHistorySelectedMonth(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
-                  >
-                    <option value="ALL">🗓️ Todos los Meses</option>
-                    <option value="01">01 - Enero</option>
-                    <option value="02">02 - Febrero</option>
-                    <option value="03">03 - Marzo</option>
-                    <option value="04">04 - Abril</option>
-                    <option value="05">05 - Mayo</option>
-                    <option value="06">06 - Junio</option>
-                    <option value="07">07 - Julio</option>
-                    <option value="08">08 - Agosto</option>
-                    <option value="09">09 - Septiembre</option>
-                    <option value="10">10 - Octubre</option>
-                    <option value="11">11 - Noviembre</option>
-                    <option value="12">12 - Diciembre</option>
-                  </select>
-                </div>
-
-                {/* 4. Botón Limpiar */}
-                {hasActiveFilters ? (
+              <div className="flex items-center justify-between pb-1 border-b border-indigo-100 dark:border-indigo-900/40">
+                <span className="text-[11px] font-black text-indigo-900 dark:text-indigo-200 uppercase tracking-wider flex items-center gap-1.5">
+                  <Filter className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  Filtros Disponibles
+                </span>
+                {hasActiveFilters && (
                   <button
                     type="button"
                     onClick={() => {
                       setHistorySearchQuery('');
                       setHistorySelectedYear('ALL');
                       setHistorySelectedMonth('ALL');
+                      setHistoryRangeFrom('');
+                      setHistoryRangeTo('');
                     }}
-                    className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-xs transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/60 dark:hover:bg-rose-900 text-rose-800 dark:text-rose-300 font-black text-[11px] transition-colors cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                     <span>Limpiar Filtros</span>
                   </button>
-                ) : (
-                  <div className="hidden md:flex items-center text-[11px] font-bold text-slate-400 dark:text-slate-500 px-3">
-                    Filtros sin aplicar
-                  </div>
                 )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                {/* 1. Buscar */}
+                <div>
+                  <label className="block text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase mb-1">Buscar</label>
+                  <div className="relative">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder="Pastor, valor o fecha..."
+                      value={historySearchQuery}
+                      onChange={(e) => setHistorySearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* 2. Filtro por Año */}
+                <div>
+                  <label className="block text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase mb-1">Año</label>
+                  <div className="relative">
+                    <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <select
+                      value={historySelectedYear}
+                      onChange={(e) => {
+                        setHistorySelectedYear(e.target.value);
+                        if (e.target.value !== 'ALL') {
+                          setHistoryRangeFrom('');
+                          setHistoryRangeTo('');
+                        }
+                      }}
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                    >
+                      <option value="ALL">📅 Todos los Años</option>
+                      {availableYears.map(y => (
+                        <option key={y} value={y}>Año {y}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* 3. Filtro por Mes */}
+                <div>
+                  <label className="block text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase mb-1">Mes</label>
+                  <div className="relative">
+                    <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <select
+                      value={historySelectedMonth}
+                      onChange={(e) => {
+                        setHistorySelectedMonth(e.target.value);
+                        if (e.target.value !== 'ALL') {
+                          setHistoryRangeFrom('');
+                          setHistoryRangeTo('');
+                        }
+                      }}
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                    >
+                      <option value="ALL">🗓️ Todos los Meses</option>
+                      <option value="01">01 - Enero</option>
+                      <option value="02">02 - Febrero</option>
+                      <option value="03">03 - Marzo</option>
+                      <option value="04">04 - Abril</option>
+                      <option value="05">05 - Mayo</option>
+                      <option value="06">06 - Junio</option>
+                      <option value="07">07 - Julio</option>
+                      <option value="08">08 - Agosto</option>
+                      <option value="09">09 - Septiembre</option>
+                      <option value="10">10 - Octubre</option>
+                      <option value="11">11 - Noviembre</option>
+                      <option value="12">12 - Diciembre</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* 4. Filtro por Rango: Desde (Mes/Año) */}
+                <div>
+                  <label className="block text-[11px] font-black text-indigo-900 dark:text-indigo-300 uppercase mb-1">
+                    Desde (Mes/Año)
+                  </label>
+                  <input
+                    type="month"
+                    value={historyRangeFrom}
+                    onChange={(e) => {
+                      setHistoryRangeFrom(e.target.value);
+                      if (e.target.value) {
+                        setHistorySelectedYear('ALL');
+                        setHistorySelectedMonth('ALL');
+                      }
+                    }}
+                    className="w-full px-3 py-2 rounded-xl border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+
+                {/* 5. Filtro por Rango: Hasta (Mes/Año) */}
+                <div>
+                  <label className="block text-[11px] font-black text-indigo-900 dark:text-indigo-300 uppercase mb-1">
+                    Hasta (Mes/Año)
+                  </label>
+                  <input
+                    type="month"
+                    value={historyRangeTo}
+                    onChange={(e) => {
+                      setHistoryRangeTo(e.target.value);
+                      if (e.target.value) {
+                        setHistorySelectedYear('ALL');
+                        setHistorySelectedMonth('ALL');
+                      }
+                    }}
+                    className="w-full px-3 py-2 rounded-xl border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
               </div>
 
               {/* Barra de Acciones de Exportación */}
@@ -922,14 +1128,10 @@ export default function TithesView({
                 <button
                   type="button"
                   onClick={() => {
-                    const periodLabel = historySelectedYear !== 'ALL' 
-                      ? (historySelectedMonth !== 'ALL' ? `${historySelectedMonth}/${historySelectedYear}` : `Año ${historySelectedYear}`)
-                      : (historySelectedMonth !== 'ALL' ? `Mes ${historySelectedMonth}` : 'Historial Consolidado');
-                    
                     printFilteredTithesReport({
                       congregationName,
                       pastorName,
-                      period: periodLabel,
+                      period: getHistoryPeriodLabel(),
                       tithes: filteredTithes,
                       totals: {
                         grossIncome: totalFilteredGross,
@@ -958,16 +1160,12 @@ export default function TithesView({
                 <button
                   type="button"
                   onClick={() => {
-                    const periodLabel = historySelectedYear !== 'ALL' 
-                      ? (historySelectedMonth !== 'ALL' ? `${historySelectedMonth}/${historySelectedYear}` : `Año ${historySelectedYear}`)
-                      : (historySelectedMonth !== 'ALL' ? `Mes ${historySelectedMonth}` : 'Historial Consolidado');
-
                     exportTithesToExcel({
                       tithes: filteredTithes,
                       pastorName,
-                      period: periodLabel,
+                      period: getHistoryPeriodLabel(),
                       congregationName,
-                      fileName: `Liquidacion_Diezmos_${historySelectedYear !== 'ALL' ? historySelectedYear : 'Consolidado'}`
+                      fileName: `Liquidacion_Diezmos_${getHistoryPeriodLabel().replace(/[^a-zA-Z0-9_-]/g, '_')}`
                     });
                   }}
                   className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all active:scale-95 cursor-pointer"
@@ -981,14 +1179,10 @@ export default function TithesView({
                 <button
                   type="button"
                   onClick={() => {
-                    const periodLabel = historySelectedYear !== 'ALL' 
-                      ? (historySelectedMonth !== 'ALL' ? `${historySelectedMonth}/${historySelectedYear}` : `Año ${historySelectedYear}`)
-                      : (historySelectedMonth !== 'ALL' ? `Mes ${historySelectedMonth}` : 'Historial Consolidado');
-
                     shareTithesHistoryWhatsApp({
                       congregationName,
                       pastorName,
-                      period: periodLabel,
+                      period: getHistoryPeriodLabel(),
                       tithes: filteredTithes,
                       totals: {
                         grossIncome: totalFilteredGross,
@@ -1017,14 +1211,10 @@ export default function TithesView({
                 <button
                   type="button"
                   onClick={() => {
-                    const periodLabel = historySelectedYear !== 'ALL' 
-                      ? (historySelectedMonth !== 'ALL' ? `${historySelectedMonth}/${historySelectedYear}` : `Año ${historySelectedYear}`)
-                      : (historySelectedMonth !== 'ALL' ? `Mes ${historySelectedMonth}` : 'Historial Consolidado');
-
                     copyTithesHistoryText({
                       congregationName,
                       pastorName,
-                      period: periodLabel,
+                      period: getHistoryPeriodLabel(),
                       tithes: filteredTithes,
                       totals: {
                         grossIncome: totalFilteredGross,
@@ -1158,33 +1348,33 @@ export default function TithesView({
                   {/* Fila de Totales y Fila de Promedios */}
                   <tfoot>
                     {/* FILA 1: TOTALES */}
-                    <tr className="bg-indigo-50/90 dark:bg-indigo-950/80 border-t-2 border-indigo-300 dark:border-indigo-700 text-slate-900 dark:text-white font-black text-xs">
-                      <td className="py-3.5 px-4 uppercase tracking-wider font-black text-indigo-950 dark:text-indigo-200">
-                        TOTAL ({count} {count === 1 ? 'REG.' : 'REGS.'})
+                    <tr className="bg-indigo-100/90 dark:bg-indigo-950/90 border-t-3 border-indigo-400 dark:border-indigo-600 text-slate-900 dark:text-white font-black text-xs">
+                      <td className="py-4 px-4 uppercase tracking-wider font-black text-indigo-950 dark:text-indigo-200 text-sm">
+                        TOTAL GENERAL ({count} {count === 1 ? 'REG.' : 'REGS.'})
                       </td>
-                      <td className="py-3.5 px-4 font-bold text-slate-400 dark:text-slate-500 text-center">-</td>
-                      <td className="py-3.5 px-4 text-right font-black text-slate-950 dark:text-white text-sm">{formatCurrency(totalFilteredGross)}</td>
-                      <td className="py-3.5 px-4 text-right font-black text-rose-600 dark:text-rose-400">{formatCurrency(totalFilteredNational)}</td>
-                      <td className="py-3.5 px-4 text-right font-black text-indigo-950 dark:text-white text-sm">{formatCurrency(totalFilteredNet)}</td>
-                      <td className="py-3.5 px-4 text-center font-bold text-slate-400 dark:text-slate-500">-</td>
-                      <td className="py-3.5 px-4 text-right font-black text-slate-800 dark:text-slate-200">{formatCurrency(totalFilteredLocalFund)}</td>
-                      <td className="py-3.5 px-4 text-right font-black text-indigo-600 dark:text-indigo-400 text-sm">{formatCurrency(totalFilteredPastor)}</td>
-                      <td className="py-3.5 px-4 text-center text-slate-400 dark:text-slate-500">-</td>
+                      <td className="py-4 px-4 font-bold text-slate-400 dark:text-slate-500 text-center">-</td>
+                      <td className="py-4 px-4 text-right font-black text-slate-950 dark:text-white text-base">{formatCurrency(totalFilteredGross)}</td>
+                      <td className="py-4 px-4 text-right font-black text-rose-600 dark:text-rose-400 text-base">-{formatCurrency(totalFilteredNational)}</td>
+                      <td className="py-4 px-4 text-right font-black text-indigo-950 dark:text-white text-base">{formatCurrency(totalFilteredNet)}</td>
+                      <td className="py-4 px-4 text-center font-bold text-slate-400 dark:text-slate-500">-</td>
+                      <td className="py-4 px-4 text-right font-black text-slate-800 dark:text-slate-200 text-base">{formatCurrency(totalFilteredLocalFund)}</td>
+                      <td className="py-4 px-4 text-right font-black text-emerald-600 dark:text-emerald-400 text-base">{formatCurrency(totalFilteredPastor)}</td>
+                      <td className="py-4 px-4 text-center text-slate-400 dark:text-slate-500">-</td>
                     </tr>
 
                     {/* FILA 2: PROMEDIOS CALCULADOS */}
-                    <tr className="bg-indigo-100/70 dark:bg-indigo-900/50 border-t border-indigo-200 dark:border-indigo-800 text-indigo-950 dark:text-indigo-100 font-extrabold text-xs">
+                    <tr className="bg-indigo-50/80 dark:bg-indigo-900/60 border-t-2 border-indigo-200 dark:border-indigo-800 text-indigo-950 dark:text-indigo-100 font-black text-xs">
                       <td className="py-3.5 px-4 uppercase tracking-wider font-black text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5">
-                        <BarChart3 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                        <span>PROMEDIO</span>
+                        <BarChart3 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                        <span>PROMEDIO MENSUAL</span>
                       </td>
                       <td className="py-3.5 px-4 font-bold text-slate-400 dark:text-slate-500 text-center">-</td>
-                      <td className="py-3.5 px-4 text-right font-extrabold text-indigo-950 dark:text-indigo-100">{formatCurrency(avgFilteredGross)}</td>
-                      <td className="py-3.5 px-4 text-right font-extrabold text-rose-700 dark:text-rose-300">{formatCurrency(avgFilteredNational)}</td>
-                      <td className="py-3.5 px-4 text-right font-extrabold text-indigo-950 dark:text-indigo-100">{formatCurrency(avgFilteredNet)}</td>
+                      <td className="py-3.5 px-4 text-right font-black text-indigo-950 dark:text-indigo-100 text-sm">{formatCurrency(avgFilteredGross)}</td>
+                      <td className="py-3.5 px-4 text-right font-black text-rose-700 dark:text-rose-300 text-sm">-{formatCurrency(avgFilteredNational)}</td>
+                      <td className="py-3.5 px-4 text-right font-black text-indigo-950 dark:text-indigo-100 text-sm">{formatCurrency(avgFilteredNet)}</td>
                       <td className="py-3.5 px-4 text-center font-bold text-slate-400 dark:text-slate-500">-</td>
-                      <td className="py-3.5 px-4 text-right font-extrabold text-slate-800 dark:text-slate-200">{formatCurrency(avgFilteredLocalFund)}</td>
-                      <td className="py-3.5 px-4 text-right font-black text-indigo-700 dark:text-indigo-300">{formatCurrency(avgFilteredPastor)}</td>
+                      <td className="py-3.5 px-4 text-right font-black text-slate-800 dark:text-slate-200 text-sm">{formatCurrency(avgFilteredLocalFund)}</td>
+                      <td className="py-3.5 px-4 text-right font-black text-emerald-700 dark:text-emerald-300 text-sm">{formatCurrency(avgFilteredPastor)}</td>
                       <td className="py-3.5 px-4 text-center text-slate-400 dark:text-slate-500">-</td>
                     </tr>
                   </tfoot>
@@ -1196,23 +1386,33 @@ export default function TithesView({
         </div>
       )}
 
-      {/* Pestaña 3: Gráfico y Resumen Anual */}
+      {/* Pestaña 3: Gráfico y Resumen Anual / Rango de Meses */}
       {activeTab === 'chart' && (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-fade-in">
           
-          {/* Selector de Año del Gráfico y Botones de Exportación */}
-          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+          {/* Selector de Período del Gráfico y Botones de Exportación */}
+          <div className="flex flex-wrap items-center justify-between gap-4 p-5 rounded-3xl bg-white dark:bg-slate-900 border-2 border-indigo-200/80 dark:border-indigo-900/60 shadow-sm">
             <div>
-              <h3 className="text-base font-black text-slate-900 dark:text-white">Evolución Anual del Diezmo Bruto</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Comportamiento financiero mes a mes</p>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                Evolución Temporal de Diezmos ({getChartPeriodLabel()})
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Visualiza el comportamiento financiero por año o por rango personalizado de meses con cálculo de totales y promedios
+              </p>
             </div>
             
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2.5">
+              {/* Selector por Año */}
+              <div className="flex items-center gap-1.5">
                 <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Año:</span>
                 <select
                   value={chartYear}
-                  onChange={(e) => setChartYear(e.target.value)}
+                  onChange={(e) => {
+                    setChartYear(e.target.value);
+                    setChartRangeFrom('');
+                    setChartRangeTo('');
+                  }}
                   className="px-3 py-1.5 rounded-xl border border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-950 dark:text-indigo-200 font-black text-xs shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                 >
                   {availableYears.map(y => (
@@ -1221,15 +1421,48 @@ export default function TithesView({
                 </select>
               </div>
 
+              {/* Filtro Rango de Meses en Gráfico */}
+              <div className="flex items-center gap-1.5 bg-indigo-50/70 dark:bg-indigo-950/40 px-3 py-1 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                <span className="text-xs font-black text-indigo-900 dark:text-indigo-300">Rango:</span>
+                <input
+                  type="month"
+                  value={chartRangeFrom}
+                  onChange={(e) => setChartRangeFrom(e.target.value)}
+                  className="px-2 py-1 rounded-lg border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs"
+                  title="Mes inicial"
+                />
+                <span className="text-xs font-bold text-slate-400">a</span>
+                <input
+                  type="month"
+                  value={chartRangeTo}
+                  onChange={(e) => setChartRangeTo(e.target.value)}
+                  className="px-2 py-1 rounded-lg border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs"
+                  title="Mes final"
+                />
+                {(chartRangeFrom || chartRangeTo) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setChartRangeFrom('');
+                      setChartRangeTo('');
+                    }}
+                    className="p-1 text-rose-600 hover:text-rose-800 dark:text-rose-400 cursor-pointer"
+                    title="Restablecer a vista anual"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
               {/* Botón Descargar PNG */}
               <button
                 type="button"
-                onClick={() => downloadChartImage(chartRef, `Grafico_Diezmo_Evolucion_${chartYear}.png`)}
+                onClick={() => downloadChartImage(chartRef, `Grafico_Diezmo_Evolucion_${getChartPeriodLabel().replace(/[^a-zA-Z0-9_-]/g, '_')}.png`)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-300 dark:border-slate-700 shadow-xs transition-all cursor-pointer"
                 title="Descargar gráfico como imagen PNG"
               >
                 <ImageIcon className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                <span>Imagen PNG</span>
+                <span>PNG</span>
               </button>
 
               {/* Botón Imprimir / PDF */}
@@ -1237,16 +1470,20 @@ export default function TithesView({
                 type="button"
                 onClick={() => {
                   printChartReport({
-                    title: 'Reporte de Evolución Anual de Diezmos',
+                    title: 'Reporte de Evolución Temporal de Diezmos',
                     subtitle: `Evolución financiera y análisis estadístico comparativo`,
-                    congregationName: 'Gestión Local',
-                    period: chartYear,
+                    congregationName,
+                    period: getChartPeriodLabel(),
                     chartRef,
                     stats: [
-                      { label: 'Ingreso Bruto Promedio', value: formatCurrency(avgGrossIncome) },
-                      { label: 'Asignación Pastoral Promedio', value: formatCurrency(avgPastorAllocation) },
-                      { label: 'Mes con Mayor Recaudo', value: maxGrossMonth ? `${getMonthName(maxGrossMonth.month)} (${formatCurrency(maxGrossAmount)})` : '-' },
-                      { label: 'Mes con Menor Recaudo', value: minGrossMonth ? `${getMonthName(minGrossMonth.month)} (${formatCurrency(minGrossAmount)})` : '-' }
+                      { label: 'Diezmo Bruto Total', value: formatCurrency(chartTotGross) },
+                      { label: 'Diezmo Bruto Promedio', value: `${formatCurrency(avgGrossIncome)}/mes` },
+                      { label: 'Total Asignación Pastoral', value: formatCurrency(chartTotPastor) },
+                      { label: 'Asignación Pastoral Promedio', value: `${formatCurrency(avgPastorAllocation)}/mes` },
+                      { label: 'Total Tesorería Nac. (21%)', value: `-${formatCurrency(chartTotNational)}` },
+                      { label: 'Total Fondo Local', value: formatCurrency(chartTotLocal) },
+                      { label: 'Mes con Mayor Recaudo', value: maxGrossMonth ? `${getMonthName(maxGrossMonth.month)}/${maxGrossMonth.year} (${formatCurrency(maxGrossAmount)})` : '-' },
+                      { label: 'Mes con Menor Recaudo', value: minGrossMonth ? `${getMonthName(minGrossMonth.month)}/${minGrossMonth.year} (${formatCurrency(minGrossAmount)})` : '-' }
                     ]
                   });
                 }}
@@ -1259,41 +1496,117 @@ export default function TithesView({
             </div>
           </div>
 
+          {/* Gráfico Canvas */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
-            <h2 className="text-base font-bold text-slate-900 dark:text-white mb-4">Curva de Evolución ({chartYear})</h2>
-            <div className="h-72">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">Curva de Evolución Temporal ({getChartPeriodLabel()})</h2>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                {isChartRangeActive ? 'Vista por Rango de Meses' : 'Vista Anual Completa (12 Meses)'}
+              </span>
+            </div>
+            <div className="h-80">
               <Line ref={chartRef} data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
             </div>
           </div>
           
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
-            <h2 className="text-base font-bold text-slate-900 dark:text-white mb-4">Resumen Estadístico ({chartYear})</h2>
+          {/* Resumen Estadístico Completo, Totales y Promedios (Ultra Notables) */}
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                Resumen Financiero, Totales y Promedios ({getChartPeriodLabel()})
+              </h2>
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                {chartCount} {chartCount === 1 ? 'mes registrado' : 'meses registrados'}
+              </span>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              
-              <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-900/50">
-                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Ingreso Bruto Promedio</span>
-                <p className="text-lg font-black text-indigo-950 dark:text-white mt-1">{formatCurrency(avgGrossIncome)}</p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-900/50">
-                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Asign. Pastor Promedio</span>
-                <p className="text-lg font-black text-indigo-600 dark:text-indigo-400 mt-1">{formatCurrency(avgPastorAllocation)}</p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-900/50">
-                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Mes Más Alto</span>
-                <p className="text-lg font-black text-indigo-950 dark:text-white mt-1">
-                  {maxGrossMonth ? `${getMonthName(maxGrossMonth.month)} (${formatCurrency(maxGrossAmount)})` : '-'}
+              {/* 1. Diezmo Bruto */}
+              <div className="p-5 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/40 border-2 border-indigo-300 dark:border-indigo-800 shadow-sm flex flex-col justify-between">
+                <span className="text-[11px] font-black text-indigo-950 dark:text-indigo-200 uppercase tracking-wider flex items-center gap-1.5">
+                  <Coins className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  Diezmo Bruto Total
+                </span>
+                <p className="text-2xl lg:text-3xl font-black text-indigo-950 dark:text-white mt-2">
+                  {formatCurrency(chartTotGross)}
                 </p>
+                <div className="pt-2 mt-2 border-t border-indigo-200 dark:border-indigo-800/80 flex justify-between items-center text-xs font-black text-indigo-800 dark:text-indigo-300">
+                  <span>Promedio:</span>
+                  <span className="px-2 py-0.5 rounded-md bg-indigo-200/80 dark:bg-indigo-900/80 text-indigo-950 dark:text-indigo-100">{formatCurrency(avgGrossIncome)}/mes</span>
+                </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-900/50">
-                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Mes Más Bajo</span>
-                <p className="text-lg font-black text-indigo-950 dark:text-white mt-1">
-                  {minGrossMonth ? `${getMonthName(minGrossMonth.month)} (${formatCurrency(minGrossAmount)})` : '-'}
+              {/* 2. Asignación Pastoral */}
+              <div className="p-5 rounded-2xl bg-emerald-50/90 dark:bg-emerald-950/40 border-2 border-emerald-300 dark:border-emerald-800 shadow-sm flex flex-col justify-between">
+                <span className="text-[11px] font-black text-emerald-950 dark:text-emerald-200 uppercase tracking-wider flex items-center gap-1.5">
+                  <UserCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  Asignación Pastoral Total
+                </span>
+                <p className="text-2xl lg:text-3xl font-black text-emerald-700 dark:text-emerald-300 mt-2">
+                  {formatCurrency(chartTotPastor)}
                 </p>
+                <div className="pt-2 mt-2 border-t border-emerald-200 dark:border-emerald-800/80 flex justify-between items-center text-xs font-black text-emerald-800 dark:text-emerald-300">
+                  <span>Promedio:</span>
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-200/80 dark:bg-emerald-900/80 text-emerald-950 dark:text-emerald-100">{formatCurrency(avgPastorAllocation)}/mes</span>
+                </div>
               </div>
 
+              {/* 3. Tesorería Nacional */}
+              <div className="p-5 rounded-2xl bg-rose-50/90 dark:bg-rose-950/40 border-2 border-rose-300 dark:border-rose-800 shadow-sm flex flex-col justify-between">
+                <span className="text-[11px] font-black text-rose-950 dark:text-rose-200 uppercase tracking-wider flex items-center gap-1.5">
+                  <Building2 className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                  Tesorería Nacional (21%)
+                </span>
+                <p className="text-2xl lg:text-3xl font-black text-rose-600 dark:text-rose-400 mt-2">
+                  -{formatCurrency(chartTotNational)}
+                </p>
+                <div className="pt-2 mt-2 border-t border-rose-200 dark:border-rose-800/80 flex justify-between items-center text-xs font-black text-rose-800 dark:text-rose-300">
+                  <span>Promedio:</span>
+                  <span className="px-2 py-0.5 rounded-md bg-rose-200/80 dark:bg-rose-900/80 text-rose-950 dark:text-rose-100">-{formatCurrency(avgNationalAllocation)}/mes</span>
+                </div>
+              </div>
+
+              {/* 4. Fondo Local */}
+              <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border-2 border-slate-300 dark:border-slate-700 shadow-sm flex flex-col justify-between">
+                <span className="text-[11px] font-black text-slate-900 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                  🏛️ Fondo Local Total
+                </span>
+                <p className="text-2xl lg:text-3xl font-black text-slate-900 dark:text-white mt-2">
+                  {formatCurrency(chartTotLocal)}
+                </p>
+                <div className="pt-2 mt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center text-xs font-black text-slate-700 dark:text-slate-300">
+                  <span>Promedio:</span>
+                  <span className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100">{formatCurrency(avgLocalAllocation)}/mes</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Extremos del Período: Mes Mayor y Menor */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800/80 flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-black text-amber-900 dark:text-amber-300 uppercase tracking-wider">🏆 Mes con Mayor Recaudo</span>
+                  <p className="text-base font-black text-slate-900 dark:text-white mt-0.5">
+                    {maxGrossMonth ? `${getMonthName(maxGrossMonth.month)} de ${maxGrossMonth.year}` : 'Sin datos'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-lg font-black text-amber-900 dark:text-amber-300">{formatCurrency(maxGrossAmount)}</span>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-100/70 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-black text-slate-700 dark:text-slate-400 uppercase tracking-wider">📉 Mes con Menor Recaudo</span>
+                  <p className="text-base font-black text-slate-900 dark:text-white mt-0.5">
+                    {minGrossMonth ? `${getMonthName(minGrossMonth.month)} de ${minGrossMonth.year}` : 'Sin datos'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-lg font-black text-slate-800 dark:text-slate-300">{formatCurrency(minGrossAmount)}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
