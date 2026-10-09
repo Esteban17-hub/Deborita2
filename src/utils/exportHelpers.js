@@ -1472,11 +1472,11 @@ export function printChartReport({ title = 'Informe Gráfico', subtitle = '', co
   }
 
   const statsHtml = stats && stats.length > 0 ? `
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin: 24px 0;">
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0 10px;">
       ${stats.map(s => `
-        <div style="padding: 16px; border-radius: 12px; border: 2px solid #cbd5e1; background: #f8fafc; text-align: center;">
-          <span style="font-size: 13px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">${s.label}</span>
-          <div style="font-size: 24px; font-weight: 950; color: ${s.color || '#1e3a8a'}; margin-top: 6px;">${s.value}</div>
+        <div style="padding: 10px 12px; border-radius: 10px; border: 1.5px solid #cbd5e1; background: #f8fafc; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+          <span style="font-size: 10.5px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; line-height: 1.2;">${s.label}</span>
+          <div style="font-size: 15px; font-weight: 900; color: ${s.color || '#1e3a8a'}; margin-top: 4px; line-height: 1.2;">${s.value}</div>
         </div>
       `).join('')}
     </div>
@@ -1491,21 +1491,21 @@ export function printChartReport({ title = 'Informe Gráfico', subtitle = '', co
         <style>
           body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            padding: 35px;
+            padding: 24px 30px;
             color: #0f172a;
-            max-width: 1000px;
+            max-width: 1050px;
             margin: 0 auto;
             background: #ffffff;
-            font-size: 15px;
+            font-size: 14px;
           }
           .header {
             text-align: center;
-            border-bottom: 3.5px solid #4f46e5;
-            padding-bottom: 18px;
-            margin-bottom: 22px;
+            border-bottom: 3px solid #4f46e5;
+            padding-bottom: 12px;
+            margin-bottom: 14px;
           }
           .title {
-            font-size: 26px;
+            font-size: 22px;
             font-weight: 950;
             margin: 0;
             text-transform: uppercase;
@@ -1513,42 +1513,40 @@ export function printChartReport({ title = 'Informe Gráfico', subtitle = '', co
             letter-spacing: 0.5px;
           }
           .sub {
-            font-size: 15.5px;
+            font-size: 13.5px;
             color: #4338ca;
-            margin-top: 6px;
+            margin-top: 5px;
             font-weight: 800;
           }
           .chart-box {
             text-align: center;
-            margin: 24px 0;
-            padding: 20px;
+            margin: 12px 0;
+            padding: 12px;
             border: 2px solid #cbd5e1;
-            border-radius: 16px;
+            border-radius: 14px;
             background: #ffffff;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
           }
           .chart-img {
-            max-width: 100%;
+            width: 100%;
             height: auto;
-            max-height: 480px;
+            max-height: 520px;
             object-fit: contain;
-          }
-          .signatures {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 55px;
+            display: block;
+            margin: 0 auto;
           }
           .footer {
             text-align: center;
-            font-size: 11.5px;
+            font-size: 11px;
             color: #64748b;
-            margin-top: 35px;
+            margin-top: 20px;
             border-top: 1.5px solid #e2e8f0;
-            padding-top: 14px;
+            padding-top: 10px;
             font-weight: 500;
           }
           @media print {
-            body { padding: 10px; }
+            body { padding: 12px 16px; }
+            .chart-box { border: 1.5px solid #cbd5e1; margin: 10px 0; }
           }
         </style>
       </head>
@@ -1566,19 +1564,6 @@ export function printChartReport({ title = 'Informe Gráfico', subtitle = '', co
 
         ${statsHtml}
 
-        <div class="signatures">
-          <div style="text-align: center; width: 40%;">
-            <div style="border-bottom: 2px solid #0f172a; height: 45px; margin-bottom: 6px;"></div>
-            <p style="font-weight: 900; margin: 0; font-size: 13.5px; color: #0f172a;">Tesorería Local</p>
-            <p style="margin: 2px 0 0; font-size: 12px; color: #64748b; font-weight: 600;">Elaborado y Verificado</p>
-          </div>
-          <div style="text-align: center; width: 40%;">
-            <div style="border-bottom: 2px solid #0f172a; height: 45px; margin-bottom: 6px;"></div>
-            <p style="font-weight: 900; margin: 0; font-size: 13.5px; color: #0f172a;">Pastor Titular</p>
-            <p style="margin: 2px 0 0; font-size: 12px; color: #64748b; font-weight: 600;">Visto Bueno y Aprobación</p>
-          </div>
-        </div>
-
         <div class="footer">
           Documento generado electrónicamente por Sistema de Gestión Financiera Deborita. Válido para informes y control financiero.
         </div>
@@ -1593,4 +1578,5 @@ export function printChartReport({ title = 'Informe Gráfico', subtitle = '', co
   printWindow.document.write(html);
   printWindow.document.close();
 }
+
 

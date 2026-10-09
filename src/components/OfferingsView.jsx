@@ -469,12 +469,12 @@ export default function OfferingsView({
                       period: viewingMonthLabel,
                       chartRef: monthlyChartRef,
                       stats: [
-                        { label: 'Total Recaudado en el Mes', value: formatCurrency(monthlyTotal) },
-                        { label: 'Total Cultos Realizados', value: `${monthlyOfferings.length} cultos` },
-                        { label: 'Cultos Domingo', value: `${formatCurrency(monthlyDayStats.stats['Domingo'] || 0)} (${monthlyDayStats.counts['Domingo'] || 0} cultos)` },
-                        { label: 'Cultos Martes', value: `${formatCurrency(monthlyDayStats.stats['Martes'] || 0)} (${monthlyDayStats.counts['Martes'] || 0} cultos)` },
-                        { label: 'Cultos Jueves', value: `${formatCurrency(monthlyDayStats.stats['Jueves'] || 0)} (${monthlyDayStats.counts['Jueves'] || 0} cultos)` },
-                        { label: 'Cultos Sábado', value: `${formatCurrency(monthlyDayStats.stats['Sábado'] || 0)} (${monthlyDayStats.counts['Sábado'] || 0} cultos)` }
+                        { label: 'Total Recaudado en el Mes', value: formatCurrency(monthlyTotal), color: '#d97706' },
+                        { label: 'Total Cultos Realizados', value: `${monthlyOfferings.length} cultos`, color: '#475569' },
+                        { label: 'Cultos Domingo', value: `${formatCurrency(monthlyDayStats.stats['Domingo'] || 0)} (${monthlyDayStats.counts['Domingo'] || 0} cultos)`, color: '#2563eb' },
+                        { label: 'Cultos Martes', value: `${formatCurrency(monthlyDayStats.stats['Martes'] || 0)} (${monthlyDayStats.counts['Martes'] || 0} cultos)`, color: '#059669' },
+                        { label: 'Cultos Jueves', value: `${formatCurrency(monthlyDayStats.stats['Jueves'] || 0)} (${monthlyDayStats.counts['Jueves'] || 0} cultos)`, color: '#7c3aed' },
+                        { label: 'Cultos Sábado', value: `${formatCurrency(monthlyDayStats.stats['Sábado'] || 0)} (${monthlyDayStats.counts['Sábado'] || 0} cultos)`, color: '#dc2626' }
                       ]
                     });
                   }}
@@ -1144,12 +1144,12 @@ export default function OfferingsView({
                         period: selectedAnnualYear === 'ALL' ? 'Histórico Total' : `Año ${selectedAnnualYear}`,
                         chartRef: annualChartRef,
                         stats: [
-                          { label: 'Total Acumulado', value: formatCurrency(annualTotal) },
-                          { label: 'Total Cultos en el Período', value: `${annualOfferings.length} cultos` },
-                          { label: 'Total Domingo', value: `${formatCurrency(annualDayStats.stats['Domingo'] || 0)} (${annualDayStats.counts['Domingo'] || 0} cultos)` },
-                          { label: 'Total Martes', value: `${formatCurrency(annualDayStats.stats['Martes'] || 0)} (${annualDayStats.counts['Martes'] || 0} cultos)` },
-                          { label: 'Total Jueves', value: `${formatCurrency(annualDayStats.stats['Jueves'] || 0)} (${annualDayStats.counts['Jueves'] || 0} cultos)` },
-                          { label: 'Total Sábado', value: `${formatCurrency(annualDayStats.stats['Sábado'] || 0)} (${annualDayStats.counts['Sábado'] || 0} cultos)` }
+                          { label: 'Total Acumulado', value: formatCurrency(annualTotal), color: '#ea580c' },
+                          { label: 'Total Cultos en el Período', value: `${annualOfferings.length} cultos`, color: '#475569' },
+                          { label: 'Total Domingo', value: `${formatCurrency(annualDayStats.stats['Domingo'] || 0)} (${annualDayStats.counts['Domingo'] || 0} cultos)`, color: '#2563eb' },
+                          { label: 'Total Martes', value: `${formatCurrency(annualDayStats.stats['Martes'] || 0)} (${annualDayStats.counts['Martes'] || 0} cultos)`, color: '#059669' },
+                          { label: 'Total Jueves', value: `${formatCurrency(annualDayStats.stats['Jueves'] || 0)} (${annualDayStats.counts['Jueves'] || 0} cultos)`, color: '#7c3aed' },
+                          { label: 'Total Sábado', value: `${formatCurrency(annualDayStats.stats['Sábado'] || 0)} (${annualDayStats.counts['Sábado'] || 0} cultos)`, color: '#dc2626' }
                         ]
                       });
                     }}

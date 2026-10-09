@@ -1476,14 +1476,14 @@ export default function TithesView({
                     period: getChartPeriodLabel(),
                     chartRef,
                     stats: [
-                      { label: 'Diezmo Bruto Total', value: formatCurrency(chartTotGross) },
-                      { label: 'Diezmo Bruto Promedio', value: `${formatCurrency(avgGrossIncome)}/mes` },
-                      { label: 'Total Asignación Pastoral', value: formatCurrency(chartTotPastor) },
-                      { label: 'Asignación Pastoral Promedio', value: `${formatCurrency(avgPastorAllocation)}/mes` },
-                      { label: 'Total Tesorería Nac. (21%)', value: formatCurrency(chartTotNational) },
-                      { label: 'Total Fondo Local', value: formatCurrency(chartTotLocal) },
-                      { label: 'Mes con Mayor Recaudo', value: maxGrossMonth ? `${getMonthName(maxGrossMonth.month)}/${maxGrossMonth.year} (${formatCurrency(maxGrossAmount)})` : '-' },
-                      { label: 'Mes con Menor Recaudo', value: minGrossMonth ? `${getMonthName(minGrossMonth.month)}/${minGrossMonth.year} (${formatCurrency(minGrossAmount)})` : '-' }
+                      { label: 'Diezmo Bruto Total', value: formatCurrency(chartTotGross), color: '#4338ca' },
+                      { label: 'Diezmo Bruto Promedio', value: `${formatCurrency(avgGrossIncome)}/mes`, color: '#6366f1' },
+                      { label: 'Total Asignación Pastoral', value: formatCurrency(chartTotPastor), color: '#059669' },
+                      { label: 'Asignación Pastoral Promedio', value: `${formatCurrency(avgPastorAllocation)}/mes`, color: '#10b981' },
+                      { label: 'Total Tesorería Nac. (21%)', value: formatCurrency(chartTotNational), color: '#e11d48' },
+                      { label: 'Total Fondo Local', value: formatCurrency(chartTotLocal), color: '#334155' },
+                      { label: 'Mes con Mayor Recaudo', value: maxGrossMonth ? `${getMonthName(maxGrossMonth.month)}/${maxGrossMonth.year} (${formatCurrency(maxGrossAmount)})` : '-', color: '#d97706' },
+                      { label: 'Mes con Menor Recaudo', value: minGrossMonth ? `${getMonthName(minGrossMonth.month)}/${minGrossMonth.year} (${formatCurrency(minGrossAmount)})` : '-', color: '#64748b' }
                     ]
                   });
                 }}
@@ -1504,7 +1504,7 @@ export default function TithesView({
                 {isChartRangeActive ? 'Vista por Rango de Meses' : 'Vista Anual Completa (12 Meses)'}
               </span>
             </div>
-            <div className="h-80">
+            <div className="h-96 sm:h-[420px]">
               <Line ref={chartRef} data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
             </div>
           </div>
