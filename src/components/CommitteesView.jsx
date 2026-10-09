@@ -4,107 +4,271 @@ import { formatCurrency, formatDate, compareDatesAsc } from '../utils/formatters
 import { exportToExcel, printFilteredCommitteeReport, shareCommitteeReportWhatsApp, copyCommitteeSummaryText } from '../utils/exportHelpers';
 import MoneyInput from './MoneyInput';
 
-// Paleta cromática disponible para los comités
+// Paleta cromática definida y vibrante para los comités
 export const COMMITTEE_COLOR_THEMES = {
   emerald: {
     id: 'emerald',
-    name: 'Verde Esmeralda',
+    name: 'Verde Esmeralda (Misiones)',
     dot: 'bg-emerald-500',
     bg: 'from-emerald-600 to-teal-600',
-    border: 'border-t-emerald-500',
-    cardBg: 'bg-emerald-50/90 dark:bg-emerald-950/35 hover:bg-emerald-100/70 dark:hover:bg-emerald-950/50 border-emerald-200 dark:border-emerald-900/60',
-    shadow: 'shadow-emerald-500/20',
-    badge: 'text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 border-emerald-300 dark:border-emerald-800',
+    topBar: 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600',
+    cardBorder: 'border-emerald-200 dark:border-emerald-800/80',
+    cardHoverBorder: 'hover:border-emerald-500 dark:hover:border-emerald-400',
+    cardBg: 'bg-emerald-50/75 dark:bg-emerald-950/30',
+    cardHoverBg: 'hover:bg-emerald-100 dark:hover:bg-emerald-950/70',
+    cardHoverRing: 'hover:ring-4 hover:ring-emerald-400/40 dark:hover:ring-emerald-500/40',
+    cardHoverShadow: 'hover:shadow-2xl hover:shadow-emerald-500/30',
+    shadow: 'shadow-emerald-500/15',
+    badge: 'text-emerald-900 dark:text-emerald-200 bg-emerald-100/90 dark:bg-emerald-900/60 border-emerald-300 dark:border-emerald-700',
+    badgeHover: 'group-hover:bg-emerald-600 group-hover:text-white group-hover:border-emerald-600',
+    balanceColor: 'text-emerald-950 dark:text-emerald-100',
+    arrowHoverBg: 'group-hover:bg-emerald-600',
     btnGradient: 'from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-500/25',
-    detailHeader: 'bg-emerald-50/60 dark:bg-emerald-950/40 border-emerald-200/80 dark:border-emerald-900/60'
+    detailHeader: 'bg-emerald-50/80 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-800'
   },
   blue: {
     id: 'blue',
-    name: 'Azul Rey',
+    name: 'Azul Rey (Jóvenes)',
     dot: 'bg-blue-500',
     bg: 'from-blue-600 to-indigo-600',
-    border: 'border-t-blue-500',
-    cardBg: 'bg-blue-50/90 dark:bg-blue-950/35 hover:bg-blue-100/70 dark:hover:bg-blue-950/50 border-blue-200 dark:border-blue-900/60',
-    shadow: 'shadow-blue-500/20',
-    badge: 'text-blue-800 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/60 border-blue-300 dark:border-blue-800',
+    topBar: 'bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-600',
+    cardBorder: 'border-blue-200 dark:border-blue-800/80',
+    cardHoverBorder: 'hover:border-blue-500 dark:hover:border-blue-400',
+    cardBg: 'bg-blue-50/75 dark:bg-blue-950/30',
+    cardHoverBg: 'hover:bg-blue-100 dark:hover:bg-blue-950/70',
+    cardHoverRing: 'hover:ring-4 hover:ring-blue-400/40 dark:hover:ring-blue-500/40',
+    cardHoverShadow: 'hover:shadow-2xl hover:shadow-blue-500/30',
+    shadow: 'shadow-blue-500/15',
+    badge: 'text-blue-900 dark:text-blue-200 bg-blue-100/90 dark:bg-blue-900/60 border-blue-300 dark:border-blue-700',
+    badgeHover: 'group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600',
+    balanceColor: 'text-blue-950 dark:text-blue-100',
+    arrowHoverBg: 'group-hover:bg-blue-600',
     btnGradient: 'from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-500/25',
-    detailHeader: 'bg-blue-50/60 dark:bg-blue-950/40 border-blue-200/80 dark:border-blue-900/60'
+    detailHeader: 'bg-blue-50/80 dark:bg-blue-950/50 border-blue-300 dark:border-blue-800'
   },
   purple: {
     id: 'purple',
-    name: 'Púrpura / Morado',
+    name: 'Púrpura (Alabanza)',
     dot: 'bg-purple-500',
     bg: 'from-purple-600 to-pink-600',
-    border: 'border-t-purple-500',
-    cardBg: 'bg-purple-50/90 dark:bg-purple-950/35 hover:bg-purple-100/70 dark:hover:bg-purple-950/50 border-purple-200 dark:border-purple-900/60',
-    shadow: 'shadow-purple-500/20',
-    badge: 'text-purple-800 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/60 border-purple-300 dark:border-purple-800',
+    topBar: 'bg-gradient-to-r from-purple-500 via-pink-500 to-purple-600',
+    cardBorder: 'border-purple-200 dark:border-purple-800/80',
+    cardHoverBorder: 'hover:border-purple-500 dark:hover:border-purple-400',
+    cardBg: 'bg-purple-50/75 dark:bg-purple-950/30',
+    cardHoverBg: 'hover:bg-purple-100 dark:hover:bg-purple-950/70',
+    cardHoverRing: 'hover:ring-4 hover:ring-purple-400/40 dark:hover:ring-purple-500/40',
+    cardHoverShadow: 'hover:shadow-2xl hover:shadow-purple-500/30',
+    shadow: 'shadow-purple-500/15',
+    badge: 'text-purple-900 dark:text-purple-200 bg-purple-100/90 dark:bg-purple-900/60 border-purple-300 dark:border-purple-700',
+    badgeHover: 'group-hover:bg-purple-600 group-hover:text-white group-hover:border-purple-600',
+    balanceColor: 'text-purple-950 dark:text-purple-100',
+    arrowHoverBg: 'group-hover:bg-purple-600',
     btnGradient: 'from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-purple-500/25',
-    detailHeader: 'bg-purple-50/60 dark:bg-purple-950/40 border-purple-200/80 dark:border-purple-900/60'
+    detailHeader: 'bg-purple-50/80 dark:bg-purple-950/50 border-purple-300 dark:border-purple-800'
   },
   amber: {
     id: 'amber',
-    name: 'Ámbar / Dorado',
+    name: 'Ámbar (Escuela Dominical)',
     dot: 'bg-amber-500',
     bg: 'from-amber-500 to-orange-600',
-    border: 'border-t-amber-500',
-    cardBg: 'bg-amber-50/90 dark:bg-amber-950/35 hover:bg-amber-100/70 dark:hover:bg-amber-950/50 border-amber-200 dark:border-amber-900/60',
-    shadow: 'shadow-amber-500/20',
-    badge: 'text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 border-amber-300 dark:border-amber-800',
+    topBar: 'bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500',
+    cardBorder: 'border-amber-200 dark:border-amber-800/80',
+    cardHoverBorder: 'hover:border-amber-500 dark:hover:border-amber-400',
+    cardBg: 'bg-amber-50/75 dark:bg-amber-950/30',
+    cardHoverBg: 'hover:bg-amber-100 dark:hover:bg-amber-950/70',
+    cardHoverRing: 'hover:ring-4 hover:ring-amber-400/40 dark:hover:ring-amber-500/40',
+    cardHoverShadow: 'hover:shadow-2xl hover:shadow-amber-500/30',
+    shadow: 'shadow-amber-500/15',
+    badge: 'text-amber-900 dark:text-amber-200 bg-amber-100/90 dark:bg-amber-900/60 border-amber-300 dark:border-amber-700',
+    badgeHover: 'group-hover:bg-amber-600 group-hover:text-white group-hover:border-amber-600',
+    balanceColor: 'text-amber-950 dark:text-amber-100',
+    arrowHoverBg: 'group-hover:bg-amber-600',
     btnGradient: 'from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white shadow-amber-500/25',
-    detailHeader: 'bg-amber-50/60 dark:bg-amber-950/40 border-amber-200/80 dark:border-amber-900/60'
+    detailHeader: 'bg-amber-50/80 dark:bg-amber-950/50 border-amber-300 dark:border-amber-800'
   },
   rose: {
     id: 'rose',
-    name: 'Rosa / Carmesí',
+    name: 'Rosa (Damas Dorcas)',
     dot: 'bg-rose-500',
     bg: 'from-rose-600 to-red-600',
-    border: 'border-t-rose-500',
-    cardBg: 'bg-rose-50/90 dark:bg-rose-950/35 hover:bg-rose-100/70 dark:hover:bg-rose-950/50 border-rose-200 dark:border-rose-900/60',
-    shadow: 'shadow-rose-500/20',
-    badge: 'text-rose-800 dark:text-rose-300 bg-rose-100 dark:bg-rose-900/60 border-rose-300 dark:border-rose-800',
+    topBar: 'bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600',
+    cardBorder: 'border-rose-200 dark:border-rose-800/80',
+    cardHoverBorder: 'hover:border-rose-500 dark:hover:border-rose-400',
+    cardBg: 'bg-rose-50/75 dark:bg-rose-950/30',
+    cardHoverBg: 'hover:bg-rose-100 dark:hover:bg-rose-950/70',
+    cardHoverRing: 'hover:ring-4 hover:ring-rose-400/40 dark:hover:ring-rose-500/40',
+    cardHoverShadow: 'hover:shadow-2xl hover:shadow-rose-500/30',
+    shadow: 'shadow-rose-500/15',
+    badge: 'text-rose-900 dark:text-rose-200 bg-rose-100/90 dark:bg-rose-900/60 border-rose-300 dark:border-rose-700',
+    badgeHover: 'group-hover:bg-rose-600 group-hover:text-white group-hover:border-rose-600',
+    balanceColor: 'text-rose-950 dark:text-rose-100',
+    arrowHoverBg: 'group-hover:bg-rose-600',
     btnGradient: 'from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white shadow-rose-500/25',
-    detailHeader: 'bg-rose-50/60 dark:bg-rose-950/40 border-rose-200/80 dark:border-rose-900/60'
+    detailHeader: 'bg-rose-50/80 dark:bg-rose-950/50 border-rose-300 dark:border-rose-800'
   },
   cyan: {
     id: 'cyan',
-    name: 'Cian / Celeste',
+    name: 'Cian (Caballeros)',
     dot: 'bg-cyan-500',
     bg: 'from-cyan-600 to-blue-600',
-    border: 'border-t-cyan-500',
-    cardBg: 'bg-cyan-50/90 dark:bg-cyan-950/35 hover:bg-cyan-100/70 dark:hover:bg-cyan-950/50 border-cyan-200 dark:border-cyan-900/60',
-    shadow: 'shadow-cyan-500/20',
-    badge: 'text-cyan-800 dark:text-cyan-300 bg-cyan-100 dark:bg-cyan-900/60 border-cyan-300 dark:border-cyan-800',
+    topBar: 'bg-gradient-to-r from-cyan-400 via-sky-500 to-blue-500',
+    cardBorder: 'border-cyan-200 dark:border-cyan-800/80',
+    cardHoverBorder: 'hover:border-cyan-500 dark:hover:border-cyan-400',
+    cardBg: 'bg-cyan-50/75 dark:bg-cyan-950/30',
+    cardHoverBg: 'hover:bg-cyan-100 dark:hover:bg-cyan-950/70',
+    cardHoverRing: 'hover:ring-4 hover:ring-cyan-400/40 dark:hover:ring-cyan-500/40',
+    cardHoverShadow: 'hover:shadow-2xl hover:shadow-cyan-500/30',
+    shadow: 'shadow-cyan-500/15',
+    badge: 'text-cyan-900 dark:text-cyan-200 bg-cyan-100/90 dark:bg-cyan-900/60 border-cyan-300 dark:border-cyan-700',
+    badgeHover: 'group-hover:bg-cyan-600 group-hover:text-white group-hover:border-cyan-600',
+    balanceColor: 'text-cyan-950 dark:text-cyan-100',
+    arrowHoverBg: 'group-hover:bg-cyan-600',
     btnGradient: 'from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-cyan-500/25',
-    detailHeader: 'bg-cyan-50/60 dark:bg-cyan-950/40 border-cyan-200/80 dark:border-cyan-900/60'
+    detailHeader: 'bg-cyan-50/80 dark:bg-cyan-950/50 border-cyan-300 dark:border-cyan-800'
   },
-  violet: {
-    id: 'violet',
-    name: 'Violeta / Índigo',
-    dot: 'bg-violet-500',
-    bg: 'from-violet-600 to-purple-600',
-    border: 'border-t-violet-500',
-    cardBg: 'bg-violet-50/90 dark:bg-violet-950/35 hover:bg-violet-100/70 dark:hover:bg-violet-950/50 border-violet-200 dark:border-violet-900/60',
-    shadow: 'shadow-violet-500/20',
-    badge: 'text-violet-800 dark:text-violet-300 bg-violet-100 dark:bg-violet-900/60 border-violet-300 dark:border-violet-800',
-    btnGradient: 'from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white shadow-violet-500/25',
-    detailHeader: 'bg-violet-50/60 dark:bg-violet-950/40 border-violet-200/80 dark:border-violet-900/60'
+  indigo: {
+    id: 'indigo',
+    name: 'Índigo (Junta Local / Directiva)',
+    dot: 'bg-indigo-500',
+    bg: 'from-indigo-600 to-purple-700',
+    topBar: 'bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600',
+    cardBorder: 'border-indigo-200 dark:border-indigo-800/80',
+    cardHoverBorder: 'hover:border-indigo-500 dark:hover:border-indigo-400',
+    cardBg: 'bg-indigo-50/75 dark:bg-indigo-950/30',
+    cardHoverBg: 'hover:bg-indigo-100 dark:hover:bg-indigo-950/70',
+    cardHoverRing: 'hover:ring-4 hover:ring-indigo-400/40 dark:hover:ring-indigo-500/40',
+    cardHoverShadow: 'hover:shadow-2xl hover:shadow-indigo-500/30',
+    shadow: 'shadow-indigo-500/15',
+    badge: 'text-indigo-900 dark:text-indigo-200 bg-indigo-100/90 dark:bg-indigo-900/60 border-indigo-300 dark:border-indigo-700',
+    badgeHover: 'group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600',
+    balanceColor: 'text-indigo-950 dark:text-indigo-100',
+    arrowHoverBg: 'group-hover:bg-indigo-600',
+    btnGradient: 'from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-500/25',
+    detailHeader: 'bg-indigo-50/80 dark:bg-indigo-950/50 border-indigo-300 dark:border-indigo-800'
   },
   teal: {
     id: 'teal',
-    name: 'Teal / Azul Marino',
+    name: 'Teal (Pro-Templo / Obras)',
     dot: 'bg-teal-500',
     bg: 'from-teal-600 to-emerald-600',
-    border: 'border-t-teal-500',
-    cardBg: 'bg-teal-50/90 dark:bg-teal-950/35 hover:bg-teal-100/70 dark:hover:bg-teal-950/50 border-teal-200 dark:border-teal-900/60',
-    shadow: 'shadow-teal-500/20',
-    badge: 'text-teal-800 dark:text-teal-300 bg-teal-100 dark:bg-teal-900/60 border-teal-300 dark:border-teal-800',
+    topBar: 'bg-gradient-to-r from-teal-400 via-emerald-500 to-teal-600',
+    cardBorder: 'border-teal-200 dark:border-teal-800/80',
+    cardHoverBorder: 'hover:border-teal-500 dark:hover:border-teal-400',
+    cardBg: 'bg-teal-50/75 dark:bg-teal-950/30',
+    cardHoverBg: 'hover:bg-teal-100 dark:hover:bg-teal-950/70',
+    cardHoverRing: 'hover:ring-4 hover:ring-teal-400/40 dark:hover:ring-teal-500/40',
+    cardHoverShadow: 'hover:shadow-2xl hover:shadow-teal-500/30',
+    shadow: 'shadow-teal-500/15',
+    badge: 'text-teal-900 dark:text-teal-200 bg-teal-100/90 dark:bg-teal-900/60 border-teal-300 dark:border-teal-700',
+    badgeHover: 'group-hover:bg-teal-600 group-hover:text-white group-hover:border-teal-600',
+    balanceColor: 'text-teal-950 dark:text-teal-100',
+    arrowHoverBg: 'group-hover:bg-teal-600',
     btnGradient: 'from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white shadow-teal-500/25',
-    detailHeader: 'bg-teal-50/60 dark:bg-teal-950/40 border-teal-200/80 dark:border-teal-900/60'
+    detailHeader: 'bg-teal-50/80 dark:bg-teal-950/50 border-teal-300 dark:border-teal-800'
+  },
+  orange: {
+    id: 'orange',
+    name: 'Naranja (Acción Social)',
+    dot: 'bg-orange-500',
+    bg: 'from-orange-500 to-red-600',
+    topBar: 'bg-gradient-to-r from-orange-400 via-amber-500 to-orange-600',
+    cardBorder: 'border-orange-200 dark:border-orange-800/80',
+    cardHoverBorder: 'hover:border-orange-500 dark:hover:border-orange-400',
+    cardBg: 'bg-orange-50/75 dark:bg-orange-950/30',
+    cardHoverBg: 'hover:bg-orange-100 dark:hover:bg-orange-950/70',
+    cardHoverRing: 'hover:ring-4 hover:ring-orange-400/40 dark:hover:ring-orange-500/40',
+    cardHoverShadow: 'hover:shadow-2xl hover:shadow-orange-500/30',
+    shadow: 'shadow-orange-500/15',
+    badge: 'text-orange-900 dark:text-orange-200 bg-orange-100/90 dark:bg-orange-900/60 border-orange-300 dark:border-orange-700',
+    badgeHover: 'group-hover:bg-orange-600 group-hover:text-white group-hover:border-orange-600',
+    balanceColor: 'text-orange-950 dark:text-orange-100',
+    arrowHoverBg: 'group-hover:bg-orange-600',
+    btnGradient: 'from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white shadow-orange-500/25',
+    detailHeader: 'bg-orange-50/80 dark:bg-orange-950/50 border-orange-300 dark:border-orange-800'
+  },
+  fuchsia: {
+    id: 'fuchsia',
+    name: 'Fucsia (Intercesión / Oración)',
+    dot: 'bg-fuchsia-500',
+    bg: 'from-fuchsia-600 to-pink-600',
+    topBar: 'bg-gradient-to-r from-fuchsia-500 via-pink-500 to-fuchsia-600',
+    cardBorder: 'border-fuchsia-200 dark:border-fuchsia-800/80',
+    cardHoverBorder: 'hover:border-fuchsia-500 dark:hover:border-fuchsia-400',
+    cardBg: 'bg-fuchsia-50/75 dark:bg-fuchsia-950/30',
+    cardHoverBg: 'hover:bg-fuchsia-100 dark:hover:bg-fuchsia-950/70',
+    cardHoverRing: 'hover:ring-4 hover:ring-fuchsia-400/40 dark:hover:ring-fuchsia-500/40',
+    cardHoverShadow: 'hover:shadow-2xl hover:shadow-fuchsia-500/30',
+    shadow: 'shadow-fuchsia-500/15',
+    badge: 'text-fuchsia-900 dark:text-fuchsia-200 bg-fuchsia-100/90 dark:bg-fuchsia-900/60 border-fuchsia-300 dark:border-fuchsia-700',
+    badgeHover: 'group-hover:bg-fuchsia-600 group-hover:text-white group-hover:border-fuchsia-600',
+    balanceColor: 'text-fuchsia-950 dark:text-fuchsia-100',
+    arrowHoverBg: 'group-hover:bg-fuchsia-600',
+    btnGradient: 'from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 text-white shadow-fuchsia-500/25',
+    detailHeader: 'bg-fuchsia-50/80 dark:bg-fuchsia-950/50 border-fuchsia-300 dark:border-fuchsia-800'
+  },
+  lime: {
+    id: 'lime',
+    name: 'Lima (Medios / Audio)',
+    dot: 'bg-lime-500',
+    bg: 'from-lime-600 to-emerald-600',
+    topBar: 'bg-gradient-to-r from-lime-400 via-emerald-500 to-lime-600',
+    cardBorder: 'border-lime-200 dark:border-lime-800/80',
+    cardHoverBorder: 'hover:border-lime-500 dark:hover:border-lime-400',
+    cardBg: 'bg-lime-50/75 dark:bg-lime-950/30',
+    cardHoverBg: 'hover:bg-lime-100 dark:hover:bg-lime-950/70',
+    cardHoverRing: 'hover:ring-4 hover:ring-lime-400/40 dark:hover:ring-lime-500/40',
+    cardHoverShadow: 'hover:shadow-2xl hover:shadow-lime-500/30',
+    shadow: 'shadow-lime-500/15',
+    badge: 'text-lime-900 dark:text-lime-200 bg-lime-100/90 dark:bg-lime-900/60 border-lime-300 dark:border-lime-700',
+    badgeHover: 'group-hover:bg-lime-600 group-hover:text-white group-hover:border-lime-600',
+    balanceColor: 'text-lime-950 dark:text-lime-100',
+    arrowHoverBg: 'group-hover:bg-lime-600',
+    btnGradient: 'from-lime-600 to-emerald-600 hover:from-lime-500 hover:to-emerald-500 text-white shadow-lime-500/25',
+    detailHeader: 'bg-lime-50/80 dark:bg-lime-950/50 border-lime-300 dark:border-lime-800'
+  },
+  violet: {
+    id: 'violet',
+    name: 'Violeta (Grupos / Células)',
+    dot: 'bg-violet-500',
+    bg: 'from-violet-600 to-purple-600',
+    topBar: 'bg-gradient-to-r from-violet-500 via-purple-500 to-violet-600',
+    cardBorder: 'border-violet-200 dark:border-violet-800/80',
+    cardHoverBorder: 'hover:border-violet-500 dark:hover:border-violet-400',
+    cardBg: 'bg-violet-50/75 dark:bg-violet-950/30',
+    cardHoverBg: 'hover:bg-violet-100 dark:hover:bg-violet-950/70',
+    cardHoverRing: 'hover:ring-4 hover:ring-violet-400/40 dark:hover:ring-violet-500/40',
+    cardHoverShadow: 'hover:shadow-2xl hover:shadow-violet-500/30',
+    shadow: 'shadow-violet-500/15',
+    badge: 'text-violet-900 dark:text-violet-200 bg-violet-100/90 dark:bg-violet-900/60 border-violet-300 dark:border-violet-700',
+    badgeHover: 'group-hover:bg-violet-600 group-hover:text-white group-hover:border-violet-600',
+    balanceColor: 'text-violet-950 dark:text-violet-100',
+    arrowHoverBg: 'group-hover:bg-violet-600',
+    btnGradient: 'from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white shadow-violet-500/25',
+    detailHeader: 'bg-violet-50/80 dark:bg-violet-950/50 border-violet-300 dark:border-violet-800'
   }
 };
 
-const THEME_KEYS = Object.keys(COMMITTEE_COLOR_THEMES);
+export const THEME_KEYS = Object.keys(COMMITTEE_COLOR_THEMES);
+
+/**
+ * Deduce automáticamente el tema de color más adecuado según el nombre del comité
+ */
+export function getCommitteeDefaultThemeKey(committeeName = '', index = 0) {
+  const lower = (committeeName || '').toLowerCase();
+  if (lower.includes('dama') || lower.includes('dorca') || lower.includes('femenil') || lower.includes('mujere')) return 'rose';
+  if (lower.includes('joven') || lower.includes('juvenil') || lower.includes('adolescente')) return 'blue';
+  if (lower.includes('escuela') || lower.includes('dominical') || lower.includes('niño') || lower.includes('infantil')) return 'amber';
+  if (lower.includes('alabanza') || lower.includes('musica') || lower.includes('adoracion') || lower.includes('coro')) return 'purple';
+  if (lower.includes('mision') || lower.includes('evangelis')) return 'emerald';
+  if (lower.includes('caballero') || lower.includes('hombre') || lower.includes('varone')) return 'cyan';
+  if (lower.includes('junta') || lower.includes('directiv') || lower.includes('general') || lower.includes('oficial')) return 'indigo';
+  if (lower.includes('construc') || lower.includes('templo') || lower.includes('obra')) return 'teal';
+  if (lower.includes('social') || lower.includes('misericordia') || lower.includes('ayuda')) return 'orange';
+  if (lower.includes('interces') || lower.includes('oracion') || lower.includes('ayuno')) return 'fuchsia';
+  if (lower.includes('audio') || lower.includes('medio') || lower.includes('comunicac') || lower.includes('redes')) return 'lime';
+  
+  return THEME_KEYS[index % THEME_KEYS.length];
+}
 
 export default function CommitteesView({
   committees = [],
@@ -163,13 +327,14 @@ export default function CommitteesView({
   const committeeMovements = selectedCommitteeId ? movements.filter(m => m.committeeId === selectedCommitteeId) : [];
 
   // Obtener tema visual para un comité
-  const getCommitteeTheme = (committee, index) => {
+  const getCommitteeTheme = (committee, index = 0) => {
+    if (!committee) return COMMITTEE_COLOR_THEMES.emerald;
     const savedColorKey = committeeColors[committee.id] || committee.color;
     if (savedColorKey && COMMITTEE_COLOR_THEMES[savedColorKey]) {
       return COMMITTEE_COLOR_THEMES[savedColorKey];
     }
-    const fallbackKey = THEME_KEYS[index % THEME_KEYS.length];
-    return COMMITTEE_COLOR_THEMES[fallbackKey];
+    const defaultKey = getCommitteeDefaultThemeKey(committee.name, index);
+    return COMMITTEE_COLOR_THEMES[defaultKey] || COMMITTEE_COLOR_THEMES.emerald;
   };
 
   // Abrir modal para crear nuevo comité
@@ -359,10 +524,13 @@ export default function CommitteesView({
                 <div
                   key={c.id}
                   onClick={() => handleSelectCommittee(c.id)}
-                  className={`p-6 rounded-3xl ${themeStyle.cardBg} border-t-4 ${themeStyle.border} border-x border-b shadow-lg hover:shadow-xl ${themeStyle.shadow} transition-all cursor-pointer flex flex-col gap-5 group relative overflow-hidden hover:scale-[1.02] active:scale-[0.99]`}
+                  className={`group relative overflow-hidden rounded-3xl p-6 transition-all duration-300 ease-out cursor-pointer flex flex-col gap-5 border-2 ${themeStyle.cardBorder} ${themeStyle.cardBg} ${themeStyle.cardHoverBg} ${themeStyle.cardHoverBorder} ${themeStyle.cardHoverRing} ${themeStyle.cardHoverShadow} hover:-translate-y-2 hover:scale-[1.02] active:scale-[0.99] shadow-md`}
                 >
-                  <div className="flex justify-between items-start relative z-10">
-                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${themeStyle.bg} text-white flex items-center justify-center shadow-md ${themeStyle.shadow} group-hover:scale-110 transition-transform font-black text-xl`}>
+                  {/* Barra superior decorativa del color temático */}
+                  <div className={`absolute top-0 left-0 right-0 h-2.5 ${themeStyle.topBar} transition-all duration-300 group-hover:h-3.5`} />
+
+                  <div className="flex justify-between items-start relative z-10 pt-1">
+                    <div className={`w-13 h-13 rounded-2xl bg-gradient-to-br ${themeStyle.bg} text-white flex items-center justify-center shadow-md ${themeStyle.shadow} group-hover:scale-115 group-hover:rotate-3 transition-transform duration-300 font-black text-xl`}>
                        <span>{c.name.charAt(0)}</span>
                     </div>
 
@@ -370,37 +538,38 @@ export default function CommitteesView({
                       {!isReadOnly && canManageCommittees && (
                         <button
                           onClick={(e) => handleOpenEditCommittee(c, e)}
-                          className="p-2 rounded-xl bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 hover:scale-110 shadow-sm transition-all"
+                          className="p-2 rounded-xl bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 hover:scale-115 shadow-xs transition-all cursor-pointer"
                           title="Editar nombre, tesorero y color del comité"
                         >
                           <Pencil className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                         </button>
                       )}
-                      <span className={`text-[10px] font-bold ${themeStyle.badge} px-2.5 py-1 rounded-full border`}>
-                        Detalles →
+                      <span className={`text-[10px] font-black ${themeStyle.badge} ${themeStyle.badgeHover} px-3 py-1.5 rounded-full border transition-all duration-200 shadow-xs flex items-center gap-1`}>
+                        <span>Detalles</span>
+                        <span className="group-hover:translate-x-1 transition-transform">→</span>
                       </span>
                     </div>
                   </div>
                   
                   <div className="relative z-10">
-                    <h3 className="font-black text-xl text-slate-900 dark:text-white leading-tight mb-2 flex items-center gap-2">
-                      <span>{c.name}</span>
+                    <h3 className="font-black text-xl text-slate-900 dark:text-white leading-tight mb-2 group-hover:text-slate-950 dark:group-hover:text-white transition-colors">
+                      {c.name}
                     </h3>
                     <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1">
                       Saldo Disponible
                     </span>
                     <span className={`text-3xl sm:text-4xl font-black tracking-tight ${
-                      commBalance < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'
-                    }`}>
+                      commBalance < 0 ? 'text-rose-600 dark:text-rose-400' : themeStyle.balanceColor || 'text-slate-900 dark:text-white'
+                    } group-hover:scale-105 inline-block transition-transform origin-left`}>
                       {formatCurrency(commBalance)}
                     </span>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-200/60 dark:border-slate-800 flex justify-between items-center mt-auto relative z-10">
+                  <div className="pt-4 border-t border-slate-200/80 dark:border-slate-800/80 flex justify-between items-center mt-auto relative z-10">
                     <p className="text-xs text-slate-600 dark:text-slate-400 font-medium truncate max-w-[190px]">
-                      Tesorero: <span className="text-slate-900 dark:text-slate-200 font-bold">{c.treasurer || 'Sin asignar'}</span>
+                      Tesorero: <span className="text-slate-900 dark:text-slate-200 font-black">{c.treasurer || 'Sin asignar'}</span>
                     </p>
-                    <span className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 group-hover:bg-blue-600 group-hover:text-white transition-colors font-bold text-xs">
+                    <span className={`w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300 ${themeStyle.arrowHoverBg} group-hover:text-white group-hover:scale-115 group-hover:border-transparent transition-all duration-200 font-bold text-xs shadow-xs`}>
                       →
                     </span>
                   </div>

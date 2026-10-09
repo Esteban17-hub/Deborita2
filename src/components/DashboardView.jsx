@@ -3,6 +3,7 @@ import { Wallet, TrendingUp, TrendingDown, HandHeart, PlusCircle, ArrowRightLeft
 import { toast } from 'react-hot-toast';
 import { formatCurrency, deduceDayOfWeek } from '../utils/formatters';
 import MoneyInput from './MoneyInput';
+import { COMMITTEE_COLOR_THEMES, getCommitteeDefaultThemeKey } from './CommitteesView';
 
 export default function DashboardView({
   committees = [],
@@ -284,42 +285,46 @@ export default function DashboardView({
 
         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-none">
           {sortedCommittees.map((com, index) => {
-            // Colores vibrantes y fondos suaves dinámicos por comité
-            const colorThemes = [
-              { gradient: 'from-blue-600 to-indigo-600', cardBg: 'bg-blue-50/50 dark:bg-blue-950/25 hover:bg-blue-50/80 dark:hover:bg-blue-950/40 border-blue-200/70 dark:border-blue-900/40' },
-              { gradient: 'from-emerald-600 to-teal-600', cardBg: 'bg-emerald-50/50 dark:bg-emerald-950/25 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/40 border-emerald-200/70 dark:border-emerald-900/40' },
-              { gradient: 'from-purple-600 to-pink-600', cardBg: 'bg-purple-50/50 dark:bg-purple-950/25 hover:bg-purple-50/80 dark:hover:bg-purple-950/40 border-purple-200/70 dark:border-purple-900/40' },
-              { gradient: 'from-amber-500 to-orange-600', cardBg: 'bg-amber-50/50 dark:bg-amber-950/25 hover:bg-amber-50/80 dark:hover:bg-amber-950/40 border-amber-200/70 dark:border-amber-900/40' },
-              { gradient: 'from-rose-600 to-red-600', cardBg: 'bg-rose-50/50 dark:bg-rose-950/25 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 border-rose-200/70 dark:border-rose-900/40' },
-              { gradient: 'from-cyan-600 to-blue-600', cardBg: 'bg-cyan-50/50 dark:bg-cyan-950/25 hover:bg-cyan-50/80 dark:hover:bg-cyan-950/40 border-cyan-200/70 dark:border-cyan-900/40' },
-              { gradient: 'from-violet-600 to-purple-600', cardBg: 'bg-violet-50/50 dark:bg-violet-950/25 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 border-violet-200/70 dark:border-violet-900/40' },
-              { gradient: 'from-teal-600 to-emerald-600', cardBg: 'bg-teal-50/50 dark:bg-teal-950/25 hover:bg-teal-50/80 dark:hover:bg-teal-950/40 border-teal-200/70 dark:border-teal-900/40' }
-            ];
-            const theme = colorThemes[index % colorThemes.length];
+            const savedColors = (() => {
+              try { return JSON.parse(localStorage.getItem('deborita_committee_colors') || '{}'); } catch { return {}; }
+            })();
+            const savedColorKey = savedColors[com.id] || com.color;
+            const themeKey = (savedColorKey && COMMITTEE_COLOR_THEMES[savedColorKey])
+              ? savedColorKey
+              : getCommitteeDefaultThemeKey(com.name, index);
+            const theme = COMMITTEE_COLOR_THEMES[themeKey] || COMMITTEE_COLOR_THEMES.blue;
 
             return (
               <div
                 key={com.id}
                 onClick={() => onSelectTab('committees')}
-                className={`min-w-[220px] p-5 rounded-2xl ${theme.cardBg} border cursor-pointer hover:shadow-lg hover:scale-105 transition-all group`}
+                className={`group min-w-[230px] p-5 rounded-2xl ${theme.cardBg} ${theme.cardHoverBg} border-2 ${theme.cardBorder} ${theme.cardHoverBorder} ${theme.cardHoverRing} ${theme.cardHoverShadow} cursor-pointer hover:shadow-xl hover:-translate-y-1.5 hover:scale-[1.03] transition-all duration-300 relative overflow-hidden`}
               >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${theme.gradient} text-white flex items-center justify-center font-black text-sm shadow-sm`}>
+                {/* Barra superior decorativa */}
+                <div className={`absolute top-0 left-0 right-0 h-1.5 ${theme.topBar} transition-all duration-300 group-hover:h-2.5`} />
+
+                <div className="flex items-center gap-3 mb-3 pt-0.5">
+                  <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${theme.bg} text-white flex items-center justify-center font-black text-sm shadow-sm group-hover:scale-115 group-hover:rotate-3 transition-transform duration-300`}>
                     {com.name.charAt(0)}
                   </div>
-                  <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 truncate flex-1">
+                  <span className="text-xs font-black text-slate-900 dark:text-slate-100 truncate flex-1 group-hover:text-slate-950 dark:group-hover:text-white transition-colors">
                     {com.name}
                   </span>
                 </div>
-                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block">
-                  Saldo
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                  Saldo Disponible
                 </span>
-                <p className={`text-2xl font-black mt-0.5 tracking-tight ${com.balance < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}`}>
+                <p className={`text-2xl font-black mt-0.5 tracking-tight ${com.balance < 0 ? 'text-rose-600 dark:text-rose-400' : theme.balanceColor || 'text-slate-900 dark:text-white'} group-hover:scale-105 inline-block transition-transform origin-left`}>
                   {formatCurrency(com.balance)}
                 </p>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 font-medium truncate">
-                  Tesorero: <span className="text-slate-700 dark:text-slate-300 font-semibold">{com.treasurer || 'No asignado'}</span>
-                </p>
+                <div className="pt-2.5 mt-2.5 border-t border-slate-200/70 dark:border-slate-800/70 flex items-center justify-between">
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate max-w-[140px]">
+                    Tesorero: <span className="text-slate-800 dark:text-slate-200 font-bold">{com.treasurer || 'Sin asignar'}</span>
+                  </p>
+                  <span className={`w-5 h-5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 ${theme.arrowHoverBg} group-hover:text-white group-hover:scale-115 group-hover:border-transparent transition-all duration-200 font-bold text-[10px]`}>
+                    →
+                  </span>
+                </div>
               </div>
             );
           })}
