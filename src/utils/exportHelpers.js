@@ -181,8 +181,8 @@ export function shareTitheWhatsApp(tithe, pastorName = 'Pastor', congName = '') 
   text += `👤 *Pastor Titular:* ${pastorName}\n`;
   text += `------------------------------------\n`;
   text += `💰 *Diezmo Bruto Recaudado:* ${formatCurrency(tithe.grossTithe || 0)}\n`;
-  text += `🔴 *Fondo Nacional (${tithe.nationalPercentage || 10}%):* -${formatCurrency(tithe.nationalTreasury || 0)}\n`;
-  text += `🟠 *Fondo Local:* -${formatCurrency(tithe.localFundAport || 0)}\n`;
+  text += `🔴 *Fondo Nacional (${tithe.nationalPercentage || 10}%):* ${formatCurrency(tithe.nationalTreasury || 0)}\n`;
+  text += `🟠 *Fondo Local:* ${formatCurrency(tithe.localFundAport || 0)}\n`;
   text += `------------------------------------\n`;
   text += `💵 *Ingreso Neto Distribuible:* ${formatCurrency(tithe.netIncome || 0)}\n`;
   text += `⭐ *ASIGNACIÓN AL PASTOR (${tithe.correctedPoint || 50}%):* ${formatCurrency(tithe.pastorAllocation || 0)}\n`;
@@ -267,7 +267,7 @@ export function printFilteredTithesReport({
         <td style="padding: 13px 16px; font-weight: 900; color: #4338ca; font-size: 15px;">${String(t.month).padStart(2, '0')}/${t.year}</td>
         <td style="padding: 13px 16px; font-weight: 700; color: #1e293b; font-size: 14.5px;">${pName}</td>
         <td style="padding: 13px 16px; text-align: right; font-weight: 900; color: #6b21a8; font-size: 15px;">${formatCurrency(gross)}</td>
-        <td style="padding: 13px 16px; text-align: right; font-weight: 800; color: #b91c1c; font-size: 15px;">-${formatCurrency(nat)}</td>
+        <td style="padding: 13px 16px; text-align: right; font-weight: 800; color: #b91c1c; font-size: 15px;">${formatCurrency(nat)}</td>
         <td style="padding: 13px 16px; text-align: right; font-weight: 900; color: #1e40af; font-size: 15px;">${formatCurrency(net)}</td>
         <td style="padding: 13px 16px; text-align: center; font-weight: 800; color: #92400e; font-size: 14px;">${typeof pts === 'number' ? pts.toFixed(2) : pts}%</td>
         <td style="padding: 13px 16px; text-align: right; font-weight: 800; color: #0f172a; font-size: 15px;">${formatCurrency(local)}</td>
@@ -428,8 +428,8 @@ export function printFilteredTithesReport({
 
           <div class="kpi" style="border-color: #fda4af; background: #fff1f2;">
             <span class="kpi-label" style="color: #be123c;">Tesorería Nacional (21%)</span>
-            <div class="kpi-val" style="color: #991b1b;">-${formatCurrency(totNational)}</div>
-            <div class="kpi-sub" style="color: #be123c;">Promedio: -${formatCurrency(avgNational)}/mes</div>
+            <div class="kpi-val" style="color: #991b1b;">${formatCurrency(totNational)}</div>
+            <div class="kpi-sub" style="color: #be123c;">Promedio: ${formatCurrency(avgNational)}/mes</div>
           </div>
 
           <div class="kpi" style="border-color: #93c5fd; background: #eff6ff;">
@@ -463,7 +463,7 @@ export function printFilteredTithesReport({
             <tr class="total-row">
               <td colspan="2">TOTALES CONSOLIDADOS (${count} MESES)</td>
               <td style="text-align: right;">${formatCurrency(totGross)}</td>
-              <td style="text-align: right;">-${formatCurrency(totNational)}</td>
+              <td style="text-align: right;">${formatCurrency(totNational)}</td>
               <td style="text-align: right;">${formatCurrency(totNet)}</td>
               <td style="text-align: center;">-</td>
               <td style="text-align: right;">${formatCurrency(totLocal)}</td>
@@ -472,7 +472,7 @@ export function printFilteredTithesReport({
             <tr class="avg-row">
               <td colspan="2">PROMEDIOS MENSUALES CALCULADOS</td>
               <td style="text-align: right; color: #581c87;">${formatCurrency(avgGross)}</td>
-              <td style="text-align: right; color: #991b1b;">-${formatCurrency(avgNational)}</td>
+              <td style="text-align: right; color: #991b1b;">${formatCurrency(avgNational)}</td>
               <td style="text-align: right; color: #1e3a8a;">${formatCurrency(avgNet)}</td>
               <td style="text-align: center;">-</td>
               <td style="text-align: right;">${formatCurrency(avgLocal)}</td>
@@ -644,7 +644,7 @@ export function buildTithesHistorySummaryText({ congregationName = '', pastorNam
   if (pastorName) text += `👤 *Pastor Titular:* ${pastorName}\n`;
   text += `------------------------------------\n`;
   text += `💰 *Total Diezmo Bruto (${count} meses):* ${formatCurrency(totGross)}\n`;
-  text += `🔴 *Total Fondo Nacional:* -${formatCurrency(totNational)}\n`;
+  text += `🔴 *Total Fondo Nacional:* ${formatCurrency(totNational)}\n`;
   text += `💵 *Total Ingreso Neto:* ${formatCurrency(totNet)}\n`;
   text += `⭐ *TOTAL ASIGNACIÓN PASTORAL:* ${formatCurrency(totPastor)}\n`;
   text += `------------------------------------\n`;

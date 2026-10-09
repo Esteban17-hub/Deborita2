@@ -858,7 +858,7 @@ export default function TithesView({
                       details: [
                         { label: 'Pastor Titular', value: pastorName || 'Pastor' },
                         { label: 'Diezmo Bruto Recaudado', value: formatCurrency(grossTithe) },
-                        { label: `Fondo Nacional (${nationalPercentage}%)`, value: `-${formatCurrency(nationalTreasury)}`, color: '#dc2626' },
+                        { label: `Fondo Nacional (${nationalPercentage}%)`, value: `${formatCurrency(nationalTreasury)}`, color: '#dc2626' },
                         { label: 'Fondo Local Congregacional', value: `-${formatCurrency(localFundAport)}`, color: '#ea580c' },
                         { label: 'Ingreso Neto Distribuible', value: formatCurrency(netIncome), color: '#1e3a8a' },
                         { label: 'Porcentaje Asignación', value: `${activeCorrectedPoint}%` }
@@ -931,11 +931,11 @@ export default function TithesView({
                 Total Tesorería Nac. (21%)
               </span>
               <p className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400 mt-2">
-                -{formatCurrency(totalFilteredNational)}
+                {formatCurrency(totalFilteredNational)}
               </p>
               <div className="pt-2.5 mt-2.5 border-t border-rose-200/80 dark:border-rose-800/80 flex justify-between items-center text-xs font-black text-rose-800 dark:text-rose-300">
                 <span>Promedio Mensual:</span>
-                <span className="px-2.5 py-0.5 rounded-lg bg-rose-200/80 dark:bg-rose-900/80 text-rose-950 dark:text-rose-100">-{formatCurrency(avgFilteredNational)}</span>
+                <span className="px-2.5 py-0.5 rounded-lg bg-rose-200/80 dark:bg-rose-900/80 text-rose-950 dark:text-rose-100">{formatCurrency(avgFilteredNational)}</span>
               </div>
             </div>
 
@@ -1299,7 +1299,7 @@ export default function TithesView({
                                   details: [
                                     { label: 'Pastor Titular', value: t.pastorName || pastorName || 'Pastor' },
                                     { label: 'Diezmo Bruto Recaudado', value: formatCurrency(t.grossTithe ?? t.grossIncome ?? 0) },
-                                    { label: `Fondo Nacional (${t.nationalPercentage || 10}%)`, value: `-${formatCurrency(t.nationalTreasury ?? t.nationalShare ?? 0)}`, color: '#dc2626' },
+                                    { label: `Fondo Nacional (${t.nationalPercentage || 10}%)`, value: `${formatCurrency(t.nationalTreasury ?? t.nationalShare ?? 0)}`, color: '#dc2626' },
                                     { label: 'Fondo Local Congregacional', value: `-${formatCurrency(t.localFundAport || 0)}`, color: '#ea580c' },
                                     { label: 'Ingreso Neto Distribuible', value: formatCurrency(t.netIncome || 0), color: '#1e3a8a' },
                                     { label: 'Porcentaje Asignación', value: `${t.correctedPoint ?? t.pastorAllocationPercentage ?? 50}%` }
@@ -1354,7 +1354,7 @@ export default function TithesView({
                       </td>
                       <td className="py-4 px-4 font-bold text-slate-400 dark:text-slate-500 text-center">-</td>
                       <td className="py-4 px-4 text-right font-black text-slate-950 dark:text-white text-base">{formatCurrency(totalFilteredGross)}</td>
-                      <td className="py-4 px-4 text-right font-black text-rose-600 dark:text-rose-400 text-base">-{formatCurrency(totalFilteredNational)}</td>
+                      <td className="py-4 px-4 text-right font-black text-rose-600 dark:text-rose-400 text-base">{formatCurrency(totalFilteredNational)}</td>
                       <td className="py-4 px-4 text-right font-black text-indigo-950 dark:text-white text-base">{formatCurrency(totalFilteredNet)}</td>
                       <td className="py-4 px-4 text-center font-bold text-slate-400 dark:text-slate-500">-</td>
                       <td className="py-4 px-4 text-right font-black text-slate-800 dark:text-slate-200 text-base">{formatCurrency(totalFilteredLocalFund)}</td>
@@ -1370,7 +1370,7 @@ export default function TithesView({
                       </td>
                       <td className="py-3.5 px-4 font-bold text-slate-400 dark:text-slate-500 text-center">-</td>
                       <td className="py-3.5 px-4 text-right font-black text-indigo-950 dark:text-indigo-100 text-sm">{formatCurrency(avgFilteredGross)}</td>
-                      <td className="py-3.5 px-4 text-right font-black text-rose-700 dark:text-rose-300 text-sm">-{formatCurrency(avgFilteredNational)}</td>
+                      <td className="py-3.5 px-4 text-right font-black text-rose-700 dark:text-rose-300 text-sm">{formatCurrency(avgFilteredNational)}</td>
                       <td className="py-3.5 px-4 text-right font-black text-indigo-950 dark:text-indigo-100 text-sm">{formatCurrency(avgFilteredNet)}</td>
                       <td className="py-3.5 px-4 text-center font-bold text-slate-400 dark:text-slate-500">-</td>
                       <td className="py-3.5 px-4 text-right font-black text-slate-800 dark:text-slate-200 text-sm">{formatCurrency(avgFilteredLocalFund)}</td>
@@ -1480,7 +1480,7 @@ export default function TithesView({
                       { label: 'Diezmo Bruto Promedio', value: `${formatCurrency(avgGrossIncome)}/mes` },
                       { label: 'Total Asignación Pastoral', value: formatCurrency(chartTotPastor) },
                       { label: 'Asignación Pastoral Promedio', value: `${formatCurrency(avgPastorAllocation)}/mes` },
-                      { label: 'Total Tesorería Nac. (21%)', value: `-${formatCurrency(chartTotNational)}` },
+                      { label: 'Total Tesorería Nac. (21%)', value: formatCurrency(chartTotNational) },
                       { label: 'Total Fondo Local', value: formatCurrency(chartTotLocal) },
                       { label: 'Mes con Mayor Recaudo', value: maxGrossMonth ? `${getMonthName(maxGrossMonth.month)}/${maxGrossMonth.year} (${formatCurrency(maxGrossAmount)})` : '-' },
                       { label: 'Mes con Menor Recaudo', value: minGrossMonth ? `${getMonthName(minGrossMonth.month)}/${minGrossMonth.year} (${formatCurrency(minGrossAmount)})` : '-' }
@@ -1559,11 +1559,11 @@ export default function TithesView({
                   Tesorería Nacional (21%)
                 </span>
                 <p className="text-2xl lg:text-3xl font-black text-rose-600 dark:text-rose-400 mt-2">
-                  -{formatCurrency(chartTotNational)}
+                  {formatCurrency(chartTotNational)}
                 </p>
                 <div className="pt-2 mt-2 border-t border-rose-200 dark:border-rose-800/80 flex justify-between items-center text-xs font-black text-rose-800 dark:text-rose-300">
                   <span>Promedio:</span>
-                  <span className="px-2 py-0.5 rounded-md bg-rose-200/80 dark:bg-rose-900/80 text-rose-950 dark:text-rose-100">-{formatCurrency(avgNationalAllocation)}/mes</span>
+                  <span className="px-2 py-0.5 rounded-md bg-rose-200/80 dark:bg-rose-900/80 text-rose-950 dark:text-rose-100">{formatCurrency(avgNationalAllocation)}/mes</span>
                 </div>
               </div>
 
