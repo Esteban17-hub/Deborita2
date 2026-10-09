@@ -74,19 +74,23 @@ export function exportToPDF(reportTitle, congregationName, columns, data, totals
 
   // Encabezado Formal de Congregación
   doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.setTextColor(30, 41, 59); // Slate-800
-  doc.text(congregationName || 'Deborita Gestión Local', 40, 40);
+  doc.setFontSize(18);
+  doc.setTextColor(30, 27, 75); // Indigo-950
+  doc.text(congregationName || 'Deborita Gestión Local', 40, 42);
 
-  doc.setFontSize(12);
+  doc.setFontSize(13);
+  doc.setFont('Helvetica', 'bold');
+  doc.setTextColor(67, 56, 202); // Indigo-700
+  doc.text(`Informe Financiero: ${reportTitle}`, 40, 62);
+
+  doc.setFontSize(11);
   doc.setFont('Helvetica', 'normal');
-  doc.setTextColor(71, 85, 105);
-  doc.text(`Informe Financiero: ${reportTitle}`, 40, 58);
-  doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-CO')}`, 40, 72);
+  doc.setTextColor(100, 116, 139); // Slate-500
+  doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}`, 40, 78);
 
-  doc.setLineWidth(1);
-  doc.setDrawColor(226, 232, 240);
-  doc.line(40, 82, 555, 82);
+  doc.setLineWidth(1.5);
+  doc.setDrawColor(203, 213, 225);
+  doc.line(40, 88, 555, 88);
 
   // Mapear headers y datos para autoTable
   const headers = columns.map(c => c.header);
@@ -110,19 +114,21 @@ export function exportToPDF(reportTitle, congregationName, columns, data, totals
   }
 
   autoTable(doc, {
-    startY: 95,
+    startY: 100,
     head: [headers],
     body: tableRows,
     theme: 'grid',
     headStyles: {
-      fillColor: [37, 99, 235], // Vibrant Blue
+      fillColor: [67, 56, 202], // Deep Indigo
       textColor: 255,
       fontStyle: 'bold',
-      fontSize: 10
+      fontSize: 11,
+      cellPadding: 7
     },
     bodyStyles: {
-      fontSize: 9,
-      textColor: [51, 65, 85]
+      fontSize: 10.5,
+      textColor: [30, 41, 59],
+      cellPadding: 6
     },
     alternateRowStyles: {
       fillColor: [248, 250, 252]
@@ -131,6 +137,7 @@ export function exportToPDF(reportTitle, congregationName, columns, data, totals
       // Resaltar la fila final de Totales
       if (totals && dataCell.section === 'body' && dataCell.rowIndex === tableRows.length - 1) {
         dataCell.cell.styles.fontStyle = 'bold';
+        dataCell.cell.styles.fontSize = 11.5;
         dataCell.cell.styles.fillColor = [224, 231, 255]; // Soft Indigo highlight
         dataCell.cell.styles.textColor = [30, 27, 75];
       }

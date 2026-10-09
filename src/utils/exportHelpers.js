@@ -263,15 +263,15 @@ export function printFilteredTithesReport({
     const rowBg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
 
     return `
-      <tr style="border-bottom: 1px solid #e2e8f0; background: ${rowBg};">
-        <td style="padding: 9px 12px; font-weight: 800; color: #4338ca;">${String(t.month).padStart(2, '0')}/${t.year}</td>
-        <td style="padding: 9px 12px; font-weight: 600; color: #334155;">${pName}</td>
-        <td style="padding: 9px 12px; text-align: right; font-weight: 800; color: #6b21a8;">${formatCurrency(gross)}</td>
-        <td style="padding: 9px 12px; text-align: right; font-weight: 700; color: #b91c1c;">-${formatCurrency(nat)}</td>
-        <td style="padding: 9px 12px; text-align: right; font-weight: 800; color: #1e40af;">${formatCurrency(net)}</td>
-        <td style="padding: 9px 12px; text-align: center; font-weight: 700; color: #92400e;">${typeof pts === 'number' ? pts.toFixed(2) : pts}%</td>
-        <td style="padding: 9px 12px; text-align: right; font-weight: 700; color: #0f172a;">${formatCurrency(local)}</td>
-        <td style="padding: 9px 12px; text-align: right; font-weight: 900; color: #15803d;">${formatCurrency(pastor)}</td>
+      <tr style="border-bottom: 1.5px solid #e2e8f0; background: ${rowBg};">
+        <td style="padding: 13px 16px; font-weight: 900; color: #4338ca; font-size: 15px;">${String(t.month).padStart(2, '0')}/${t.year}</td>
+        <td style="padding: 13px 16px; font-weight: 700; color: #1e293b; font-size: 14.5px;">${pName}</td>
+        <td style="padding: 13px 16px; text-align: right; font-weight: 900; color: #6b21a8; font-size: 15px;">${formatCurrency(gross)}</td>
+        <td style="padding: 13px 16px; text-align: right; font-weight: 800; color: #b91c1c; font-size: 15px;">-${formatCurrency(nat)}</td>
+        <td style="padding: 13px 16px; text-align: right; font-weight: 900; color: #1e40af; font-size: 15px;">${formatCurrency(net)}</td>
+        <td style="padding: 13px 16px; text-align: center; font-weight: 800; color: #92400e; font-size: 14px;">${typeof pts === 'number' ? pts.toFixed(2) : pts}%</td>
+        <td style="padding: 13px 16px; text-align: right; font-weight: 800; color: #0f172a; font-size: 15px;">${formatCurrency(local)}</td>
+        <td style="padding: 13px 16px; text-align: right; font-weight: 950; color: #15803d; font-size: 16px;">${formatCurrency(pastor)}</td>
       </tr>
     `;
   }).join('');
@@ -285,121 +285,125 @@ export function printFilteredTithesReport({
         <style>
           body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            padding: 35px;
+            padding: 40px;
             color: #0f172a;
-            max-width: 900px;
+            max-width: 1050px;
             margin: 0 auto;
             background: #ffffff;
+            font-size: 15px;
           }
           .header {
             text-align: center;
-            border-bottom: 3px solid #6366f1;
-            padding-bottom: 16px;
-            margin-bottom: 20px;
+            border-bottom: 3.5px solid #4f46e5;
+            padding-bottom: 20px;
+            margin-bottom: 24px;
           }
           .title {
-            font-size: 22px;
-            font-weight: 900;
+            font-size: 28px;
+            font-weight: 950;
             margin: 0;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #312e81;
+            letter-spacing: 0.8px;
+            color: #1e1b4b;
           }
           .sub {
-            font-size: 13px;
-            color: #64748b;
-            margin-top: 5px;
-            font-weight: 600;
+            font-size: 16px;
+            color: #4338ca;
+            margin-top: 8px;
+            font-weight: 800;
           }
           .meta {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 20px;
-            font-size: 12px;
-            color: #475569;
-            background: #f8fafc;
-            padding: 10px 14px;
-            border-radius: 10px;
-            border: 1px solid #e2e8f0;
+            margin-bottom: 24px;
+            font-size: 14.5px;
+            color: #334155;
+            background: #f1f5f9;
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 1.5px solid #cbd5e1;
+            font-weight: 600;
           }
           .kpi-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            margin-bottom: 24px;
+            gap: 14px;
+            margin-bottom: 28px;
           }
           .kpi {
-            padding: 12px;
-            border-radius: 12px;
-            border: 1.5px solid #e2e8f0;
+            padding: 16px 14px;
+            border-radius: 14px;
+            border: 2px solid #e2e8f0;
             background: #f8fafc;
             text-align: center;
           }
           .kpi-label {
-            font-size: 10px;
-            font-weight: 800;
+            font-size: 12.5px;
+            font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #64748b;
+            letter-spacing: 0.6px;
+            color: #475569;
             display: block;
           }
           .kpi-val {
-            font-size: 16px;
-            font-weight: 900;
-            margin-top: 4px;
+            font-size: 23px;
+            font-weight: 950;
+            margin-top: 6px;
           }
           .kpi-sub {
-            font-size: 10px;
-            font-weight: 700;
-            margin-top: 4px;
-            padding-top: 4px;
-            border-top: 1px dashed #cbd5e1;
-            color: #475569;
+            font-size: 13.5px;
+            font-weight: 800;
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1.5px dashed #cbd5e1;
+            color: #334155;
           }
           table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
-            font-size: 12px;
-            border-radius: 10px;
+            margin-bottom: 24px;
+            font-size: 14.5px;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 2px solid #c7d2fe;
           }
           th {
-            background: #eef2ff;
-            color: #312e81;
-            padding: 10px 12px;
+            background: #e0e7ff;
+            color: #1e1b4b;
+            padding: 14px 16px;
             text-transform: uppercase;
-            font-size: 10.5px;
-            font-weight: 900;
-            letter-spacing: 0.5px;
-            border-bottom: 2px solid #c7d2fe;
+            font-size: 13.5px;
+            font-weight: 950;
+            letter-spacing: 0.6px;
+            border-bottom: 3px solid #6366f1;
           }
           .total-row td {
             background: #e0e7ff !important;
             color: #1e1b4b !important;
-            font-weight: 900 !important;
-            border-top: 2px solid #6366f1 !important;
-            padding: 10px 12px;
+            font-weight: 950 !important;
+            border-top: 3px solid #4338ca !important;
+            padding: 16px;
+            font-size: 16.5px;
           }
           .avg-row td {
             background: #f1f5f9 !important;
-            color: #334155 !important;
-            font-weight: 800 !important;
-            border-bottom: 2px solid #cbd5e1 !important;
-            padding: 8px 12px;
-            font-size: 11px;
+            color: #1e293b !important;
+            font-weight: 900 !important;
+            border-top: 1.5px solid #cbd5e1 !important;
+            padding: 14px 16px;
+            font-size: 15.5px;
           }
           .footer {
             text-align: center;
-            font-size: 10.5px;
-            color: #94a3b8;
-            margin-top: 35px;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            margin-top: 40px;
+            border-top: 1.5px solid #e2e8f0;
+            padding-top: 16px;
           }
           @media print {
-            body { padding: 0; }
+            body { padding: 15px; }
           }
         </style>
       </head>
@@ -416,27 +420,27 @@ export function printFilteredTithesReport({
         </div>
 
         <div class="kpi-container">
-          <div class="kpi" style="border-color: #d8b4fe; background: #faf5ff;">
-            <span class="kpi-label" style="color: #7e22ce;">Diezmo Bruto Total</span>
-            <div class="kpi-val" style="color: #6b21a8;">${formatCurrency(totGross)}</div>
-            <div class="kpi-sub" style="color: #7e22ce;">Promedio: ${formatCurrency(avgGross)}/mes</div>
+          <div class="kpi" style="border-color: #c084fc; background: #faf5ff;">
+            <span class="kpi-label" style="color: #6b21a8;">Diezmo Bruto Total</span>
+            <div class="kpi-val" style="color: #581c87;">${formatCurrency(totGross)}</div>
+            <div class="kpi-sub" style="color: #6b21a8;">Promedio: ${formatCurrency(avgGross)}/mes</div>
           </div>
 
-          <div class="kpi" style="border-color: #fecdd3; background: #fff1f2;">
-            <span class="kpi-label" style="color: #be123c;">Tesorería Nacional</span>
-            <div class="kpi-val" style="color: #b91c1c;">-${formatCurrency(totNational)}</div>
+          <div class="kpi" style="border-color: #fda4af; background: #fff1f2;">
+            <span class="kpi-label" style="color: #be123c;">Tesorería Nacional (21%)</span>
+            <div class="kpi-val" style="color: #991b1b;">-${formatCurrency(totNational)}</div>
             <div class="kpi-sub" style="color: #be123c;">Promedio: -${formatCurrency(avgNational)}/mes</div>
           </div>
 
-          <div class="kpi" style="border-color: #bfdbfe; background: #eff6ff;">
-            <span class="kpi-label" style="color: #1d4ed8;">Ingreso Neto Total</span>
-            <div class="kpi-val" style="color: #1e40af;">${formatCurrency(totNet)}</div>
+          <div class="kpi" style="border-color: #93c5fd; background: #eff6ff;">
+            <span class="kpi-label" style="color: #1d4ed8;">Ingreso Neto Distribuible</span>
+            <div class="kpi-val" style="color: #1e3a8a;">${formatCurrency(totNet)}</div>
             <div class="kpi-sub" style="color: #1d4ed8;">Promedio: ${formatCurrency(avgNet)}/mes</div>
           </div>
 
-          <div class="kpi" style="border-color: #bbf7d0; background: #f0fdf4;">
+          <div class="kpi" style="border-color: #86efac; background: #f0fdf4;">
             <span class="kpi-label" style="color: #15803d;">Asignación Pastoral</span>
-            <div class="kpi-val" style="color: #166534;">${formatCurrency(totPastor)}</div>
+            <div class="kpi-val" style="color: #14532d;">${formatCurrency(totPastor)}</div>
             <div class="kpi-sub" style="color: #15803d;">Promedio: ${formatCurrency(avgPastor)}/mes</div>
           </div>
         </div>
@@ -466,13 +470,13 @@ export function printFilteredTithesReport({
               <td style="text-align: right;">${formatCurrency(totPastor)}</td>
             </tr>
             <tr class="avg-row">
-              <td colspan="2">PROMEDIOS MENSUALES</td>
-              <td style="text-align: right; color: #7e22ce;">${formatCurrency(avgGross)}</td>
-              <td style="text-align: right; color: #be123c;">-${formatCurrency(avgNational)}</td>
-              <td style="text-align: right; color: #1d4ed8;">${formatCurrency(avgNet)}</td>
+              <td colspan="2">PROMEDIOS MENSUALES CALCULADOS</td>
+              <td style="text-align: right; color: #581c87;">${formatCurrency(avgGross)}</td>
+              <td style="text-align: right; color: #991b1b;">-${formatCurrency(avgNational)}</td>
+              <td style="text-align: right; color: #1e3a8a;">${formatCurrency(avgNet)}</td>
               <td style="text-align: center;">-</td>
               <td style="text-align: right;">${formatCurrency(avgLocal)}</td>
-              <td style="text-align: right; color: #15803d;">${formatCurrency(avgPastor)}</td>
+              <td style="text-align: right; color: #14532d;">${formatCurrency(avgPastor)}</td>
             </tr>
           </tbody>
         </table>
@@ -701,17 +705,17 @@ export function printOfficialReceipt({ title, subtitle, congregationName, date, 
   }
 
   const detailsHtml = details.map(d => `
-    <tr style="border-bottom: 1px solid #e2e8f0;">
-      <td style="padding: 10px 12px; font-weight: 600; color: #334155;">${d.label}</td>
-      <td style="padding: 10px 12px; text-align: right; font-weight: 700; color: ${d.color || '#0f172a'};">${d.value}</td>
+    <tr style="border-bottom: 1.5px solid #e2e8f0;">
+      <td style="padding: 12px 14px; font-weight: 700; color: #334155; font-size: 14.5px;">${d.label}</td>
+      <td style="padding: 12px 14px; text-align: right; font-weight: 900; color: ${d.color || '#0f172a'}; font-size: 15.5px;">${d.value}</td>
     </tr>
   `).join('');
 
   const signaturesHtml = signatures.map(s => `
     <div style="text-align: center; width: 45%;">
-      <div style="border-bottom: 1.5px solid #0f172a; height: 50px; margin-bottom: 8px;"></div>
-      <p style="font-weight: 800; margin: 0; font-size: 13px; color: #0f172a;">${s.name}</p>
-      <p style="margin: 2px 0 0; font-size: 11px; color: #64748b;">${s.role}</p>
+      <div style="border-bottom: 2px solid #0f172a; height: 50px; margin-bottom: 8px;"></div>
+      <p style="font-weight: 900; margin: 0; font-size: 13.5px; color: #0f172a;">${s.name}</p>
+      <p style="margin: 2px 0 0; font-size: 12px; color: #64748b; font-weight: 600;">${s.role}</p>
     </div>
   `).join('');
 
@@ -722,19 +726,102 @@ export function printOfficialReceipt({ title, subtitle, congregationName, date, 
         <title>${title} - ${congregationName}</title>
         <meta charset="utf-8">
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 40px; color: #0f172a; max-width: 750px; margin: 0 auto; }
-          .header { text-align: center; border-bottom: 2px solid #3b82f6; padding-bottom: 16px; margin-bottom: 24px; }
-          .title { font-size: 20px; font-weight: 900; margin: 0; text-transform: uppercase; color: #1e3a8a; }
-          .sub { font-size: 13px; color: #64748b; margin-top: 4px; font-weight: 600; }
-          .meta { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 12px; color: #475569; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 13px; }
-          .total-box { background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-          .total-title { font-size: 14px; font-weight: 800; text-transform: uppercase; color: #1e293b; }
-          .total-value { font-size: 22px; font-weight: 900; color: #1d4ed8; }
-          .signatures { display: flex; justify-content: space-between; margin-top: 60px; }
-          .footer { text-align: center; font-size: 10px; color: #94a3b8; margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 35px;
+            color: #0f172a;
+            max-width: 850px;
+            margin: 0 auto;
+            background: #ffffff;
+            font-size: 14.5px;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 3px solid #3b82f6;
+            padding-bottom: 18px;
+            margin-bottom: 24px;
+          }
+          .title {
+            font-size: 24px;
+            font-weight: 950;
+            margin: 0;
+            text-transform: uppercase;
+            color: #1e3a8a;
+            letter-spacing: 0.5px;
+          }
+          .sub {
+            font-size: 15px;
+            color: #475569;
+            margin-top: 6px;
+            font-weight: 700;
+          }
+          .meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 22px;
+            font-size: 13.5px;
+            color: #334155;
+            background: #f8fafc;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            font-weight: 600;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 26px;
+            font-size: 14.5px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            overflow: hidden;
+          }
+          th {
+            background: #e2e8f0;
+            color: #1e293b;
+            padding: 12px 14px;
+            text-transform: uppercase;
+            font-size: 13px;
+            font-weight: 950;
+            letter-spacing: 0.5px;
+          }
+          .total-box {
+            background: #eff6ff;
+            border: 2.5px solid #93c5fd;
+            border-radius: 14px;
+            padding: 18px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+          }
+          .total-title {
+            font-size: 15px;
+            font-weight: 900;
+            text-transform: uppercase;
+            color: #1e3a8a;
+          }
+          .total-value {
+            font-size: 26px;
+            font-weight: 950;
+            color: #1d4ed8;
+          }
+          .signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 55px;
+          }
+          .footer {
+            text-align: center;
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 40px;
+            border-top: 1.5px solid #e2e8f0;
+            padding-top: 14px;
+            font-weight: 500;
+          }
           @media print {
-            body { padding: 0; }
+            body { padding: 10px; }
             .no-print { display: none; }
           }
         </style>
@@ -752,9 +839,9 @@ export function printOfficialReceipt({ title, subtitle, congregationName, date, 
 
         <table>
           <thead>
-            <tr style="background: #f1f5f9; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">
-              <th style="padding: 10px 12px; text-align: left;">Concepto / Descripción</th>
-              <th style="padding: 10px 12px; text-align: right;">Valor</th>
+            <tr>
+              <th style="text-align: left;">Concepto / Descripción</th>
+              <th style="text-align: right;">Valor</th>
             </tr>
           </thead>
           <tbody>
@@ -770,7 +857,7 @@ export function printOfficialReceipt({ title, subtitle, congregationName, date, 
         ` : ''}
 
         ${notes ? `
-          <div style="font-size: 12px; color: #475569; margin-bottom: 24px; padding: 10px; background: #f8fafc; border-radius: 8px;">
+          <div style="font-size: 13.5px; color: #334155; margin-bottom: 24px; padding: 12px 16px; background: #f8fafc; border-radius: 10px; border: 1.5px solid #e2e8f0;">
             <strong>Observaciones:</strong> ${notes}
           </div>
         ` : ''}
@@ -809,17 +896,20 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
   // Ordenar movimientos por fecha del día 1 al 31 (ascendente)
   const sorted = [...movements].sort((a, b) => compareDatesAsc(a.date, b.date));
 
-  const rowsHtml = sorted.map(m => `
-    <tr style="border-bottom: 1px solid #e2e8f0; ${m.annulled ? 'opacity: 0.5;' : ''}">
-      <td style="padding: 8px 10px; font-weight: 700;">${formatDate(m.date)}</td>
-      <td style="padding: 8px 10px; font-weight: 800; color: ${m.type === 'INGRESO' ? '#16a34a' : '#dc2626'};">${m.type}</td>
-      <td style="padding: 8px 10px;">${m.description || 'Sin descripción'} ${m.annulled ? '<span style="color:#dc2626;font-weight:700;">(ANULADO)</span>' : ''}</td>
-      <td style="padding: 8px 10px; text-align: right; font-weight: 800; color: ${m.type === 'INGRESO' ? '#15803d' : '#b91c1c'};">
-        ${m.type === 'INGRESO' ? '+' : '-'}${formatCurrency(m.amount || 0)}
-      </td>
-      <td style="padding: 8px 10px; text-align: center; font-size: 11px;">${m.annulled ? 'Anulado' : 'Activo'}</td>
-    </tr>
-  `).join('');
+  const rowsHtml = sorted.map((m, idx) => {
+    const rowBg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+    return `
+      <tr style="border-bottom: 1.5px solid #e2e8f0; background: ${rowBg}; ${m.annulled ? 'opacity: 0.55;' : ''}">
+        <td style="padding: 12px 14px; font-weight: 800; font-size: 14px; color: #1e293b;">${formatDate(m.date)}</td>
+        <td style="padding: 12px 14px; font-weight: 900; font-size: 14px; color: ${m.type === 'INGRESO' ? '#16a34a' : '#dc2626'};">${m.type}</td>
+        <td style="padding: 12px 14px; font-size: 14px; color: #334155; font-weight: 600;">${m.description || 'Sin descripción'} ${m.annulled ? '<span style="color:#dc2626;font-weight:900;">(ANULADO)</span>' : ''}</td>
+        <td style="padding: 12px 14px; text-align: right; font-weight: 900; font-size: 15px; color: ${m.type === 'INGRESO' ? '#15803d' : '#b91c1c'};">
+          ${m.type === 'INGRESO' ? '+' : '-'}${formatCurrency(m.amount || 0)}
+        </td>
+        <td style="padding: 12px 14px; text-align: center; font-size: 12.5px; font-weight: 800; color: ${m.annulled ? '#b91c1c' : '#0369a1'};">${m.annulled ? 'Anulado' : 'Activo'}</td>
+      </tr>
+    `;
+  }).join('');
 
   const html = `
     <!DOCTYPE html>
@@ -828,19 +918,101 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
         <title>Reporte Comité - ${committeeName}</title>
         <meta charset="utf-8">
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 30px; color: #0f172a; max-width: 850px; margin: 0 auto; }
-          .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 14px; margin-bottom: 20px; }
-          .title { font-size: 20px; font-weight: 900; margin: 0; text-transform: uppercase; color: #1e3a8a; }
-          .sub { font-size: 13px; color: #64748b; margin-top: 4px; font-weight: 600; }
-          .meta { display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 12px; color: #475569; }
-          .kpi-container { display: flex; gap: 12px; margin-bottom: 20px; }
-          .kpi { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; text-align: center; background: #f8fafc; }
-          .kpi-val { font-size: 16px; font-weight: 900; margin-top: 4px; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 12px; }
-          th { background: #f1f5f9; padding: 8px 10px; text-transform: uppercase; font-size: 11px; text-align: left; }
-          .signatures { display: flex; justify-content: space-between; margin-top: 50px; }
-          .footer { text-align: center; font-size: 10px; color: #94a3b8; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 10px; }
-          @media print { body { padding: 0; } }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 35px;
+            color: #0f172a;
+            max-width: 950px;
+            margin: 0 auto;
+            background: #ffffff;
+            font-size: 14.5px;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 3.5px solid #2563eb;
+            padding-bottom: 18px;
+            margin-bottom: 22px;
+          }
+          .title {
+            font-size: 26px;
+            font-weight: 950;
+            margin: 0;
+            text-transform: uppercase;
+            color: #1e3a8a;
+            letter-spacing: 0.5px;
+          }
+          .sub {
+            font-size: 15.5px;
+            color: #3b82f6;
+            margin-top: 6px;
+            font-weight: 800;
+          }
+          .meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 13.5px;
+            color: #334155;
+            background: #f1f5f9;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1.5px solid #cbd5e1;
+            font-weight: 600;
+          }
+          .kpi-container {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 24px;
+          }
+          .kpi {
+            flex: 1;
+            padding: 16px 14px;
+            border-radius: 14px;
+            border: 2px solid #cbd5e1;
+            text-align: center;
+            background: #f8fafc;
+          }
+          .kpi-val {
+            font-size: 22px;
+            font-weight: 950;
+            margin-top: 6px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 26px;
+            font-size: 14px;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            overflow: hidden;
+          }
+          th {
+            background: #e2e8f0;
+            color: #1e293b;
+            padding: 13px 14px;
+            text-transform: uppercase;
+            font-size: 13px;
+            font-weight: 950;
+            text-align: left;
+            letter-spacing: 0.5px;
+          }
+          .signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 55px;
+          }
+          .footer {
+            text-align: center;
+            font-size: 11.5px;
+            color: #64748b;
+            margin-top: 35px;
+            border-top: 1.5px solid #e2e8f0;
+            padding-top: 14px;
+            font-weight: 500;
+          }
+          @media print {
+            body { padding: 10px; }
+          }
         </style>
       </head>
       <body>
@@ -851,20 +1023,20 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
 
         <div class="meta">
           <span><strong>Tesorero(a) a Cargo:</strong> ${treasurerName || 'Sin asignar'}</span>
-          <span><strong>Fecha de Generación:</strong> ${new Date().toLocaleDateString('es-CO')}</span>
+          <span><strong>Fecha de Generación:</strong> ${new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
         </div>
 
         <div class="kpi-container">
-          <div class="kpi">
-            <span style="font-size: 11px; color: #16a34a; font-weight: 800; text-transform: uppercase;">Total Aportes / Ingresos</span>
+          <div class="kpi" style="border-color: #86efac; background: #f0fdf4;">
+            <span style="font-size: 12px; color: #16a34a; font-weight: 900; text-transform: uppercase;">Total Aportes / Ingresos</span>
             <div class="kpi-val" style="color: #15803d;">+${formatCurrency(totals.income)}</div>
           </div>
-          <div class="kpi">
-            <span style="font-size: 11px; color: #dc2626; font-weight: 800; text-transform: uppercase;">Total Egresos</span>
+          <div class="kpi" style="border-color: #fca5a5; background: #fff1f2;">
+            <span style="font-size: 12px; color: #dc2626; font-weight: 900; text-transform: uppercase;">Total Egresos</span>
             <div class="kpi-val" style="color: #b91c1c;">-${formatCurrency(totals.expense)}</div>
           </div>
-          <div class="kpi" style="border-color: #3b82f6; background: #eff6ff;">
-            <span style="font-size: 11px; color: #1d4ed8; font-weight: 800; text-transform: uppercase;">Saldo Neto Período</span>
+          <div class="kpi" style="border-color: #93c5fd; background: #eff6ff;">
+            <span style="font-size: 12px; color: #1d4ed8; font-weight: 900; text-transform: uppercase;">Saldo Neto Período</span>
             <div class="kpi-val" style="color: #1e3a8a;">${formatCurrency(totals.net)}</div>
           </div>
         </div>
@@ -886,14 +1058,14 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
 
         <div class="signatures">
           <div style="text-align: center; width: 40%;">
-            <div style="border-bottom: 1.5px solid #0f172a; height: 45px; margin-bottom: 6px;"></div>
-            <p style="font-weight: 800; margin: 0; font-size: 12px;">${treasurerName || 'Tesorero(a) del Comité'}</p>
-            <p style="margin: 0; font-size: 10px; color: #64748b;">Tesorería del Comité</p>
+            <div style="border-bottom: 2px solid #0f172a; height: 45px; margin-bottom: 6px;"></div>
+            <p style="font-weight: 900; margin: 0; font-size: 13.5px; color: #0f172a;">${treasurerName || 'Tesorero(a) del Comité'}</p>
+            <p style="margin: 2px 0 0; font-size: 12px; color: #64748b; font-weight: 600;">Tesorería del Comité</p>
           </div>
           <div style="text-align: center; width: 40%;">
-            <div style="border-bottom: 1.5px solid #0f172a; height: 45px; margin-bottom: 6px;"></div>
-            <p style="font-weight: 800; margin: 0; font-size: 12px;">Pastor Titular / Tesorería General</p>
-            <p style="margin: 0; font-size: 10px; color: #64748b;">Visto Bueno y Aprobación</p>
+            <div style="border-bottom: 2px solid #0f172a; height: 45px; margin-bottom: 6px;"></div>
+            <p style="font-weight: 900; margin: 0; font-size: 13.5px; color: #0f172a;">Pastor Titular / Tesorería General</p>
+            <p style="margin: 2px 0 0; font-size: 12px; color: #64748b; font-weight: 600;">Visto Bueno y Aprobación</p>
           </div>
         </div>
 
@@ -991,16 +1163,17 @@ export function printFilteredOfferingsReport({ monthName = '', offerings = [], t
   // Ordenar ofrendas por fecha del día 1 al 31 (ascendente)
   const sorted = [...offerings].sort((a, b) => compareDatesAsc(a.date, b.date));
 
-  const rowsHtml = sorted.map(o => {
+  const rowsHtml = sorted.map((o, idx) => {
     const comName = committeeMap[o.destinationCommitteeId] || 'General';
+    const rowBg = idx % 2 === 0 ? '#ffffff' : '#fffbeb';
     return `
-      <tr style="border-bottom: 1px solid #e2e8f0;">
-        <td style="padding: 8px 10px; font-weight: 700;">${formatDate(o.date)}</td>
-        <td style="padding: 8px 10px; font-weight: 800; color: #b45309;">${o.dayOfWeek || ''}</td>
-        <td style="padding: 8px 10px; font-weight: 600;">${comName}</td>
-        <td style="padding: 8px 10px; text-align: right; font-weight: 800; color: #0f172a;">${formatCurrency(o.amount || 0)}</td>
-        <td style="padding: 8px 10px; font-size: 11px;">${o.responsible || 'Tesorero'}</td>
-        <td style="padding: 8px 10px; font-size: 11px; color: #475569;">${(o.notes || o.description || '').replace(/^\[|\]$/g, '')}</td>
+      <tr style="border-bottom: 1.5px solid #fed7aa; background: ${rowBg};">
+        <td style="padding: 12px 14px; font-weight: 800; font-size: 14px; color: #1e293b;">${formatDate(o.date)}</td>
+        <td style="padding: 12px 14px; font-weight: 900; font-size: 14px; color: #b45309;">${o.dayOfWeek || ''}</td>
+        <td style="padding: 12px 14px; font-weight: 700; font-size: 14px; color: #78350f;">${comName}</td>
+        <td style="padding: 12px 14px; text-align: right; font-weight: 900; font-size: 15.5px; color: #0f172a;">${formatCurrency(o.amount || 0)}</td>
+        <td style="padding: 12px 14px; font-size: 13px; font-weight: 600; color: #334155;">${o.responsible || 'Tesorero'}</td>
+        <td style="padding: 12px 14px; font-size: 13px; color: #475569;">${(o.notes || o.description || '').replace(/^\[|\]$/g, '')}</td>
       </tr>
     `;
   }).join('');
@@ -1012,18 +1185,98 @@ export function printFilteredOfferingsReport({ monthName = '', offerings = [], t
         <title>Reporte de Ofrendas - ${monthName || 'Histórico'}</title>
         <meta charset="utf-8">
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 30px; color: #0f172a; max-width: 850px; margin: 0 auto; }
-          .header { text-align: center; border-bottom: 2px solid #f59e0b; padding-bottom: 14px; margin-bottom: 20px; }
-          .title { font-size: 20px; font-weight: 900; margin: 0; text-transform: uppercase; color: #92400e; }
-          .sub { font-size: 13px; color: #64748b; margin-top: 4px; font-weight: 600; }
-          .meta { display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 12px; color: #475569; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 12px; }
-          th { background: #fef3c7; padding: 8px 10px; text-transform: uppercase; font-size: 11px; text-align: left; color: #78350f; }
-          .total-box { background: #fffbeb; border: 2px solid #fde68a; border-radius: 10px; padding: 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-          .total-val { font-size: 20px; font-weight: 900; color: #b45309; }
-          .signatures { display: flex; justify-content: space-between; margin-top: 50px; }
-          .footer { text-align: center; font-size: 10px; color: #94a3b8; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 10px; }
-          @media print { body { padding: 0; } }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 35px;
+            color: #0f172a;
+            max-width: 950px;
+            margin: 0 auto;
+            background: #ffffff;
+            font-size: 14.5px;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 3.5px solid #f59e0b;
+            padding-bottom: 18px;
+            margin-bottom: 22px;
+          }
+          .title {
+            font-size: 26px;
+            font-weight: 950;
+            margin: 0;
+            text-transform: uppercase;
+            color: #92400e;
+            letter-spacing: 0.5px;
+          }
+          .sub {
+            font-size: 15.5px;
+            color: #b45309;
+            margin-top: 6px;
+            font-weight: 800;
+          }
+          .meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 13.5px;
+            color: #475569;
+            background: #fffbeb;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1.5px solid #fde68a;
+            font-weight: 600;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 26px;
+            font-size: 14px;
+            border: 2px solid #fed7aa;
+            border-radius: 12px;
+            overflow: hidden;
+          }
+          th {
+            background: #fef3c7;
+            padding: 13px 14px;
+            text-transform: uppercase;
+            font-size: 13px;
+            text-align: left;
+            color: #78350f;
+            font-weight: 950;
+            letter-spacing: 0.5px;
+          }
+          .total-box {
+            background: #fffbeb;
+            border: 2.5px solid #fde68a;
+            border-radius: 14px;
+            padding: 18px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 26px;
+          }
+          .total-val {
+            font-size: 26px;
+            font-weight: 950;
+            color: #b45309;
+          }
+          .signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 55px;
+          }
+          .footer {
+            text-align: center;
+            font-size: 11.5px;
+            color: #64748b;
+            margin-top: 35px;
+            border-top: 1.5px solid #e2e8f0;
+            padding-top: 14px;
+            font-weight: 500;
+          }
+          @media print {
+            body { padding: 10px; }
+          }
         </style>
       </head>
       <body>
@@ -1034,11 +1287,11 @@ export function printFilteredOfferingsReport({ monthName = '', offerings = [], t
 
         <div class="meta">
           <span><strong>Total Registros:</strong> ${sorted.length} ofrendas</span>
-          <span><strong>Fecha de Impresión:</strong> ${new Date().toLocaleDateString('es-CO')}</span>
+          <span><strong>Fecha de Impresión:</strong> ${new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
         </div>
 
         <div class="total-box">
-          <span style="font-weight: 800; font-size: 13px; text-transform: uppercase; color: #92400e;">Gran Total Recaudado</span>
+          <span style="font-weight: 900; font-size: 15px; text-transform: uppercase; color: #92400e;">Gran Total Recaudado</span>
           <span class="total-val">${formatCurrency(totalAmount)}</span>
         </div>
 
@@ -1060,14 +1313,14 @@ export function printFilteredOfferingsReport({ monthName = '', offerings = [], t
 
         <div class="signatures">
           <div style="text-align: center; width: 40%;">
-            <div style="border-bottom: 1.5px solid #0f172a; height: 45px; margin-bottom: 6px;"></div>
-            <p style="font-weight: 800; margin: 0; font-size: 12px;">Tesorero(a) Local</p>
-            <p style="margin: 0; font-size: 10px; color: #64748b;">Responsable de Recaudo</p>
+            <div style="border-bottom: 2px solid #0f172a; height: 45px; margin-bottom: 6px;"></div>
+            <p style="font-weight: 900; margin: 0; font-size: 13.5px; color: #0f172a;">Tesorero(a) Local</p>
+            <p style="margin: 2px 0 0; font-size: 12px; color: #64748b; font-weight: 600;">Responsable de Recaudo</p>
           </div>
           <div style="text-align: center; width: 40%;">
-            <div style="border-bottom: 1.5px solid #0f172a; height: 45px; margin-bottom: 6px;"></div>
-            <p style="font-weight: 800; margin: 0; font-size: 12px;">Pastor Titular</p>
-            <p style="margin: 0; font-size: 10px; color: #64748b;">Visto Bueno y Aprobación</p>
+            <div style="border-bottom: 2px solid #0f172a; height: 45px; margin-bottom: 6px;"></div>
+            <p style="font-weight: 900; margin: 0; font-size: 13.5px; color: #0f172a;">Pastor Titular</p>
+            <p style="margin: 2px 0 0; font-size: 12px; color: #64748b; font-weight: 600;">Visto Bueno y Aprobación</p>
           </div>
         </div>
 
@@ -1219,11 +1472,11 @@ export function printChartReport({ title = 'Informe Gráfico', subtitle = '', co
   }
 
   const statsHtml = stats && stats.length > 0 ? `
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 20px 0;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin: 24px 0;">
       ${stats.map(s => `
-        <div style="padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; text-align: center;">
-          <span style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">${s.label}</span>
-          <div style="font-size: 16px; font-weight: 900; color: ${s.color || '#0f172a'}; margin-top: 4px;">${s.value}</div>
+        <div style="padding: 16px; border-radius: 12px; border: 2px solid #cbd5e1; background: #f8fafc; text-align: center;">
+          <span style="font-size: 13px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">${s.label}</span>
+          <div style="font-size: 24px; font-weight: 950; color: ${s.color || '#1e3a8a'}; margin-top: 6px;">${s.value}</div>
         </div>
       `).join('')}
     </div>
@@ -1236,15 +1489,67 @@ export function printChartReport({ title = 'Informe Gráfico', subtitle = '', co
         <title>${title} - ${period || 'Reporte'}</title>
         <meta charset="utf-8">
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 30px; color: #0f172a; max-width: 850px; margin: 0 auto; }
-          .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 14px; margin-bottom: 20px; }
-          .title { font-size: 20px; font-weight: 900; margin: 0; text-transform: uppercase; color: #1e3a8a; }
-          .sub { font-size: 13px; color: #64748b; margin-top: 4px; font-weight: 600; }
-          .chart-box { text-align: center; margin: 20px 0; padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; }
-          .chart-img { max-width: 100%; height: auto; max-height: 380px; object-fit: contain; }
-          .signatures { display: flex; justify-content: space-between; margin-top: 50px; }
-          .footer { text-align: center; font-size: 10px; color: #94a3b8; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 10px; }
-          @media print { body { padding: 0; } }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 35px;
+            color: #0f172a;
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #ffffff;
+            font-size: 15px;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 3.5px solid #4f46e5;
+            padding-bottom: 18px;
+            margin-bottom: 22px;
+          }
+          .title {
+            font-size: 26px;
+            font-weight: 950;
+            margin: 0;
+            text-transform: uppercase;
+            color: #1e1b4b;
+            letter-spacing: 0.5px;
+          }
+          .sub {
+            font-size: 15.5px;
+            color: #4338ca;
+            margin-top: 6px;
+            font-weight: 800;
+          }
+          .chart-box {
+            text-align: center;
+            margin: 24px 0;
+            padding: 20px;
+            border: 2px solid #cbd5e1;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+          }
+          .chart-img {
+            max-width: 100%;
+            height: auto;
+            max-height: 480px;
+            object-fit: contain;
+          }
+          .signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 55px;
+          }
+          .footer {
+            text-align: center;
+            font-size: 11.5px;
+            color: #64748b;
+            margin-top: 35px;
+            border-top: 1.5px solid #e2e8f0;
+            padding-top: 14px;
+            font-weight: 500;
+          }
+          @media print {
+            body { padding: 10px; }
+          }
         </style>
       </head>
       <body>
@@ -1263,14 +1568,14 @@ export function printChartReport({ title = 'Informe Gráfico', subtitle = '', co
 
         <div class="signatures">
           <div style="text-align: center; width: 40%;">
-            <div style="border-bottom: 1.5px solid #0f172a; height: 45px; margin-bottom: 6px;"></div>
-            <p style="font-weight: 800; margin: 0; font-size: 12px;">Tesorería Local</p>
-            <p style="margin: 0; font-size: 10px; color: #64748b;">Elaborado y Verificado</p>
+            <div style="border-bottom: 2px solid #0f172a; height: 45px; margin-bottom: 6px;"></div>
+            <p style="font-weight: 900; margin: 0; font-size: 13.5px; color: #0f172a;">Tesorería Local</p>
+            <p style="margin: 2px 0 0; font-size: 12px; color: #64748b; font-weight: 600;">Elaborado y Verificado</p>
           </div>
           <div style="text-align: center; width: 40%;">
-            <div style="border-bottom: 1.5px solid #0f172a; height: 45px; margin-bottom: 6px;"></div>
-            <p style="font-weight: 800; margin: 0; font-size: 12px;">Pastor Titular</p>
-            <p style="margin: 0; font-size: 10px; color: #64748b;">Visto Bueno y Aprobación</p>
+            <div style="border-bottom: 2px solid #0f172a; height: 45px; margin-bottom: 6px;"></div>
+            <p style="font-weight: 900; margin: 0; font-size: 13.5px; color: #0f172a;">Pastor Titular</p>
+            <p style="margin: 2px 0 0; font-size: 12px; color: #64748b; font-weight: 600;">Visto Bueno y Aprobación</p>
           </div>
         </div>
 
