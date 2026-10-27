@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { FileText, Download, FileSpreadsheet, Filter, X, Coins, Building2, UserCheck, BarChart3, Calendar } from 'lucide-react';
 import { formatCurrency, formatDate, deduceDayOfWeek } from '../utils/formatters';
 import { exportToExcel, exportToPDF } from '../utils/pdfExcelExporter';
-import { exportOfferingsToExcel, printFilteredTithesReport, exportTithesToExcel } from '../utils/exportHelpers';
+import { exportOfferingsToExcel, printFilteredTithesReport, exportTithesToExcel, printFilteredCommitteeReport, printFilteredOfferingsReport } from '../utils/exportHelpers';
 
 export default function ReportsView({
   movements = [],
@@ -189,11 +189,49 @@ export default function ReportsView({
       return;
     }
 
-    const titlesMap = {
-      COMMITTEES: 'Movimientos de Comités',
-      OFFERINGS: 'Ofrendas Locales'
-    };
-    exportToPDF(titlesMap[reportType], congregationName, columns, filteredData, totals);
+    if (reportType === 'COMMITTEES') {
+      const periodLabel = selectedYear !== 'ALL'
+        ? (selectedMonth !== 'ALL' ? `${selectedMonth}/${selectedYear}` : `Año ${selectedYear}`)
+        : (dateFrom || dateTo ? `${dateFrom || ''} al ${dateTo || ''}` : 'Historial Completo');
+
+      const selectedComObj = committees.find(c => c.id === selectedCommittee);
+      const committeeName = selectedComObj ? selectedComObj.name : 'Consolidado General de Comités';
+      const treasurerName = selectedComObj ? (selectedComObj.treasurer || 'Tesorero(a)') : 'Tesorería General';
+
+      const activeMovs = filteredData.filter(m => !m.annulled);
+      const inc = activeMovs.filter(m => m.type === 'INGRESO').reduce((acc, m) => acc + (m.amount || 0), 0);
+      const exp = activeMovs.filter(m => m.type === 'EGRESO').reduce((acc, m) => acc + (m.amount || 0), 0);
+
+      printFilteredCommitteeReport({
+        congregationName,
+        committeeName,
+        treasurerName,
+        monthName: periodLabel,
+        movements: filteredData,
+        totals: { income: inc, expense: exp, net: inc - exp }
+      });
+      return;
+    }
+
+    if (reportType === 'OFFERINGS') {
+      const periodLabel = selectedYear !== 'ALL'
+        ? (selectedMonth !== 'ALL' ? `${selectedMonth}/${selectedYear}` : `Año ${selectedYear}`)
+        : (dateFrom || dateTo ? `${dateFrom || ''} al ${dateTo || ''}` : 'Historial Completo');
+
+      const committeeMap = {};
+      committees.forEach(c => {
+        if (c && c.id) committeeMap[c.id] = c.name;
+      });
+
+      printFilteredOfferingsReport({
+        congregationName,
+        monthName: periodLabel,
+        offerings: filteredData,
+        totalAmount: totals.amount || 0,
+        committeeMap
+      });
+      return;
+    }
   };
 
   const handleExportExcel = () => {

@@ -1,6 +1,137 @@
 import * as XLSX from 'xlsx';
 import { formatCurrency, formatDate, formatLongDate, compareDatesAsc } from './formatters';
 import { toast } from 'react-hot-toast';
+import Chart from 'chart.js/auto';
+
+/**
+ * Plugin de Chart.js para dibujar valores numéricos formateados encima de cada barra
+ */
+const barValueLabelsPlugin = {
+  id: 'barValueLabels',
+  afterDatasetsDraw: (chart) => {
+    const { ctx: c } = chart;
+    c.save();
+    c.font = 'bold 9px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    c.fillStyle = '#1e293b';
+    c.textAlign = 'center';
+    c.textBaseline = 'bottom';
+
+    chart.data.datasets.forEach((dataset, dIdx) => {
+      const meta = chart.getDatasetMeta(dIdx);
+      if (!meta.hidden && meta.data) {
+        meta.data.forEach((bar, index) => {
+          const val = dataset.data[index];
+          if (val !== undefined && val !== null && val > 0) {
+            let label = formatCurrency(val);
+            if (val >= 1000000) {
+              label = `$${(val / 1000000).toFixed(1)}M`;
+            } else if (val >= 1000) {
+              label = `$${(val / 1000).toFixed(0)}k`;
+            }
+            c.fillText(label, bar.x, bar.y - 2);
+          }
+        });
+      }
+    });
+    c.restore();
+  }
+};
+
+/**
+ * Renderiza un gráfico a imagen base64 PNG de alta resolución sin necesidad de DOM visible
+ */
+function renderOffscreenChart({ type, data, options = {}, width = 500, height = 260 }) {
+  if (typeof document === 'undefined') return '';
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = width * 2;
+    canvas.height = height * 2;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+
+    // Plugin para asegurar fondo blanco sólido (crucial para impresión nítida)
+    const whiteBgPlugin = {
+      id: 'whiteBg',
+      beforeDraw: (chart) => {
+        const { ctx: c, width: w, height: h } = chart;
+        c.save();
+        c.fillStyle = '#ffffff';
+        c.fillRect(0, 0, w, h);
+        c.restore();
+      }
+    };
+
+    const isPie = type === 'pie' || type === 'doughnut';
+
+    const chartInstance = new Chart(ctx, {
+      type,
+      data,
+      options: {
+        responsive: false,
+        animation: false,
+        devicePixelRatio: 2,
+        plugins: {
+          legend: {
+            display: options?.plugins?.legend?.display !== undefined ? options.plugins.legend.display : true,
+            position: isPie ? 'bottom' : 'top',
+            labels: {
+              boxWidth: 10,
+              padding: 8,
+              font: {
+                size: 10,
+                weight: 'bold',
+                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+              },
+              color: '#334155'
+            }
+          },
+          tooltip: { enabled: false },
+          ...options.plugins
+        },
+        scales: type === 'bar' ? {
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { size: 9.5, weight: 'bold' },
+              color: '#334155'
+            }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: '#f1f5f9' },
+            ticks: {
+              font: { size: 9, weight: '600' },
+              color: '#64748b',
+              callback: (val) => {
+                if (Math.abs(val) >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
+                if (Math.abs(val) >= 1000) return `$${(val / 1000).toFixed(0)}k`;
+                return `$${val}`;
+              }
+            }
+          },
+          ...options.scales
+        } : undefined,
+        layout: {
+          padding: {
+            top: 10,
+            bottom: 6,
+            left: 8,
+            right: 8
+          }
+        },
+        ...options
+      },
+      plugins: [whiteBgPlugin, ...(options.extraPlugins || [])]
+    });
+
+    const base64 = chartInstance.toBase64Image('image/png', 1.0);
+    chartInstance.destroy();
+    return base64;
+  } catch (err) {
+    console.warn('Error al generar imagen de gráfica:', err);
+    return '';
+  }
+}
 
 /**
  * Función auxiliar para copiar texto con fallback robusto para todos los navegadores
@@ -896,11 +1027,161 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
   // Ordenar movimientos por fecha del día 1 al 31 (ascendente)
   const sorted = [...movements].sort((a, b) => compareDatesAsc(a.date, b.date));
 
+  const activeMovements = sorted.filter(m => !m.annulled);
+  const inc = totals.income !== undefined ? Number(totals.income) : activeMovements.filter(m => m.type === 'INGRESO').reduce((s, m) => s + (m.amount || 0), 0);
+  const exp = totals.expense !== undefined ? Number(totals.expense) : activeMovements.filter(m => m.type === 'EGRESO').reduce((s, m) => s + (m.amount || 0), 0);
+  const netVal = totals.net !== undefined ? Number(totals.net) : (inc - exp);
+
+  // Verificar si hay múltiples comités en el listado (ej: cuando se imprime desde Reportes con "Todos los comités")
+  const committeeNames = [...new Set(sorted.map(m => m.committeeName).filter(Boolean))];
+  const isMultiCommittee = committeeNames.length > 1;
+
+  // --- GENERACIÓN DE GRÁFICAS PARA COMITÉS ---
+  let barChartImg = '';
+  let pieChartImg = '';
+  let barChartTitle = 'Balance Financiero (Ingresos vs Egresos)';
+  let pieChartTitle = 'Proporción Ingresos vs Egresos';
+
+  if (isMultiCommittee) {
+    barChartTitle = 'Comparativa de Flujo por Comité';
+    pieChartTitle = 'Distribución del Volumen por Comité';
+
+    const comStats = committeeNames.map(name => {
+      const cMovs = activeMovements.filter(m => m.committeeName === name);
+      const cInc = cMovs.filter(m => m.type === 'INGRESO').reduce((s, m) => s + (m.amount || 0), 0);
+      const cExp = cMovs.filter(m => m.type === 'EGRESO').reduce((s, m) => s + (m.amount || 0), 0);
+      return { name, income: cInc, expense: cExp, total: cInc + cExp };
+    });
+
+    barChartImg = renderOffscreenChart({
+      type: 'bar',
+      data: {
+        labels: comStats.map(c => c.name.length > 12 ? c.name.slice(0, 11) + '…' : c.name),
+        datasets: [
+          {
+            label: 'Ingresos (+)',
+            data: comStats.map(c => c.income),
+            backgroundColor: '#10b981',
+            borderRadius: 4
+          },
+          {
+            label: 'Egresos (-)',
+            data: comStats.map(c => c.expense),
+            backgroundColor: '#f43f5e',
+            borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        extraPlugins: [barValueLabelsPlugin]
+      }
+    });
+
+    const totalAllCom = comStats.reduce((s, c) => s + c.total, 0) || 1;
+    pieChartImg = renderOffscreenChart({
+      type: 'doughnut',
+      data: {
+        labels: comStats.map(c => `${c.name}: ${formatCurrency(c.total)} (${Math.round((c.total / totalAllCom) * 100)}%)`),
+        datasets: [{
+          data: comStats.map(c => c.total),
+          backgroundColor: [
+            '#4f46e5', '#059669', '#d97706', '#dc2626',
+            '#0284c7', '#7c3aed', '#db2777', '#ca8a04', '#14b8a6', '#f97316'
+          ]
+        }]
+      }
+    });
+  } else if (inc > 0 || exp > 0) {
+    // Reporte de un solo comité:
+    // Revisar si los movimientos cubren más de 1 mes para graficar evolución mensual
+    const monthsMap = {};
+    activeMovements.forEach(m => {
+      const mKey = m.date ? m.date.slice(0, 7) : 'Actual';
+      if (!monthsMap[mKey]) monthsMap[mKey] = { income: 0, expense: 0 };
+      if (m.type === 'INGRESO') monthsMap[mKey].income += (m.amount || 0);
+      if (m.type === 'EGRESO') monthsMap[mKey].expense += (m.amount || 0);
+    });
+
+    const monthKeys = Object.keys(monthsMap).sort();
+    if (monthKeys.length > 1) {
+      barChartTitle = 'Evolución Mensual (Ingresos vs Egresos)';
+      barChartImg = renderOffscreenChart({
+        type: 'bar',
+        data: {
+          labels: monthKeys.map(k => {
+            const [y, m] = k.split('-');
+            const monthNamesShort = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            return m ? `${monthNamesShort[parseInt(m, 10) - 1]} ${y}` : k;
+          }),
+          datasets: [
+            {
+              label: 'Ingresos (+)',
+              data: monthKeys.map(k => monthsMap[k].income),
+              backgroundColor: '#10b981',
+              borderRadius: 4
+            },
+            {
+              label: 'Egresos (-)',
+              data: monthKeys.map(k => monthsMap[k].expense),
+              backgroundColor: '#f43f5e',
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          extraPlugins: [barValueLabelsPlugin]
+        }
+      });
+    } else {
+      barChartTitle = 'Balance Financiero (Ingresos vs Egresos vs Saldo)';
+      barChartImg = renderOffscreenChart({
+        type: 'bar',
+        data: {
+          labels: ['Ingresos (+)', 'Egresos (-)', 'Saldo Neto'],
+          datasets: [{
+            label: 'Monto ($)',
+            data: [inc, exp, Math.max(0, netVal)],
+            backgroundColor: ['#10b981', '#f43f5e', netVal >= 0 ? '#3b82f6' : '#e11d48'],
+            borderRadius: 6
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { display: false }
+          },
+          extraPlugins: [barValueLabelsPlugin]
+        }
+      });
+    }
+
+    // 2. Gráfica de Torta: Proporción Ingresos vs Egresos
+    pieChartTitle = 'Proporción Ingresos vs Egresos';
+    const totalFlow = (inc + exp) || 1;
+    const incPct = Math.round((inc / totalFlow) * 100);
+    const expPct = Math.round((exp / totalFlow) * 100);
+
+    pieChartImg = renderOffscreenChart({
+      type: 'doughnut',
+      data: {
+        labels: [
+          `Ingresos: ${formatCurrency(inc)} (${incPct}%)`,
+          `Egresos: ${formatCurrency(exp)} (${expPct}%)`
+        ],
+        datasets: [{
+          data: [inc, exp],
+          backgroundColor: ['#10b981', '#f43f5e'],
+          borderWidth: 2
+        }]
+      }
+    });
+  }
+
   const rowsHtml = sorted.map((m, idx) => {
     const rowBg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
     return `
       <tr style="border-bottom: 1px solid #e2e8f0; background: ${rowBg}; ${m.annulled ? 'opacity: 0.55;' : ''}">
         <td style="padding: 7px 10px; font-weight: 800; font-size: 12px; color: #1e293b;">${formatDate(m.date)}</td>
+        ${isMultiCommittee ? `<td style="padding: 7px 10px; font-weight: 700; font-size: 11.5px; color: #4338ca;">${m.committeeName || '-'}</td>` : ''}
         <td style="padding: 7px 10px; font-weight: 900; font-size: 11.5px; color: ${m.type === 'INGRESO' ? '#16a34a' : '#dc2626'};">${m.type}</td>
         <td style="padding: 7px 10px; font-size: 12px; color: #334155; font-weight: 600;">${m.description || 'Sin descripción'} ${m.annulled ? '<span style="color:#dc2626;font-weight:900;">(ANULADO)</span>' : ''}</td>
         <td style="padding: 7px 10px; text-align: right; font-weight: 900; font-size: 12.5px; color: ${m.type === 'INGRESO' ? '#15803d' : '#b91c1c'};">
@@ -977,6 +1258,39 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
             font-weight: 950;
             margin-top: 3px;
           }
+          .charts-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+          }
+          .chart-card {
+            background: #ffffff;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 10px 12px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+          }
+          .chart-title {
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: #1e293b;
+            margin-bottom: 6px;
+          }
+          .chart-img {
+            width: 100%;
+            height: 195px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+          }
           table {
             width: 100%;
             border-collapse: collapse;
@@ -1012,6 +1326,9 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
           }
           @media print {
             body { padding: 10px; }
+            .charts-container { margin-bottom: 14px; page-break-inside: avoid; }
+            .chart-card { border: 1px solid #cbd5e1; padding: 6px 8px; box-shadow: none; }
+            .chart-img { height: 180px !important; }
           }
         </style>
       </head>
@@ -1029,22 +1346,40 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
         <div class="kpi-container">
           <div class="kpi" style="border-color: #86efac; background: #f0fdf4;">
             <span style="font-size: 10.5px; color: #16a34a; font-weight: 900; text-transform: uppercase;">Total Aportes / Ingresos</span>
-            <div class="kpi-val" style="color: #15803d;">+${formatCurrency(totals.income)}</div>
+            <div class="kpi-val" style="color: #15803d;">+${formatCurrency(inc)}</div>
           </div>
           <div class="kpi" style="border-color: #fca5a5; background: #fff1f2;">
             <span style="font-size: 10.5px; color: #dc2626; font-weight: 900; text-transform: uppercase;">Total Egresos</span>
-            <div class="kpi-val" style="color: #b91c1c;">-${formatCurrency(totals.expense)}</div>
+            <div class="kpi-val" style="color: #b91c1c;">-${formatCurrency(exp)}</div>
           </div>
           <div class="kpi" style="border-color: #93c5fd; background: #eff6ff;">
             <span style="font-size: 10.5px; color: #1d4ed8; font-weight: 900; text-transform: uppercase;">Saldo Neto Período</span>
-            <div class="kpi-val" style="color: #1e3a8a;">${formatCurrency(totals.net)}</div>
+            <div class="kpi-val" style="color: #1e3a8a;">${formatCurrency(netVal)}</div>
           </div>
         </div>
+
+        ${(barChartImg || pieChartImg) ? `
+          <div class="charts-container">
+            ${barChartImg ? `
+              <div class="chart-card">
+                <div class="chart-title">📊 ${barChartTitle}</div>
+                <img src="${barChartImg}" class="chart-img" alt="Gráfica de Barras" />
+              </div>
+            ` : ''}
+            ${pieChartImg ? `
+              <div class="chart-card">
+                <div class="chart-title">🥧 ${pieChartTitle}</div>
+                <img src="${pieChartImg}" class="chart-img" alt="Gráfica de Torta" />
+              </div>
+            ` : ''}
+          </div>
+        ` : ''}
 
         <table>
           <thead>
             <tr>
               <th>Fecha (Día 1-31)</th>
+              ${isMultiCommittee ? '<th>Comité</th>' : ''}
               <th>Tipo</th>
               <th>Descripción</th>
               <th style="text-align: right;">Monto</th>
@@ -1052,6 +1387,9 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
             </tr>
           </thead>
           <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
             ${rowsHtml}
           </tbody>
         </table>
@@ -1163,6 +1501,98 @@ export function printFilteredOfferingsReport({ monthName = '', offerings = [], t
   // Ordenar ofrendas por fecha del día 1 al 31 (ascendente)
   const sorted = [...offerings].sort((a, b) => compareDatesAsc(a.date, b.date));
 
+  // --- GENERACIÓN DE GRÁFICAS PARA OFRENDAS ---
+  let barChartImg = '';
+  let pieChartImg = '';
+  const barChartTitle = 'Recaudación por Día de Culto';
+  let pieChartTitle = 'Distribución de Ofrendas por Comité';
+
+  if (sorted.length > 0 && totalAmount > 0) {
+    // 1. Gráfica de Barras: Recaudación por Día de Culto (Domingo, Martes, Jueves, Sábado)
+    const dayTotals = { 'Domingo': 0, 'Martes': 0, 'Jueves': 0, 'Sábado': 0 };
+    sorted.forEach(o => {
+      const day = o.dayOfWeek || deduceDayOfWeek(o.date);
+      if (dayTotals[day] !== undefined) {
+        dayTotals[day] += Number(o.amount || 0);
+      } else if (day) {
+        dayTotals[day] = (dayTotals[day] || 0) + Number(o.amount || 0);
+      }
+    });
+
+    const standardDays = ['Domingo', 'Martes', 'Jueves', 'Sábado'];
+    const otherDays = Object.keys(dayTotals).filter(d => !standardDays.includes(d) && dayTotals[d] > 0);
+    const allDays = [...standardDays, ...otherDays].filter(d => dayTotals[d] > 0 || sorted.length <= 15);
+    const dayAmounts = allDays.map(d => dayTotals[d] || 0);
+    const dayColors = {
+      'Domingo': '#2563eb',
+      'Martes': '#059669',
+      'Jueves': '#7c3aed',
+      'Sábado': '#d97706'
+    };
+
+    barChartImg = renderOffscreenChart({
+      type: 'bar',
+      data: {
+        labels: allDays,
+        datasets: [{
+          label: 'Recaudo ($)',
+          data: dayAmounts,
+          backgroundColor: allDays.map(d => dayColors[d] || '#0284c7'),
+          borderRadius: 6
+        }]
+      },
+      options: {
+        plugins: {
+          legend: { display: false }
+        },
+        extraPlugins: [barValueLabelsPlugin]
+      }
+    });
+
+    // 2. Gráfica de Torta: Distribución por Comité Destino
+    const comTotals = {};
+    sorted.forEach(o => {
+      const comName = committeeMap[o.destinationCommitteeId] || o.committeeName || 'General';
+      comTotals[comName] = (comTotals[comName] || 0) + Number(o.amount || 0);
+    });
+
+    const comEntries = Object.entries(comTotals).sort((a, b) => b[1] - a[1]);
+    const palette = ['#4f46e5', '#059669', '#d97706', '#dc2626', '#0284c7', '#7c3aed', '#db2777', '#ca8a04', '#14b8a6', '#f97316'];
+
+    if (comEntries.length > 1) {
+      pieChartTitle = 'Distribución por Comité Destino';
+      pieChartImg = renderOffscreenChart({
+        type: 'doughnut',
+        data: {
+          labels: comEntries.map(([name, val]) => {
+            const pct = Math.round((val / totalAmount) * 100);
+            return `${name}: ${formatCurrency(val)} (${pct}%)`;
+          }),
+          datasets: [{
+            data: comEntries.map(([_, val]) => val),
+            backgroundColor: palette.slice(0, comEntries.length)
+          }]
+        }
+      });
+    } else {
+      pieChartTitle = 'Distribución de Recaudo por Día';
+      const dayEntries = Object.entries(dayTotals).filter(([_, val]) => val > 0);
+      pieChartImg = renderOffscreenChart({
+        type: 'doughnut',
+        data: {
+          labels: dayEntries.map(([day, val]) => {
+            const pct = Math.round((val / totalAmount) * 100);
+            return `${day}: ${formatCurrency(val)} (${pct}%)`;
+          }),
+          datasets: [{
+            data: dayEntries.map(([_, val]) => val),
+            backgroundColor: dayEntries.map(([day]) => dayColors[day] || '#0284c7')
+          }]
+        }
+      });
+    }
+  }
+
   const rowsHtml = sorted.map((o, idx) => {
     const comName = committeeMap[o.destinationCommitteeId] || 'General';
     const rowBg = idx % 2 === 0 ? '#ffffff' : '#fffbeb';
@@ -1226,6 +1656,54 @@ export function printFilteredOfferingsReport({ monthName = '', offerings = [], t
             border: 1px solid #fde68a;
             font-weight: 600;
           }
+          .total-box {
+            background: #fffbeb;
+            border: 2px solid #fde68a;
+            border-radius: 10px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+          }
+          .total-val {
+            font-size: 18px;
+            font-weight: 950;
+            color: #b45309;
+          }
+          .charts-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+          }
+          .chart-card {
+            background: #ffffff;
+            border: 1.5px solid #fed7aa;
+            border-radius: 12px;
+            padding: 10px 12px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+          }
+          .chart-title {
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: #92400e;
+            margin-bottom: 6px;
+          }
+          .chart-img {
+            width: 100%;
+            height: 195px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+          }
           table {
             width: 100%;
             border-collapse: collapse;
@@ -1245,21 +1723,6 @@ export function printFilteredOfferingsReport({ monthName = '', offerings = [], t
             font-weight: 950;
             letter-spacing: 0.4px;
           }
-          .total-box {
-            background: #fffbeb;
-            border: 2px solid #fde68a;
-            border-radius: 10px;
-            padding: 12px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 18px;
-          }
-          .total-val {
-            font-size: 18px;
-            font-weight: 950;
-            color: #b45309;
-          }
           .signatures {
             display: flex;
             justify-content: space-between;
@@ -1276,6 +1739,9 @@ export function printFilteredOfferingsReport({ monthName = '', offerings = [], t
           }
           @media print {
             body { padding: 10px; }
+            .charts-container { margin-bottom: 14px; page-break-inside: avoid; }
+            .chart-card { border: 1px solid #fed7aa; padding: 6px 8px; box-shadow: none; }
+            .chart-img { height: 180px !important; }
           }
         </style>
       </head>
@@ -1294,6 +1760,23 @@ export function printFilteredOfferingsReport({ monthName = '', offerings = [], t
           <span style="font-weight: 900; font-size: 15px; text-transform: uppercase; color: #92400e;">Gran Total Recaudado</span>
           <span class="total-val">${formatCurrency(totalAmount)}</span>
         </div>
+
+        ${(barChartImg || pieChartImg) ? `
+          <div class="charts-container">
+            ${barChartImg ? `
+              <div class="chart-card">
+                <div class="chart-title">📊 ${barChartTitle}</div>
+                <img src="${barChartImg}" class="chart-img" alt="Gráfica de Barras" />
+              </div>
+            ` : ''}
+            ${pieChartImg ? `
+              <div class="chart-card">
+                <div class="chart-title">🥧 ${pieChartTitle}</div>
+                <img src="${pieChartImg}" class="chart-img" alt="Gráfica de Torta" />
+              </div>
+            ` : ''}
+          </div>
+        ` : ''}
 
         <table>
           <thead>
