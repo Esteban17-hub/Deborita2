@@ -1263,10 +1263,18 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
             font-weight: 950;
             margin-top: 3px;
           }
+          .charts-page {
+            page-break-before: always;
+            break-before: page;
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 2px dashed #cbd5e1;
+          }
           .charts-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
+            gap: 16px;
+            margin-top: 18px;
             margin-bottom: 20px;
             page-break-inside: avoid;
           }
@@ -1274,7 +1282,7 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
             background: #ffffff;
             border: 1.5px solid #cbd5e1;
             border-radius: 12px;
-            padding: 10px 12px;
+            padding: 12px 14px;
             text-align: center;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
             display: flex;
@@ -1282,16 +1290,16 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
             justify-content: space-between;
           }
           .chart-title {
-            font-size: 11px;
+            font-size: 11.5px;
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 0.3px;
             color: #1e293b;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
           }
           .chart-img {
             width: 100%;
-            height: 195px;
+            height: 250px;
             object-fit: contain;
             display: block;
             margin: 0 auto;
@@ -1331,9 +1339,16 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
           }
           @media print {
             body { padding: 10px; }
+            .charts-page {
+              page-break-before: always !important;
+              break-before: page !important;
+              margin-top: 0 !important;
+              padding-top: 15px !important;
+              border-top: none !important;
+            }
             .charts-container { margin-bottom: 14px; page-break-inside: avoid; }
-            .chart-card { border: 1px solid #cbd5e1; padding: 6px 8px; box-shadow: none; }
-            .chart-img { height: 180px !important; }
+            .chart-card { border: 1px solid #cbd5e1; padding: 8px 10px; box-shadow: none; }
+            .chart-img { height: 240px !important; }
           }
         </style>
       </head>
@@ -1362,23 +1377,6 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
             <div class="kpi-val" style="color: #1e3a8a;">${formatCurrency(netVal)}</div>
           </div>
         </div>
-
-        ${(barChartImg || pieChartImg) ? `
-          <div class="charts-container">
-            ${barChartImg ? `
-              <div class="chart-card">
-                <div class="chart-title">📊 ${barChartTitle}</div>
-                <img src="${barChartImg}" class="chart-img" alt="Gráfica de Barras" />
-              </div>
-            ` : ''}
-            ${pieChartImg ? `
-              <div class="chart-card">
-                <div class="chart-title">🥧 ${pieChartTitle}</div>
-                <img src="${pieChartImg}" class="chart-img" alt="Gráfica de Torta" />
-              </div>
-            ` : ''}
-          </div>
-        ` : ''}
 
         <table>
           <thead>
@@ -1411,6 +1409,34 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
         <div class="footer">
           Documento generado por Sistema de Contabilidad Deborita. Válido para control interno e informe congregacional.
         </div>
+
+        ${(barChartImg || pieChartImg) ? `
+          <div class="charts-page">
+            <div class="header">
+              <h1 class="title">ANÁLISIS GRÁFICO Y ESTADÍSTICO</h1>
+              <p class="sub">${committeeName} | ${congregationName || 'Deborita Gestión Local'} | Período: ${monthName || 'Histórico Completo'}</p>
+            </div>
+
+            <div class="charts-container" style="grid-template-columns: ${(barChartImg && pieChartImg) ? 'repeat(2, 1fr)' : '1fr'};">
+              ${barChartImg ? `
+                <div class="chart-card">
+                  <div class="chart-title">📊 ${barChartTitle}</div>
+                  <img src="${barChartImg}" class="chart-img" alt="Gráfica de Barras" />
+                </div>
+              ` : ''}
+              ${pieChartImg ? `
+                <div class="chart-card">
+                  <div class="chart-title">🥧 ${pieChartTitle}</div>
+                  <img src="${pieChartImg}" class="chart-img" alt="Gráfica de Torta" />
+                </div>
+              ` : ''}
+            </div>
+
+            <div class="footer">
+              Hoja de anexos visuales. Sistema de Contabilidad Deborita.
+            </div>
+          </div>
+        ` : ''}
 
         <script>
           window.onload = function() { window.print(); }
@@ -1680,10 +1706,18 @@ export function printFilteredOfferingsReport({ monthName = '', offerings = [], t
             font-weight: 950;
             color: #b45309;
           }
+          .charts-page {
+            page-break-before: always;
+            break-before: page;
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 2px dashed #fed7aa;
+          }
           .charts-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
+            gap: 16px;
+            margin-top: 18px;
             margin-bottom: 20px;
             page-break-inside: avoid;
           }
@@ -1691,7 +1725,7 @@ export function printFilteredOfferingsReport({ monthName = '', offerings = [], t
             background: #ffffff;
             border: 1.5px solid #fed7aa;
             border-radius: 12px;
-            padding: 10px 12px;
+            padding: 12px 14px;
             text-align: center;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
             display: flex;
@@ -1699,16 +1733,16 @@ export function printFilteredOfferingsReport({ monthName = '', offerings = [], t
             justify-content: space-between;
           }
           .chart-title {
-            font-size: 11px;
+            font-size: 11.5px;
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 0.3px;
             color: #92400e;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
           }
           .chart-img {
             width: 100%;
-            height: 195px;
+            height: 250px;
             object-fit: contain;
             display: block;
             margin: 0 auto;
@@ -1748,9 +1782,16 @@ export function printFilteredOfferingsReport({ monthName = '', offerings = [], t
           }
           @media print {
             body { padding: 10px; }
+            .charts-page {
+              page-break-before: always !important;
+              break-before: page !important;
+              margin-top: 0 !important;
+              padding-top: 15px !important;
+              border-top: none !important;
+            }
             .charts-container { margin-bottom: 14px; page-break-inside: avoid; }
-            .chart-card { border: 1px solid #fed7aa; padding: 6px 8px; box-shadow: none; }
-            .chart-img { height: 180px !important; }
+            .chart-card { border: 1px solid #fed7aa; padding: 8px 10px; box-shadow: none; }
+            .chart-img { height: 240px !important; }
           }
         </style>
       </head>
@@ -1769,23 +1810,6 @@ export function printFilteredOfferingsReport({ monthName = '', offerings = [], t
           <span style="font-weight: 900; font-size: 15px; text-transform: uppercase; color: #92400e;">Gran Total Recaudado</span>
           <span class="total-val">${formatCurrency(totalAmount)}</span>
         </div>
-
-        ${(barChartImg || pieChartImg) ? `
-          <div class="charts-container">
-            ${barChartImg ? `
-              <div class="chart-card">
-                <div class="chart-title">📊 ${barChartTitle}</div>
-                <img src="${barChartImg}" class="chart-img" alt="Gráfica de Barras" />
-              </div>
-            ` : ''}
-            ${pieChartImg ? `
-              <div class="chart-card">
-                <div class="chart-title">🥧 ${pieChartTitle}</div>
-                <img src="${pieChartImg}" class="chart-img" alt="Gráfica de Torta" />
-              </div>
-            ` : ''}
-          </div>
-        ` : ''}
 
         <table>
           <thead>
@@ -1819,6 +1843,34 @@ export function printFilteredOfferingsReport({ monthName = '', offerings = [], t
         <div class="footer">
           Documento generado electrónicamente por Sistema Deborita. Válido para auditoría y control financiero.
         </div>
+
+        ${(barChartImg || pieChartImg) ? `
+          <div class="charts-page">
+            <div class="header">
+              <h1 class="title">ANÁLISIS GRÁFICO - OFRENDAS</h1>
+              <p class="sub">${congregationName || 'Deborita Gestión Local'} | Período: ${monthName || 'Histórico Completo'}</p>
+            </div>
+
+            <div class="charts-container" style="grid-template-columns: ${(barChartImg && pieChartImg) ? 'repeat(2, 1fr)' : '1fr'};">
+              ${barChartImg ? `
+                <div class="chart-card">
+                  <div class="chart-title">📊 ${barChartTitle}</div>
+                  <img src="${barChartImg}" class="chart-img" alt="Gráfica de Barras" />
+                </div>
+              ` : ''}
+              ${pieChartImg ? `
+                <div class="chart-card">
+                  <div class="chart-title">🥧 ${pieChartTitle}</div>
+                  <img src="${pieChartImg}" class="chart-img" alt="Gráfica de Torta" />
+                </div>
+              ` : ''}
+            </div>
+
+            <div class="footer">
+              Hoja de anexos visuales. Sistema de Contabilidad Deborita.
+            </div>
+          </div>
+        ` : ''}
 
         <script>
           window.onload = function() { window.print(); }
