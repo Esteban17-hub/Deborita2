@@ -757,12 +757,12 @@ export default function CommitteesView({
                       <button
                         type="button"
                         onClick={() => {
-                          const exportData = sortedMovements.map(m => ({
+                          const activeOnly = sortedMovements.filter(m => !m.annulled);
+                          const exportData = activeOnly.map(m => ({
                             'Fecha': formatDate(m.date),
                             'Tipo': m.type,
                             'Descripción': m.description || '',
-                            'Monto': m.type === 'INGRESO' ? m.amount : -m.amount,
-                            'Estado': m.annulled ? `Anulado (${m.annulReason || ''})` : 'Activo'
+                            'Monto': m.type === 'INGRESO' ? m.amount : -m.amount
                           }));
                           exportToExcel(exportData, `Reporte_${activeCommittee.name.replace(/\s+/g, '_')}`);
                         }}
@@ -777,12 +777,13 @@ export default function CommitteesView({
                         type="button"
                         onClick={() => {
                           const monthObj = monthsList.find(m => m.code === movSelectedMonth);
+                          const activeOnly = sortedMovements.filter(m => !m.annulled);
                           printFilteredCommitteeReport({
                             congregationName,
                             committeeName: activeCommittee.name,
                             treasurerName: activeCommittee.treasurer || 'Tesorero(a)',
                             monthName: monthObj ? monthObj.name : 'Período Completo',
-                            movements: sortedMovements,
+                            movements: activeOnly,
                             totals: { income: filteredIngresos, expense: filteredEgresos, net: filteredNeto }
                           });
                         }}
@@ -797,12 +798,13 @@ export default function CommitteesView({
                         type="button"
                         onClick={() => {
                           const monthObj = monthsList.find(m => m.code === movSelectedMonth);
+                          const activeOnly = sortedMovements.filter(m => !m.annulled);
                           shareCommitteeReportWhatsApp({
                             congregationName,
                             committeeName: activeCommittee.name,
                             treasurerName: activeCommittee.treasurer || 'Tesorero(a)',
                             monthName: monthObj ? monthObj.name : 'Período Completo',
-                            movements: sortedMovements,
+                            movements: activeOnly,
                             totals: { income: filteredIngresos, expense: filteredEgresos, net: filteredNeto }
                           });
                         }}
@@ -817,12 +819,13 @@ export default function CommitteesView({
                         type="button"
                         onClick={() => {
                           const monthObj = monthsList.find(m => m.code === movSelectedMonth);
+                          const activeOnly = sortedMovements.filter(m => !m.annulled);
                           copyCommitteeSummaryText({
                             congregationName,
                             committeeName: activeCommittee.name,
                             treasurerName: activeCommittee.treasurer || 'Tesorero(a)',
                             monthName: monthObj ? monthObj.name : 'Período Completo',
-                            movements: sortedMovements,
+                            movements: activeOnly,
                             totals: { income: filteredIngresos, expense: filteredEgresos, net: filteredNeto }
                           });
                         }}

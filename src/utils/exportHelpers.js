@@ -1024,12 +1024,18 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
     return;
   }
 
-  // Ordenar movimientos por fecha del día 1 al 31 (ascendente)
-  const sorted = [...movements].sort((a, b) => compareDatesAsc(a.date, b.date));
+  // Excluir rigurosamente cualquier movimiento anulado del reporte oficial (PDF e impreso)
+  const activeMovements = movements.filter(m => !m.annulled);
 
-  const activeMovements = sorted.filter(m => !m.annulled);
-  const inc = totals.income !== undefined ? Number(totals.income) : activeMovements.filter(m => m.type === 'INGRESO').reduce((s, m) => s + (m.amount || 0), 0);
-  const exp = totals.expense !== undefined ? Number(totals.expense) : activeMovements.filter(m => m.type === 'EGRESO').reduce((s, m) => s + (m.amount || 0), 0);
+  // Ordenar movimientos activos por fecha del día 1 al 31 (ascendente)
+  const sorted = [...activeMovements].sort((a, b) => compareDatesAsc(a.date, b.date));
+
+  const inc = totals.income !== undefined && totals.income > 0 
+    ? Number(totals.income) 
+    : activeMovements.filter(m => m.type === 'INGRESO').reduce((s, m) => s + (m.amount || 0), 0);
+  const exp = totals.expense !== undefined && totals.expense > 0 
+    ? Number(totals.expense) 
+    : activeMovements.filter(m => m.type === 'EGRESO').reduce((s, m) => s + (m.amount || 0), 0);
   const netVal = totals.net !== undefined ? Number(totals.net) : (inc - exp);
 
   // Verificar si hay múltiples comités en el listado (ej: cuando se imprime desde Reportes con "Todos los comités")
@@ -1179,15 +1185,14 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
   const rowsHtml = sorted.map((m, idx) => {
     const rowBg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
     return `
-      <tr style="border-bottom: 1px solid #e2e8f0; background: ${rowBg}; ${m.annulled ? 'opacity: 0.55;' : ''}">
+      <tr style="border-bottom: 1px solid #e2e8f0; background: ${rowBg};">
         <td style="padding: 7px 10px; font-weight: 800; font-size: 12px; color: #1e293b;">${formatDate(m.date)}</td>
         ${isMultiCommittee ? `<td style="padding: 7px 10px; font-weight: 700; font-size: 11.5px; color: #4338ca;">${m.committeeName || '-'}</td>` : ''}
         <td style="padding: 7px 10px; font-weight: 900; font-size: 11.5px; color: ${m.type === 'INGRESO' ? '#16a34a' : '#dc2626'};">${m.type}</td>
-        <td style="padding: 7px 10px; font-size: 12px; color: #334155; font-weight: 600;">${m.description || 'Sin descripción'} ${m.annulled ? '<span style="color:#dc2626;font-weight:900;">(ANULADO)</span>' : ''}</td>
+        <td style="padding: 7px 10px; font-size: 12px; color: #334155; font-weight: 600;">${m.description || 'Sin descripción'}</td>
         <td style="padding: 7px 10px; text-align: right; font-weight: 900; font-size: 12.5px; color: ${m.type === 'INGRESO' ? '#15803d' : '#b91c1c'};">
           ${m.type === 'INGRESO' ? '+' : '-'}${formatCurrency(m.amount || 0)}
         </td>
-        <td style="padding: 7px 10px; text-align: center; font-size: 11px; font-weight: 800; color: ${m.annulled ? '#b91c1c' : '#0369a1'};">${m.annulled ? 'Anulado' : 'Activo'}</td>
       </tr>
     `;
   }).join('');
@@ -1383,13 +1388,9 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
               <th>Tipo</th>
               <th>Descripción</th>
               <th style="text-align: right;">Monto</th>
-              <th style="text-align: center;">Estado</th>
             </tr>
           </thead>
           <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
             ${rowsHtml}
           </tbody>
         </table>
@@ -1426,16 +1427,25 @@ export function printFilteredCommitteeReport({ committeeName, treasurerName = ''
  * Genera el texto estructurado del resumen de un comité
  */
 export function buildCommitteeSummaryText({ committeeName, treasurerName = '', monthName = '', movements = [], totals = { income: 0, expense: 0, net: 0 }, congregationName = '' }) {
-  const sorted = [...movements].sort((a, b) => compareDatesAsc(a.date, b.date));
+  const activeMovements = movements.filter(m => !m.annulled);
+  const sorted = [...activeMovements].sort((a, b) => compareDatesAsc(a.date, b.date));
+
+  const inc = totals.income !== undefined && totals.income > 0
+    ? Number(totals.income)
+    : activeMovements.filter(m => m.type === 'INGRESO').reduce((s, m) => s + (m.amount || 0), 0);
+  const exp = totals.expense !== undefined && totals.expense > 0
+    ? Number(totals.expense)
+    : activeMovements.filter(m => m.type === 'EGRESO').reduce((s, m) => s + (m.amount || 0), 0);
+  const net = totals.net !== undefined ? Number(totals.net) : (inc - exp);
 
   let text = `📊 *REPORTE DE COMITÉ: ${committeeName.toUpperCase()}*\n`;
   if (congregationName) text += `🏛️ *Congregación:* ${congregationName}\n`;
   if (monthName) text += `🗓️ *Período:* ${monthName}\n`;
   if (treasurerName) text += `👤 *Tesorero(a):* ${treasurerName}\n`;
   text += `------------------------------------\n`;
-  text += `💰 *Total Aportes / Ingresos:* +${formatCurrency(totals.income)}\n`;
-  text += `🔴 *Total Egresos:* -${formatCurrency(totals.expense)}\n`;
-  text += `💵 *SALDO NETO PERÍODO:* ${formatCurrency(totals.net)}\n`;
+  text += `💰 *Total Aportes / Ingresos:* +${formatCurrency(inc)}\n`;
+  text += `🔴 *Total Egresos:* -${formatCurrency(exp)}\n`;
+  text += `💵 *SALDO NETO PERÍODO:* ${formatCurrency(net)}\n`;
   text += `------------------------------------\n`;
   text += `📋 *DESGLOSE (Del 1 al 31 en orden):*\n`;
 
@@ -1445,8 +1455,7 @@ export function buildCommitteeSummaryText({ committeeName, treasurerName = '', m
     sorted.forEach((m) => {
       const d = formatDate(m.date);
       const sign = m.type === 'INGRESO' ? '+' : '-';
-      const ann = m.annulled ? ' (ANULADO)' : '';
-      text += `• ${d}: ${m.description || 'Movimiento'} (${sign}${formatCurrency(m.amount)})${ann}\n`;
+      text += `• ${d}: ${m.description || 'Movimiento'} (${sign}${formatCurrency(m.amount)})\n`;
     });
   }
 

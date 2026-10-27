@@ -20,6 +20,7 @@ export default function ReportsView({
   const [selectedDay, setSelectedDay] = useState('ALL');
   const [selectedYear, setSelectedYear] = useState('ALL');
   const [selectedMonth, setSelectedMonth] = useState('ALL');
+  const [selectedStatus, setSelectedStatus] = useState('ACTIVE'); // 'ACTIVE', 'ALL', 'ANNULLED'
 
   const isReadOnly = userRole === 'VISITA';
 
@@ -52,6 +53,8 @@ export default function ReportsView({
     filteredData = movements
       .filter(m => {
         if (selectedCommittee !== 'ALL' && m.committeeId !== selectedCommittee) return false;
+        if (selectedStatus === 'ACTIVE' && m.annulled) return false;
+        if (selectedStatus === 'ANNULLED' && !m.annulled) return false;
         if (dateFrom && m.date < dateFrom) return false;
         if (dateTo && m.date > dateTo) return false;
         if (selectedYear !== 'ALL' && !m.date.startsWith(selectedYear)) return false;
@@ -207,7 +210,7 @@ export default function ReportsView({
         committeeName,
         treasurerName,
         monthName: periodLabel,
-        movements: filteredData,
+        movements: activeMovs,
         totals: { income: inc, expense: exp, net: inc - exp }
       });
       return;
@@ -261,13 +264,23 @@ export default function ReportsView({
       return;
     }
 
+    if (reportType === 'COMMITTEES') {
+      const activeData = filteredData.filter(m => !m.annulled);
+      const exportColumns = columns.filter(c => c.key !== 'status');
+      const activeTotals = {
+        amount: activeData.reduce((acc, m) => m.type === 'INGRESO' ? acc + (m.amount || 0) : acc - (m.amount || 0), 0)
+      };
+      exportToExcel('Movimientos_Comites', exportColumns, activeData, activeTotals, congregationName);
+      return;
+    }
+
     const titlesMap = {
       COMMITTEES: 'Movimientos_Comites'
     };
     exportToExcel(titlesMap[reportType], columns, filteredData, totals, congregationName);
   };
 
-  const hasActiveFilters = dateFrom || dateTo || selectedCommittee !== 'ALL' || selectedDay !== 'ALL' || selectedYear !== 'ALL' || selectedMonth !== 'ALL';
+  const hasActiveFilters = dateFrom || dateTo || selectedCommittee !== 'ALL' || selectedDay !== 'ALL' || selectedYear !== 'ALL' || selectedMonth !== 'ALL' || (reportType === 'COMMITTEES' && selectedStatus !== 'ACTIVE');
 
   const handleClearFilters = () => {
     setDateFrom('');
@@ -276,6 +289,7 @@ export default function ReportsView({
     setSelectedDay('ALL');
     setSelectedYear('ALL');
     setSelectedMonth('ALL');
+    setSelectedStatus('ACTIVE');
   };
 
   return (
@@ -406,7 +420,7 @@ export default function ReportsView({
 
           {/* Comité (solo si no es diezmos) */}
           {reportType !== 'TITHES' && (
-            <div className="lg:col-span-3">
+            <div className={reportType === 'COMMITTEES' ? 'lg:col-span-3' : 'lg:col-span-3'}>
               <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Comité</label>
               <select
                 value={selectedCommittee}
@@ -417,6 +431,24 @@ export default function ReportsView({
                 {committees.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
+              </select>
+            </div>
+          )}
+
+          {/* Estado de Transacciones (solo en Comités para ver/auditar anulados en pantalla) */}
+          {reportType === 'COMMITTEES' && (
+            <div className="lg:col-span-3">
+              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                Estado Transacciones (Pantalla)
+              </label>
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold text-xs outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="ACTIVE">✅ Solo Activos (Válidos)</option>
+                <option value="ALL">📋 Todos (Activos y Anulados)</option>
+                <option value="ANNULLED">🚫 Solo Anulados</option>
               </select>
             </div>
           )}
