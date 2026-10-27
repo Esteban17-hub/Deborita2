@@ -4,6 +4,28 @@ import { formatCurrency, formatDate, compareDatesAsc } from '../utils/formatters
 import { exportToExcel, printFilteredCommitteeReport, shareCommitteeReportWhatsApp, copyCommitteeSummaryText } from '../utils/exportHelpers';
 import MoneyInput from './MoneyInput';
 
+// Tema cromático azul unificado institucional para todos los comités (diseño fijo y consistente según preferencia)
+export const UNIFIED_BLUE_THEME = {
+  id: 'blue',
+  name: 'Azul Institucional',
+  dot: 'bg-blue-600',
+  bg: 'from-blue-600 via-indigo-600 to-purple-700',
+  topBar: 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600',
+  cardBorder: 'border-blue-200/90 dark:border-blue-900/60',
+  cardHoverBorder: 'hover:border-blue-500 dark:hover:border-blue-400',
+  cardBg: 'bg-gradient-to-b from-blue-50/50 via-white to-white dark:from-slate-900 dark:to-blue-950/40',
+  cardHoverBg: 'hover:bg-blue-100/90 dark:hover:bg-blue-950/80',
+  cardHoverRing: 'hover:ring-4 hover:ring-blue-400/35 dark:hover:ring-blue-500/35',
+  cardHoverShadow: 'hover:shadow-2xl hover:shadow-blue-500/25',
+  shadow: 'shadow-indigo-500/25',
+  badge: 'text-blue-950 dark:text-blue-200 bg-blue-100/90 dark:bg-blue-900/60 border-blue-300 dark:border-blue-700',
+  badgeHover: 'group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600',
+  balanceColor: 'text-blue-950 dark:text-blue-100',
+  arrowHoverBg: 'group-hover:bg-blue-600',
+  btnGradient: 'from-blue-600 via-indigo-600 to-purple-700 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-500/25',
+  detailHeader: 'bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 dark:from-slate-800/90 dark:to-blue-950/50 border-blue-200 dark:border-blue-800'
+};
+
 // Paleta cromática definida y vibrante para los comités
 export const COMMITTEE_COLOR_THEMES = {
   emerald: {
@@ -251,23 +273,10 @@ export const COMMITTEE_COLOR_THEMES = {
 export const THEME_KEYS = Object.keys(COMMITTEE_COLOR_THEMES);
 
 /**
- * Deduce automáticamente el tema de color más adecuado según el nombre del comité
+ * Retorna siempre el tema azul unificado para todos los comités
  */
-export function getCommitteeDefaultThemeKey(committeeName = '', index = 0) {
-  const lower = (committeeName || '').toLowerCase();
-  if (lower.includes('dama') || lower.includes('dorca') || lower.includes('femenil') || lower.includes('mujere')) return 'rose';
-  if (lower.includes('joven') || lower.includes('juvenil') || lower.includes('adolescente')) return 'blue';
-  if (lower.includes('escuela') || lower.includes('dominical') || lower.includes('niño') || lower.includes('infantil')) return 'amber';
-  if (lower.includes('alabanza') || lower.includes('musica') || lower.includes('adoracion') || lower.includes('coro')) return 'purple';
-  if (lower.includes('mision') || lower.includes('evangelis')) return 'emerald';
-  if (lower.includes('caballero') || lower.includes('hombre') || lower.includes('varone')) return 'cyan';
-  if (lower.includes('junta') || lower.includes('directiv') || lower.includes('general') || lower.includes('oficial')) return 'indigo';
-  if (lower.includes('construc') || lower.includes('templo') || lower.includes('obra')) return 'teal';
-  if (lower.includes('social') || lower.includes('misericordia') || lower.includes('ayuda')) return 'orange';
-  if (lower.includes('interces') || lower.includes('oracion') || lower.includes('ayuno')) return 'fuchsia';
-  if (lower.includes('audio') || lower.includes('medio') || lower.includes('comunicac') || lower.includes('redes')) return 'lime';
-  
-  return THEME_KEYS[index % THEME_KEYS.length];
+export function getCommitteeDefaultThemeKey() {
+  return 'blue';
 }
 
 export default function CommitteesView({
@@ -302,7 +311,7 @@ export default function CommitteesView({
   // Form Comité (Crear / Editar)
   const [formName, setFormName] = useState('');
   const [formTreasurer, setFormTreasurer] = useState('');
-  const [formColor, setFormColor] = useState('emerald');
+  const [formColor, setFormColor] = useState('blue');
 
   // Modal Movimiento (Crear / Editar)
   const [isNewMovementOpen, setIsNewMovementOpen] = useState(false);
@@ -326,15 +335,9 @@ export default function CommitteesView({
   const activeCommittee = committees.find(c => c.id === selectedCommitteeId);
   const committeeMovements = selectedCommitteeId ? movements.filter(m => m.committeeId === selectedCommitteeId) : [];
 
-  // Obtener tema visual para un comité
-  const getCommitteeTheme = (committee, index = 0) => {
-    if (!committee) return COMMITTEE_COLOR_THEMES.emerald;
-    const savedColorKey = committeeColors[committee.id] || committee.color;
-    if (savedColorKey && COMMITTEE_COLOR_THEMES[savedColorKey]) {
-      return COMMITTEE_COLOR_THEMES[savedColorKey];
-    }
-    const defaultKey = getCommitteeDefaultThemeKey(committee.name, index);
-    return COMMITTEE_COLOR_THEMES[defaultKey] || COMMITTEE_COLOR_THEMES.emerald;
+  // Obtener tema visual para un comité (tema azul unificado institucional fijo)
+  const getCommitteeTheme = () => {
+    return UNIFIED_BLUE_THEME;
   };
 
   // Abrir modal para crear nuevo comité
@@ -342,7 +345,7 @@ export default function CommitteesView({
     setEditingCommittee(null);
     setFormName('');
     setFormTreasurer('');
-    setFormColor('emerald');
+    setFormColor('blue');
     setIsManageModalOpen(true);
   };
 
@@ -352,8 +355,7 @@ export default function CommitteesView({
     setEditingCommittee(comm);
     setFormName(comm.name || '');
     setFormTreasurer(comm.treasurer || '');
-    const currentTheme = committeeColors[comm.id] || comm.color || 'emerald';
-    setFormColor(currentTheme);
+    setFormColor('blue');
     setIsManageModalOpen(true);
   };
 
@@ -1069,39 +1071,6 @@ export default function CommitteesView({
                   placeholder="Nombre de la persona encargada"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
-              </div>
-
-              {/* Selector Visual de Colores */}
-              <div className="space-y-2 pt-1">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">
-                  Color y Tema Visual del Comité
-                </label>
-                <div className="grid grid-cols-4 gap-2.5 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
-                  {THEME_KEYS.map((key) => {
-                    const theme = COMMITTEE_COLOR_THEMES[key];
-                    const isSelected = formColor === key;
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => setFormColor(key)}
-                        className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all ${
-                          isSelected
-                            ? 'bg-white dark:bg-slate-800 border-blue-500 shadow-md scale-105 ring-2 ring-blue-400'
-                            : 'border-transparent hover:bg-white/60 dark:hover:bg-slate-800/60'
-                        }`}
-                        title={theme.name}
-                      >
-                        <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${theme.bg} shadow-sm flex items-center justify-center text-white`}>
-                          {isSelected && <Check className="w-4 h-4 stroke-[3px]" />}
-                        </div>
-                        <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 truncate w-full text-center">
-                          {theme.name.split(' ')[0]}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
               </div>
 
               <div className="flex gap-2 justify-end pt-3 border-t border-slate-100 dark:border-slate-800">

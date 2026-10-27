@@ -3,7 +3,7 @@ import { Wallet, TrendingUp, TrendingDown, HandHeart, PlusCircle, ArrowRightLeft
 import { toast } from 'react-hot-toast';
 import { formatCurrency, deduceDayOfWeek } from '../utils/formatters';
 import MoneyInput from './MoneyInput';
-import { COMMITTEE_COLOR_THEMES, getCommitteeDefaultThemeKey } from './CommitteesView';
+import { UNIFIED_BLUE_THEME } from './CommitteesView';
 
 export default function DashboardView({
   committees = [],
@@ -284,15 +284,8 @@ export default function DashboardView({
         </div>
 
         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-none">
-          {sortedCommittees.map((com, index) => {
-            const savedColors = (() => {
-              try { return JSON.parse(localStorage.getItem('deborita_committee_colors') || '{}'); } catch { return {}; }
-            })();
-            const savedColorKey = savedColors[com.id] || com.color;
-            const themeKey = (savedColorKey && COMMITTEE_COLOR_THEMES[savedColorKey])
-              ? savedColorKey
-              : getCommitteeDefaultThemeKey(com.name, index);
-            const theme = COMMITTEE_COLOR_THEMES[themeKey] || COMMITTEE_COLOR_THEMES.blue;
+          {sortedCommittees.map((com) => {
+            const theme = UNIFIED_BLUE_THEME;
 
             return (
               <div
